@@ -1,6 +1,101 @@
 <?php
 // consultas.php
-include('../componentes/db.php'); // Incluye la conexión a la base de datos
+include('../componentes/configSesion.php'); // Valida sesion activa
+include('../componentes/db.php'); // Incluye la conexion a la base de datos
+
+function toSqlValue($conexion, $value) {
+  if (is_null($value)) {
+    return "NULL";
+  }
+  return "'" . mysqli_real_escape_string($conexion, (string)$value) . "'";
+}
+
+function downloadDatabaseBackup($conexion, $databaseName, $backupType = 'full') {
+  $validTypes = ['structure', 'data', 'full'];
+  if (!in_array($backupType, $validTypes, true)) {
+    $backupType = 'full';
+  }
+
+  $timestamp = date('Ymd_His');
+  $safeDb = preg_replace('/[^a-zA-Z0-9_]/', '_', $databaseName);
+  $fileName = 'backup_' . $safeDb . '_' . $timestamp . '.sql';
+
+  header('Content-Type: application/sql; charset=utf-8');
+  header('Content-Disposition: attachment; filename="' . $fileName . '"');
+  header('Pragma: no-cache');
+  header('Expires: 0');
+
+  echo "-- Backup SQL generado desde consultas.php\n";
+  echo "-- Base de datos: " . $databaseName . "\n";
+  echo "-- Fecha: " . date('Y-m-d H:i:s') . "\n";
+  echo "-- Tipo: " . strtoupper($backupType) . "\n\n";
+  echo "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n";
+  echo "START TRANSACTION;\n";
+  echo "SET time_zone = \"+00:00\";\n";
+  echo "SET FOREIGN_KEY_CHECKS=0;\n\n";
+
+  $resultTables = mysqli_query($conexion, "SHOW TABLES");
+  if (!$resultTables) {
+    echo "-- Error al obtener tablas: " . mysqli_error($conexion) . "\n";
+    echo "SET FOREIGN_KEY_CHECKS=1;\nCOMMIT;\n";
+    exit;
+  }
+
+  $tables = [];
+  while ($row = mysqli_fetch_row($resultTables)) {
+    $tables[] = $row[0];
+  }
+
+  foreach ($tables as $table) {
+    if ($backupType === 'structure' || $backupType === 'full') {
+      $resultCreate = mysqli_query($conexion, "SHOW CREATE TABLE `$table`");
+      if ($resultCreate && $rowCreate = mysqli_fetch_assoc($resultCreate)) {
+        $createStatement = $rowCreate['Create Table'];
+        echo "-- --------------------------------------------------------\n";
+        echo "-- Estructura de tabla `$table`\n";
+        echo "-- --------------------------------------------------------\n";
+        echo "DROP TABLE IF EXISTS `$table`;\n";
+        echo $createStatement . ";\n\n";
+      } else {
+        echo "-- Error al obtener CREATE TABLE de `$table`: " . mysqli_error($conexion) . "\n\n";
+      }
+    }
+
+    if ($backupType === 'data' || $backupType === 'full') {
+      $resultData = mysqli_query($conexion, "SELECT * FROM `$table`");
+      if ($resultData && mysqli_num_rows($resultData) > 0) {
+        echo "-- Datos de tabla `$table`\n";
+        while ($rowData = mysqli_fetch_assoc($resultData)) {
+          $columns = array_map(function ($col) {
+            return "`" . $col . "`";
+          }, array_keys($rowData));
+
+          $values = array_map(function ($val) use ($conexion) {
+            return toSqlValue($conexion, $val);
+          }, array_values($rowData));
+
+          echo "INSERT INTO `$table` (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $values) . ");\n";
+        }
+        echo "\n";
+      } else {
+        echo "-- Tabla `$table` sin registros o no accesible.\n\n";
+      }
+    }
+  }
+
+  echo "SET FOREIGN_KEY_CHECKS=1;\n";
+  echo "COMMIT;\n";
+  exit;
+}
+
+if (
+  $_SERVER['REQUEST_METHOD'] === 'POST' &&
+  isset($_POST['backup_action']) &&
+  $_POST['backup_action'] === 'download_backup'
+) {
+  $backupType = isset($_POST['backup_type']) ? trim($_POST['backup_type']) : 'full';
+  downloadDatabaseBackup($conexion, $baseDatos, $backupType);
+}
 
 $consulta_all = '';
 $resultado_query = null;
@@ -152,6 +247,18 @@ if (!$tablaSeleccionada && !$consulta_all && count($tablas) > 0) {
     .list-group-item.sidebar-table .dropdown-menu .dropdown-item {
   color: #000 !important;
 }
+    .backup-fab {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1080;
+      border-radius: 999px;
+      box-shadow: 0 0.35rem 0.9rem rgba(0, 0, 0, 0.2);
+      padding: 0.65rem 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
   </style>
 </head>
 <body>
@@ -410,6 +517,60 @@ if (!$tablaSeleccionada && !$consulta_all && count($tablas) > 0) {
   </div>
 </div>
 
+<button
+  type="button"
+  class="btn btn-warning backup-fab"
+  data-bs-toggle="modal"
+  data-bs-target="#backupModal"
+  title="Generar backup SQL"
+>
+  <i class="bi bi-download"></i> Backup
+</button>
+
+<div class="modal fade" id="backupModal" tabindex="-1" aria-labelledby="backupModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="consultas.php">
+        <input type="hidden" name="backup_action" value="download_backup">
+        <div class="modal-header">
+          <h5 class="modal-title" id="backupModalLabel">Generar copia de seguridad</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2">Selecciona el tipo de backup SQL para la base de datos actual:</p>
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="backup_type" id="backupFull" value="full" checked>
+            <label class="form-check-label" for="backupFull">
+              General (estructura + registros)
+            </label>
+          </div>
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="backup_type" id="backupStructure" value="structure">
+            <label class="form-check-label" for="backupStructure">
+              Solo tablas (estructura)
+            </label>
+          </div>
+
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="backup_type" id="backupData" value="data">
+            <label class="form-check-label" for="backupData">
+              Solo registros (datos)
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-minty">
+            <i class="bi bi-download"></i> Descargar .sql
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Bootstrap Bundle con Popper (necesario para Dropdowns) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -493,3 +654,4 @@ var chartRegistro = new Chart(ctx, {
 </script>
 </body>
 </html>
+
