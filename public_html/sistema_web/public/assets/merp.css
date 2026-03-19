@@ -1,0 +1,3 @@
+.badge { font-weight: 500; }
+.badge.rounded-pill { padding: .55em .8em; font-size: .78rem; }
+.table td { vertical-align: middle; }

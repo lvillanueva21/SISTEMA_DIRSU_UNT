@@ -1,0 +1,52 @@
+[02-Sep-2024 07:14:36 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:19:14 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:28:45 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:32:16 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:32:32 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:35:33 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:35:49 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:38:36 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:39:59 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:40:25 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:43:49 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[02-Sep-2024 07:46:21 UTC] PHP Fatal error:  Uncaught Error: Call to a member function bind_param() on bool in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php:64
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 64
+[11-Sep-2024 17:55:01 UTC] PHP Notice:  Undefined variable: disciplinar in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 50
+[11-Sep-2024 17:55:01 UTC] PHP Notice:  Undefined variable: facultad in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 50
+[11-Sep-2024 17:55:01 UTC] PHP Notice:  Undefined variable: programa_estudios in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 50
+[11-Sep-2024 17:55:01 UTC] PHP Notice:  Undefined variable: departamento_academico in /home/gla/public_html/sistema_web/componentes/formulario/validarFormulario.php on line 50

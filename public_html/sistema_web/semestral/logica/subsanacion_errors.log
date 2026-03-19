@@ -1,0 +1,15 @@
+[12-Sep-2025 16:43:31 America/Lima] PHP Fatal error:  Uncaught Error: mysqli_stmt::bind_param(): Argument #2 cannot be passed by reference in /var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/semestral/logica/enviar_subsanacion.php:111
+Stack trace:
+#0 {main}
+  thrown in /var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/semestral/logica/enviar_subsanacion.php on line 111
+[12-Sep-2025 16:43:31 America/Lima] [enviar_subsanacion][fatal] {"type":1,"message":"Uncaught Error: mysqli_stmt::bind_param(): Argument #2 cannot be passed by reference in \/var\/www\/html\/otros\/rsu.unitru.edu.pe\/htdocs\/sistema_web\/semestral\/logica\/enviar_subsanacion.php:111\nStack trace:\n#0 {main}\n  thrown","file":"\/var\/www\/html\/otros\/rsu.unitru.edu.pe\/htdocs\/sistema_web\/semestral\/logica\/enviar_subsanacion.php","line":111}
+[12-Sep-2025 16:52:27 America/Lima] PHP Fatal error:  Uncaught Error: mysqli_stmt::bind_param(): Argument #2 cannot be passed by reference in /var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/semestral/logica/enviar_subsanacion.php:111
+Stack trace:
+#0 {main}
+  thrown in /var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/semestral/logica/enviar_subsanacion.php on line 111
+[12-Sep-2025 16:52:27 America/Lima] [enviar_subsanacion][fatal] {"type":1,"message":"Uncaught Error: mysqli_stmt::bind_param(): Argument #2 cannot be passed by reference in \/var\/www\/html\/otros\/rsu.unitru.edu.pe\/htdocs\/sistema_web\/semestral\/logica\/enviar_subsanacion.php:111\nStack trace:\n#0 {main}\n  thrown","file":"\/var\/www\/html\/otros\/rsu.unitru.edu.pe\/htdocs\/sistema_web\/semestral\/logica\/enviar_subsanacion.php","line":111}
+[12-Sep-2025 16:53:57 America/Lima] PHP Fatal error:  Uncaught Error: mysqli_stmt::bind_param(): Argument #2 cannot be passed by reference in /var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/semestral/logica/enviar_subsanacion.php:110
+Stack trace:
+#0 {main}
+  thrown in /var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/semestral/logica/enviar_subsanacion.php on line 110
+[12-Sep-2025 16:53:57 America/Lima] [enviar_subsanacion][fatal] {"type":1,"message":"Uncaught Error: mysqli_stmt::bind_param(): Argument #2 cannot be passed by reference in \/var\/www\/html\/otros\/rsu.unitru.edu.pe\/htdocs\/sistema_web\/semestral\/logica\/enviar_subsanacion.php:110\nStack trace:\n#0 {main}\n  thrown","file":"\/var\/www\/html\/otros\/rsu.unitru.edu.pe\/htdocs\/sistema_web\/semestral\/logica\/enviar_subsanacion.php","line":110}

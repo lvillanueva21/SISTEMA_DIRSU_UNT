@@ -1,0 +1,39 @@
+[23-Dec-2024 17:02:42 UTC] PHP Notice:  Undefined variable: conn in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:02:42 UTC] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:02:44 UTC] PHP Notice:  Undefined variable: conn in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:02:44 UTC] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:03:55 UTC] PHP Notice:  Undefined variable: conn in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:03:55 UTC] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:04:57 UTC] PHP Notice:  Undefined variable: conn in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:04:57 UTC] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:10:53 UTC] PHP Notice:  Undefined variable: conn in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[23-Dec-2024 17:10:53 UTC] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php:9
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 9
+[02-Jan-2025 02:09:54 UTC] PHP Notice:  Undefined variable: proyecto in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:09:54 UTC] PHP Notice:  Trying to access array offset on value of type null in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:10:02 UTC] PHP Notice:  Undefined variable: proyecto in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:10:02 UTC] PHP Notice:  Trying to access array offset on value of type null in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:41:16 UTC] PHP Notice:  Undefined variable: proyecto in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:41:16 UTC] PHP Notice:  Trying to access array offset on value of type null in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:42:46 UTC] PHP Notice:  Undefined variable: proyecto in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:42:46 UTC] PHP Notice:  Trying to access array offset on value of type null in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:42:52 UTC] PHP Notice:  Undefined variable: proyecto in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 02:42:52 UTC] PHP Notice:  Trying to access array offset on value of type null in /home/gla/public_html/sistema_web/comite_facultad_3/logica_rub/guardar_calificacion.php on line 5
+[02-Jan-2025 06:04:51 UTC] PHP Warning:  json_decode() expects parameter 1 to be string, array given in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 27
+[02-Jan-2025 06:04:51 UTC] PHP Warning:  json_decode() expects parameter 1 to be string, array given in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 28
+[02-Jan-2025 06:05:27 UTC] PHP Warning:  json_decode() expects parameter 1 to be string, array given in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 27
+[02-Jan-2025 06:05:27 UTC] PHP Warning:  json_decode() expects parameter 1 to be string, array given in /home/gla/public_html/sistema_web/comite_facultad/logica_rub/get_calificacion.php on line 28

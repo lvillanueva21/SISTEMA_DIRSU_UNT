@@ -1,0 +1,1061 @@
+Todos los CREATE TABLE (solo tablas)
+×
+1. clientes
+CREATE TABLE `clientes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+2. codigo_alias_facultad
+CREATE TABLE `codigo_alias_facultad` (
+  `facultad_id` int NOT NULL,
+  `alias` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `correlativo_width` tinyint NOT NULL DEFAULT '3',
+  PRIMARY KEY (`facultad_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+3. codigo_pool
+CREATE TABLE `codigo_pool` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `periodo_id` int NOT NULL,
+  `facultad_id` int NOT NULL,
+  `codigo` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `disponible` tinyint(1) NOT NULL DEFAULT '1',
+  `comentario` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pool_busq` (`periodo_id`,`facultad_id`,`disponible`)
+) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+4. codigo_secuencias_periodo
+CREATE TABLE `codigo_secuencias_periodo` (
+  `periodo_id` int NOT NULL,
+  `facultad_id` int NOT NULL,
+  `ultimo` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`periodo_id`,`facultad_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+5. control_eventos
+CREATE TABLE `control_eventos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `estado` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+6. cotejos_f1
+CREATE TABLE `cotejos_f1` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `descripcion` varchar(200) DEFAULT NULL,
+  `numero` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `etapa` int DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+7. cronograma_de_proyectos_DIRSU
+CREATE TABLE `cronograma_de_proyectos_DIRSU` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `inicio1` datetime NOT NULL,
+  `fin1` datetime NOT NULL,
+  `inicio2` datetime NOT NULL,
+  `fin2` datetime NOT NULL,
+  `inicio3` datetime NOT NULL,
+  `fin3` datetime NOT NULL,
+  `inicio4` datetime NOT NULL,
+  `fin4` datetime NOT NULL,
+  `inicio5` datetime NOT NULL,
+  `fin5` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+8. cronogramas
+CREATE TABLE `cronogramas` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `periodo` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `codigo` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `inicio` datetime NOT NULL,
+  `fin` datetime NOT NULL,
+  `estado` int NOT NULL DEFAULT '1',
+  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+9. cronogramas_semestrales
+CREATE TABLE `cronogramas_semestrales` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int DEFAULT '0',
+  `estado` int DEFAULT '0',
+  `pcf_inicio` datetime DEFAULT NULL,
+  `pcf_limite` datetime DEFAULT NULL,
+  `pcf_fin` datetime DEFAULT NULL,
+  `dd_inicio` datetime DEFAULT NULL,
+  `dd_fin` datetime DEFAULT NULL,
+  `df_inicio` datetime DEFAULT NULL,
+  `df_fin` datetime DEFAULT NULL,
+  `rsu_inicio` datetime DEFAULT NULL,
+  `rsu_limite` datetime DEFAULT NULL,
+  `rsu_fin` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=291 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+10. cw_carrusel
+CREATE TABLE `cw_carrusel` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `imagen` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `texto` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `orden` int NOT NULL,
+  `visible` tinyint(1) DEFAULT '1',
+  `titulo` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `mostrar_titulo` tinyint(1) DEFAULT '1',
+  `subtitulo` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `mostrar_subtitulo` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=924 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+11. cw_log_menu
+CREATE TABLE `cw_log_menu` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_opcion` int DEFAULT NULL,
+  `accion` enum('crear','editar','eliminar','reordenar','visibility') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fecha` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `detalles` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  PRIMARY KEY (`id`),
+  KEY `id_opcion` (`id_opcion`),
+  CONSTRAINT `cw_log_menu_ibfk_1` FOREIGN KEY (`id_opcion`) REFERENCES `cw_opciones_menu` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+12. cw_opciones_menu
+CREATE TABLE `cw_opciones_menu` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `texto` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `parent_id` int DEFAULT NULL,
+  `visible` tinyint(1) DEFAULT '1',
+  `orden` int DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `fk_parent` (`parent_id`),
+  CONSTRAINT `fk_parent` FOREIGN KEY (`parent_id`) REFERENCES `cw_opciones_menu` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+13. deadlines
+CREATE TABLE `deadlines` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_rol` int NOT NULL,
+  `titulo` varchar(200) NOT NULL,
+  `mensaje` varchar(500) NOT NULL,
+  `fecha_inicio` datetime NOT NULL,
+  `fecha_fin` datetime NOT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  KEY `fk_deadlines_rol` (`id_rol`),
+  CONSTRAINT `fk_deadlines_rol` FOREIGN KEY (`id_rol`) REFERENCES `rol` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+14. departamentos
+CREATE TABLE `departamentos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(150) DEFAULT NULL,
+  `id_facultad` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_departamentos_facultades` (`id_facultad`),
+  CONSTRAINT `fk_departamentos_facultades` FOREIGN KEY (`id_facultad`) REFERENCES `facultades` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+15. directorio
+CREATE TABLE `directorio` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id_rol` int NOT NULL,
+  `email` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `telefono` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nombres` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `apellidos` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `telefono_asistente` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `correo_asistente` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_usuario` (`usuario`),
+  KEY `idx_id_rol` (`id_rol`),
+  CONSTRAINT `fk_directorio_rol` FOREIGN KEY (`id_rol`) REFERENCES `rol` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+16. escuelas
+CREATE TABLE `escuelas` (
+  `id_escuela` int NOT NULL AUTO_INCREMENT,
+  `nombre_escuela` varchar(150) NOT NULL,
+  `id_facultad` int DEFAULT NULL,
+  PRIMARY KEY (`id_escuela`),
+  KEY `fk_escuelas_facultades` (`id_facultad`),
+  CONSTRAINT `fk_escuelas_facultades` FOREIGN KEY (`id_facultad`) REFERENCES `facultades` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+17. estados
+CREATE TABLE `estados` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(30) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+18. ev_casos
+CREATE TABLE `ev_casos` (
+  `id_respuesta` int NOT NULL,
+  `id_py` int NOT NULL,
+  `route_status` tinyint NOT NULL DEFAULT '0' COMMENT '0=EN_DESARROLLO,1=EN_RUTA,2=APROBADO_TOTAL',
+  `current_office` tinyint DEFAULT NULL COMMENT '1=PCF,2=DD,3=DF,4=RSU',
+  `fecha_solicitud` datetime DEFAULT NULL,
+  `aprobado_total_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_respuesta`),
+  KEY `idx_py` (`id_py`),
+  CONSTRAINT `fk_ev_casos_respuesta` FOREIGN KEY (`id_respuesta`) REFERENCES `sm_respuestas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+19. ev_cat_oficinas
+CREATE TABLE `ev_cat_oficinas` (
+  `office` tinyint NOT NULL,
+  `codigo` varchar(8) NOT NULL,
+  `nombre` varchar(80) NOT NULL,
+  `badge_bg` char(7) NOT NULL,
+  `text_color` char(7) NOT NULL,
+  PRIMARY KEY (`office`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+20. ev_eventos
+CREATE TABLE `ev_eventos` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `id_respuesta` int NOT NULL,
+  `event_code` varchar(40) NOT NULL,
+  `office` tinyint DEFAULT NULL,
+  `tipo` tinyint DEFAULT NULL,
+  `detalle` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(32) DEFAULT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_respuesta_fecha` (`id_respuesta`,`created_at`),
+  CONSTRAINT `fk_ev_eventos_respuesta` FOREIGN KEY (`id_respuesta`) REFERENCES `sm_respuestas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+21. ev_intentos
+CREATE TABLE `ev_intentos` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `id_respuesta` int NOT NULL,
+  `office` tinyint NOT NULL COMMENT '1=PCF,2=DD,3=DF,4=RSU',
+  `tipo` tinyint NOT NULL COMMENT '1=COTEJO,2=RUBRICA,3=VB',
+  `intento` smallint NOT NULL DEFAULT '1',
+  `active` tinyint NOT NULL DEFAULT '1',
+  `estado` tinyint NOT NULL DEFAULT '0' COMMENT '0=ESPERA,1=APROBADO,2=OBSERVADO',
+  `total` tinyint NOT NULL DEFAULT '0' COMMENT 'Rúbrica: 0..20; Cotejo/VB: 0',
+  `obs_general` text COLLATE utf8mb4_unicode_ci COMMENT 'Solo Cotejo cuando OBSERVADO',
+  `observed_at` datetime DEFAULT NULL,
+  `due_at` datetime DEFAULT NULL,
+  `closed_at` datetime DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `closed_by` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_intento` (`id_respuesta`,`office`,`tipo`,`intento`),
+  KEY `idx_activo` (`id_respuesta`,`office`,`tipo`,`active`),
+  KEY `idx_estado` (`id_respuesta`,`office`,`tipo`,`estado`),
+  CONSTRAINT `fk_ev_intentos_respuesta` FOREIGN KEY (`id_respuesta`) REFERENCES `sm_respuestas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=170 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+22. ev_oficinas_tracking
+CREATE TABLE `ev_oficinas_tracking` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `id_respuesta` int NOT NULL,
+  `office` tinyint NOT NULL COMMENT '1=PCF,2=DD,3=DF,4=RSU',
+  `arrived_at` datetime NOT NULL,
+  `left_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_respuesta_office` (`id_respuesta`,`office`,`arrived_at`),
+  CONSTRAINT `fk_ev_track_respuesta` FOREIGN KEY (`id_respuesta`) REFERENCES `sm_respuestas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+23. ev_rubrica_aspectos
+CREATE TABLE `ev_rubrica_aspectos` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `intento_id` bigint NOT NULL,
+  `aspecto` tinyint NOT NULL COMMENT '1=Estructura,2=Contenido,3=Redaccion,4=CalidadInfo,5=Propuesta',
+  `nota` tinyint NOT NULL DEFAULT '0',
+  `observacion` varchar(3000) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_intento_aspecto` (`intento_id`,`aspecto`),
+  CONSTRAINT `fk_ev_rubrica_intento` FOREIGN KEY (`intento_id`) REFERENCES `ev_intentos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=293 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+24. eva_calificaciones
+CREATE TABLE `eva_calificaciones` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `id_evaluacion` int NOT NULL,
+  `id_oficina` tinyint unsigned NOT NULL,
+  `tipo` enum('cotejo','vistobueno','rubrica') NOT NULL,
+  `estado` enum('en_espera','aprobado','observado') NOT NULL DEFAULT 'en_espera',
+  `dias_subsanacion` tinyint unsigned DEFAULT NULL COMMENT 'Días (calendario) para subsanar; si NULL/0 se aplican defaults por tipo',
+  `total` tinyint unsigned DEFAULT NULL,
+  `obs_general` text,
+  `reintentos` int NOT NULL DEFAULT '0',
+  `anulaciones` int NOT NULL DEFAULT '0',
+  `ultimo_observado_at` datetime DEFAULT NULL,
+  `ultima_revision_solicitada_at` datetime DEFAULT NULL,
+  `creado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_unica` (`id_evaluacion`,`id_oficina`,`tipo`),
+  KEY `idx_eval_ofi` (`id_evaluacion`,`id_oficina`),
+  KEY `fk_cal_oficina` (`id_oficina`),
+  CONSTRAINT `fk_cal_eval` FOREIGN KEY (`id_evaluacion`) REFERENCES `eva_evaluaciones` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_cal_oficina` FOREIGN KEY (`id_oficina`) REFERENCES `eva_oficinas` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=509 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+25. eva_evaluaciones
+CREATE TABLE `eva_evaluaciones` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_respuesta` int NOT NULL,
+  `situacion` enum('en_oficina','aprobado') NOT NULL DEFAULT 'en_oficina',
+  `id_oficina_actual` tinyint unsigned DEFAULT NULL,
+  `creado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_respuesta` (`id_respuesta`),
+  KEY `idx_actual` (`id_oficina_actual`,`situacion`),
+  CONSTRAINT `fk_eval_oficina` FOREIGN KEY (`id_oficina_actual`) REFERENCES `eva_oficinas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_eval_respuesta` FOREIGN KEY (`id_respuesta`) REFERENCES `sm_respuestas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+26. eva_oficina_instancias
+CREATE TABLE `eva_oficina_instancias` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `id_evaluacion` int NOT NULL,
+  `id_oficina` tinyint unsigned NOT NULL,
+  `llegada` datetime NOT NULL,
+  `salida` datetime DEFAULT NULL,
+  `estado` enum('en_espera','aprobado','observado') NOT NULL DEFAULT 'en_espera',
+  `reintentos` int NOT NULL DEFAULT '0',
+  `anulaciones` int NOT NULL DEFAULT '0',
+  `ultima_observacion_at` datetime DEFAULT NULL,
+  `ultima_revision_solicitada_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_eval_ofi` (`id_evaluacion`,`id_oficina`),
+  KEY `idx_abierto` (`id_evaluacion`,`salida`),
+  KEY `fk_inst_oficina` (`id_oficina`),
+  CONSTRAINT `fk_inst_eval` FOREIGN KEY (`id_evaluacion`) REFERENCES `eva_evaluaciones` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_inst_oficina` FOREIGN KEY (`id_oficina`) REFERENCES `eva_oficinas` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=238 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+27. eva_oficinas
+CREATE TABLE `eva_oficinas` (
+  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(8) NOT NULL,
+  `nombre` varchar(80) NOT NULL,
+  `orden` tinyint unsigned NOT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_codigo` (`codigo`),
+  UNIQUE KEY `uk_orden` (`orden`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+28. eva_rubrica_aspectos
+CREATE TABLE `eva_rubrica_aspectos` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `id_calificacion` bigint NOT NULL,
+  `aspecto` enum('estructura','contenido','redaccion','calidad_info','propuesta_mejora') NOT NULL,
+  `nota` tinyint unsigned NOT NULL,
+  `observacion` varchar(3000) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_rubrica_aspecto` (`id_calificacion`,`aspecto`),
+  CONSTRAINT `fk_rubrica_cal` FOREIGN KEY (`id_calificacion`) REFERENCES `eva_calificaciones` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=586 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+29. evaluaciones
+CREATE TABLE `evaluaciones` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `id_periodo` int NOT NULL,
+  `oficina` enum('pcf','dd','df','rsu') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tipo` enum('cotejo','rubrica','vb') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `estado` enum('en_espera','aprobado','observado') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'en_espera',
+  `evaluador_id` int DEFAULT NULL,
+  `fecha_inicio` datetime DEFAULT NULL,
+  `fecha_evaluacion` datetime DEFAULT NULL,
+  `fecha_limite` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_py` (`id_py`),
+  KEY `id_periodo` (`id_periodo`),
+  CONSTRAINT `evaluaciones_ibfk_1` FOREIGN KEY (`id_py`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `evaluaciones_ibfk_2` FOREIGN KEY (`id_periodo`) REFERENCES `periodos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=591 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+30. facultades
+CREATE TABLE `facultades` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(150) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+31. historial_estados
+CREATE TABLE `historial_estados` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `id_periodo` int NOT NULL,
+  `fecha` datetime NOT NULL,
+  `accion` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `descripcion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `usuario_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_py` (`id_py`),
+  KEY `id_periodo` (`id_periodo`),
+  CONSTRAINT `historial_estados_ibfk_1` FOREIGN KEY (`id_py`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `historial_estados_ibfk_2` FOREIGN KEY (`id_periodo`) REFERENCES `periodos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=925 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+32. historial_proyectos
+CREATE TABLE `historial_proyectos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `descripcion` varchar(150) NOT NULL,
+  `fecha` datetime DEFAULT NULL,
+  `id_py` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_historial_proyectos_proyectos` (`id_py`),
+  CONSTRAINT `fk_historial_proyectos_proyectos` FOREIGN KEY (`id_py`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=875 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+33. historial_usuarios
+CREATE TABLE `historial_usuarios` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `descripcion` varchar(150) DEFAULT NULL,
+  `fecha` datetime DEFAULT NULL,
+  `id_usuario` int DEFAULT NULL,
+  `adicional` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=282 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+34. inicio_fecha_limite
+CREATE TABLE `inicio_fecha_limite` (
+  `id` tinyint unsigned NOT NULL DEFAULT '1',
+  `titulo` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mensaje` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `deadline` datetime NOT NULL,
+  `updated_by` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+35. l2601_etiquetas
+CREATE TABLE `l2601_etiquetas` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(60) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `creado_por` bigint unsigned DEFAULT NULL,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_etq_nombre` (`nombre`),
+  KEY `fk_etq_creado_por` (`creado_por`),
+  CONSTRAINT `fk_etq_creado_por` FOREIGN KEY (`creado_por`) REFERENCES `l2601_usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+36. l2601_eventos
+CREATE TABLE `l2601_eventos` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `page_key` varchar(60) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `titulo` varchar(200) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `parrafo` varchar(2000) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `inicio_fecha` date DEFAULT NULL,
+  `inicio_hora` time DEFAULT NULL,
+  `fin_fecha` date DEFAULT NULL,
+  `fin_hora` time DEFAULT NULL,
+  `coordinador` varchar(160) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `ponente` varchar(160) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `estado` varchar(20) COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'activo',
+  `tags_csv` varchar(800) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `foto_evento` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `creado_por` bigint unsigned DEFAULT NULL,
+  `actualizado_por` bigint unsigned DEFAULT NULL,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_evt_page` (`page_key`),
+  KEY `idx_evt_estado` (`estado`),
+  KEY `idx_evt_inicio_fecha` (`inicio_fecha`),
+  KEY `idx_evt_creado_en` (`creado_en`),
+  KEY `fk_evt_creado_por` (`creado_por`),
+  KEY `fk_evt_actualizado_por` (`actualizado_por`),
+  CONSTRAINT `fk_evt_actualizado_por` FOREIGN KEY (`actualizado_por`) REFERENCES `l2601_usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_evt_creado_por` FOREIGN KEY (`creado_por`) REFERENCES `l2601_usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+37. l2601_eventos_log
+CREATE TABLE `l2601_eventos_log` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `evento_id` bigint unsigned DEFAULT NULL,
+  `page_key` varchar(60) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `accion` varchar(20) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `usuario_id` bigint unsigned DEFAULT NULL,
+  `rol_codigo` varchar(30) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `ip` varchar(45) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `datos` longtext COLLATE utf8mb4_spanish_ci,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_log_page` (`page_key`),
+  KEY `idx_log_evento` (`evento_id`),
+  KEY `idx_log_accion` (`accion`),
+  KEY `idx_log_creado_en` (`creado_en`),
+  KEY `fk_log_usuario` (`usuario_id`),
+  CONSTRAINT `fk_log_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `l2601_usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+38. l2601_noticias
+CREATE TABLE `l2601_noticias` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `page_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `titulo` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `resumen` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `cuerpo` text CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci,
+  `imagen_portada` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `estado` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL DEFAULT 'publicada',
+  `destacada` tinyint(1) NOT NULL DEFAULT '0',
+  `publicada_en` datetime DEFAULT NULL,
+  `etiquetas_csv` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `creado_por` bigint unsigned DEFAULT NULL,
+  `actualizado_por` bigint unsigned DEFAULT NULL,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_noticias_page` (`page_key`),
+  KEY `idx_noticias_estado` (`estado`),
+  KEY `idx_noticias_destacada` (`page_key`,`destacada`),
+  KEY `idx_noticias_publicada_en` (`publicada_en`),
+  KEY `fk_noticias_creado_por` (`creado_por`),
+  KEY `fk_noticias_actualizado_por` (`actualizado_por`),
+  CONSTRAINT `fk_noticias_actualizado_por` FOREIGN KEY (`actualizado_por`) REFERENCES `l2601_usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_noticias_creado_por` FOREIGN KEY (`creado_por`) REFERENCES `l2601_usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+39. l2601_noticias_log
+CREATE TABLE `l2601_noticias_log` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `noticia_id` bigint unsigned DEFAULT NULL,
+  `page_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `accion` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci NOT NULL,
+  `usuario_id` bigint unsigned DEFAULT NULL,
+  `snapshot_json` text CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish_ci,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_nlog_page` (`page_key`),
+  KEY `idx_nlog_noticia` (`noticia_id`),
+  KEY `idx_nlog_accion` (`accion`),
+  KEY `idx_nlog_usuario` (`usuario_id`),
+  CONSTRAINT `fk_nlog_noticia` FOREIGN KEY (`noticia_id`) REFERENCES `l2601_noticias` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_nlog_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `l2601_usuarios` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+40. l2601_roles
+CREATE TABLE `l2601_roles` (
+  `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(30) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `nombre` varchar(60) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_roles_codigo` (`codigo`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+41. l2601_usuarios
+CREATE TABLE `l2601_usuarios` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `nombres` varchar(100) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `apellidos` varchar(120) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `dni` char(8) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `clave_hash` varchar(255) COLLATE utf8mb4_spanish_ci NOT NULL,
+  `rol_id` tinyint unsigned NOT NULL,
+  `foto_perfil` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT '1',
+  `creado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dni` (`dni`),
+  KEY `idx_estado` (`estado`),
+  KEY `idx_usuarios_rol` (`rol_id`),
+  CONSTRAINT `fk_usuarios_roles` FOREIGN KEY (`rol_id`) REFERENCES `l2601_roles` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `chk_dni_8dig` CHECK (regexp_like(`dni`,_utf8mb4'^[0-9]{8}$'))
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+42. lugares_multi
+CREATE TABLE `lugares_multi` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `sector` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `caserio` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `departamento_em` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `provincia_em` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `distrito_em` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=158 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+43. mensajes
+CREATE TABLE `mensajes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `titulo` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cuerpo` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+44. observaciones_cotejo
+CREATE TABLE `observaciones_cotejo` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_evaluacion` int NOT NULL,
+  `observacion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `dias_subsanacion` tinyint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_evaluacion` (`id_evaluacion`),
+  CONSTRAINT `observaciones_cotejo_ibfk_1` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=114 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+45. ods
+CREATE TABLE `ods` (
+  `id` int NOT NULL,
+  `nombre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+46. pc_permisos_paginas
+CREATE TABLE `pc_permisos_paginas` (
+  `id_usuario` int NOT NULL,
+  `id_menu` int NOT NULL,
+  `puede_editar` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id_usuario`,`id_menu`),
+  KEY `pc_fk_perm_menu` (`id_menu`),
+  CONSTRAINT `pc_fk_perm_menu` FOREIGN KEY (`id_menu`) REFERENCES `cw_opciones_menu` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `pc_fk_perm_user` FOREIGN KEY (`id_usuario`) REFERENCES `pc_usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+47. pc_usuarios
+CREATE TABLE `pc_usuarios` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario` varchar(60) NOT NULL,
+  `clave_hash` varchar(255) NOT NULL,
+  `nombres` varchar(80) NOT NULL,
+  `apellidos` varchar(80) NOT NULL,
+  `correo` varchar(120) DEFAULT NULL,
+  `rol` enum('administrador','editor') NOT NULL DEFAULT 'editor',
+  `foto_perfil` varchar(255) DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `creado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_en` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `usuario` (`usuario`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+48. periodos
+CREATE TABLE `periodos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `activo` tinyint(1) DEFAULT '1',
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `nombre` (`nombre`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+49. programa_ods
+CREATE TABLE `programa_ods` (
+  `programa_id` int NOT NULL,
+  `ods_id` int NOT NULL,
+  PRIMARY KEY (`programa_id`,`ods_id`),
+  KEY `fk_progods_ods` (`ods_id`),
+  CONSTRAINT `fk_progods_ods` FOREIGN KEY (`ods_id`) REFERENCES `ods` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_progods_programa` FOREIGN KEY (`programa_id`) REFERENCES `programas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+50. programas
+CREATE TABLE `programas` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_programas_nombre` (`nombre`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+51. progresos_f1
+CREATE TABLE `progresos_f1` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int DEFAULT NULL,
+  `com_fac` int DEFAULT NULL,
+  `dir_depa` int DEFAULT NULL,
+  `dec_fac` int DEFAULT NULL,
+  `dir_rsu` int DEFAULT NULL,
+  `id_estado` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_com_fac_estados` (`com_fac`),
+  KEY `fk_dir_depa_estados` (`dir_depa`),
+  KEY `fk_dec_fac_estados` (`dec_fac`),
+  KEY `fk_dir_rsu_estados` (`dir_rsu`),
+  KEY `fk_estado_estados` (`id_estado`),
+  CONSTRAINT `fk_com_fac_estados` FOREIGN KEY (`com_fac`) REFERENCES `estados` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_dec_fac_estados` FOREIGN KEY (`dec_fac`) REFERENCES `estados` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_dir_depa_estados` FOREIGN KEY (`dir_depa`) REFERENCES `estados` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_dir_rsu_estados` FOREIGN KEY (`dir_rsu`) REFERENCES `estados` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_estado_estados` FOREIGN KEY (`id_estado`) REFERENCES `estados` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=151 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+52. proyecto_codigos
+CREATE TABLE `proyecto_codigos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `periodo_id` int NOT NULL,
+  `codigo` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `origen` enum('manual','auto') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `asignado_en` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_py_periodo` (`id_py`,`periodo_id`),
+  UNIQUE KEY `uq_codigo_periodo` (`periodo_id`,`codigo`)
+) ENGINE=InnoDB AUTO_INCREMENT=83 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+53. proyectos
+CREATE TABLE `proyectos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `estado` int DEFAULT '0',
+  `p1` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `p2` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `p3` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `p4` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `p5` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `p6` longtext,
+  `p7_1` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `p7_2` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `infantes` int DEFAULT NULL,
+  `ninos` int DEFAULT NULL,
+  `adolescentes` int DEFAULT NULL,
+  `jovenes` int DEFAULT NULL,
+  `adultos` int DEFAULT NULL,
+  `adultos_mayores` int DEFAULT NULL,
+  `sector` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `caserio` varchar(300) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `distrito` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `provincia` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `departamento` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `fecha_inicio` text,
+  `fecha_fin` text,
+  `planificacion` varchar(3000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'Sin descripción',
+  `ejecucion` varchar(3000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'Sin descripción',
+  `monitoreo` varchar(3000) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'Sin descripción',
+  `p10_1s` int NOT NULL DEFAULT '0',
+  `p10_2s` int NOT NULL DEFAULT '0',
+  `p10_3s` int NOT NULL DEFAULT '0',
+  `p10_1h` int NOT NULL DEFAULT '0',
+  `p10_2h` int NOT NULL DEFAULT '0',
+  `p10_3h` int NOT NULL DEFAULT '0',
+  `disciplinar` tinyint(1) DEFAULT NULL,
+  `facultad` tinyint DEFAULT NULL,
+  `programa_estudios` tinyint DEFAULT NULL,
+  `departamento_academico` tinyint DEFAULT NULL,
+  `coordinador` varchar(70) DEFAULT NULL,
+  `componentes` longtext,
+  `integrantes_docentes` longtext,
+  `delegados_estudiantes` longtext,
+  `diagnostico` longtext,
+  `justificacion` longtext,
+  `general` longtext,
+  `especificos` longtext,
+  `metas` longtext,
+  `cronograma1` longtext,
+  `cronograma2` longtext,
+  `metodologia` longtext,
+  `entregables` longtext,
+  `impacto` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `matriz` longtext,
+  `pre_dis` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `pre_nodis` longtext,
+  `ser_dis` longtext,
+  `ser_nodis` longtext,
+  `resumen` longtext,
+  `financiamiento` longtext,
+  `monto_uni` decimal(8,3) DEFAULT NULL,
+  `monto_auto` decimal(8,3) DEFAULT NULL,
+  `monto_otro` decimal(8,3) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=465 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+54. proyectos_finales
+CREATE TABLE `proyectos_finales` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int DEFAULT NULL,
+  `estado` int DEFAULT '0',
+  `titulo` varchar(300) DEFAULT NULL,
+  `programa` varchar(300) DEFAULT NULL,
+  `ods` varchar(100) DEFAULT NULL,
+  `coordinador` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `integrantes` longtext,
+  `estudiantes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `omi` longtext,
+  `lugar` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `beneficiados` longtext,
+  `fecha_inicio` text,
+  `fecha_fin` text,
+  `resumen` longtext,
+  `actividades` longtext,
+  `resultados` longtext,
+  `descripcion` longtext,
+  `matriz` longtext,
+  `comentarios` longtext,
+  `conclusiones` longtext,
+  `analisis` longtext,
+  `recomendaciones` longtext,
+  `fuentes` longtext,
+  `anexos` longtext,
+  `carga` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci,
+  `cot_cf` text,
+  `obs_cotejo_cf` longtext,
+  `rub_cf` text,
+  `obs_rubrica_cf` longtext,
+  `vb_df` text,
+  `vb_dd` text,
+  `cot_dr` text,
+  `obs_cotejo_dr` longtext,
+  `rub_dr` text,
+  `obs_rubrica_dr` longtext,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=224 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+55. proyectos_periodo
+CREATE TABLE `proyectos_periodo` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `id_periodo` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_py` (`id_py`),
+  KEY `id_periodo` (`id_periodo`),
+  CONSTRAINT `proyectos_periodo_ibfk_1` FOREIGN KEY (`id_py`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `proyectos_periodo_ibfk_2` FOREIGN KEY (`id_periodo`) REFERENCES `periodos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=177 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+56. revision_cotejos_f1
+CREATE TABLE `revision_cotejos_f1` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int DEFAULT NULL,
+  `id_usuario` int DEFAULT NULL,
+  `id_cotejo_f1` int DEFAULT NULL,
+  `observacion` varchar(1000) DEFAULT NULL,
+  `id_estado` int DEFAULT '0',
+  `fecha_hora` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_revision_cotejos_f1_proyectos` (`id_py`),
+  KEY `fk_revision_cotejos_f1_usuarios` (`id_usuario`),
+  KEY `fk_revision_cotejos_f1_cotejos_f1` (`id_cotejo_f1`),
+  KEY `fk_revision_cotejos_f1_estados` (`id_estado`),
+  CONSTRAINT `fk_revision_cotejos_f1_cotejos_f1` FOREIGN KEY (`id_cotejo_f1`) REFERENCES `cotejos_f1` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_revision_cotejos_f1_estados` FOREIGN KEY (`id_estado`) REFERENCES `estados` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_revision_cotejos_f1_proyectos` FOREIGN KEY (`id_py`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_revision_cotejos_f1_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1550 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+57. revisiones_proyectos
+CREATE TABLE `revisiones_proyectos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `id_periodo` int NOT NULL,
+  `oficina_actual` enum('pcf','dd','df','rsu') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `estado` enum('editable','bloqueado') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'editable',
+  `fecha_solicitud` datetime DEFAULT NULL,
+  `fecha_cierre` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_py` (`id_py`),
+  KEY `id_periodo` (`id_periodo`),
+  CONSTRAINT `revisiones_proyectos_ibfk_1` FOREIGN KEY (`id_py`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `revisiones_proyectos_ibfk_2` FOREIGN KEY (`id_periodo`) REFERENCES `periodos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=179 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+58. rol
+CREATE TABLE `rol` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+59. rubrica_aspectos
+CREATE TABLE `rubrica_aspectos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_evaluacion` int NOT NULL,
+  `aspecto` enum('estructura','contenido','redaccion','calidad_info','mejora') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `puntaje` tinyint DEFAULT NULL,
+  `observacion` varchar(3000) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_evaluacion` (`id_evaluacion`),
+  CONSTRAINT `rubrica_aspectos_ibfk_1` FOREIGN KEY (`id_evaluacion`) REFERENCES `evaluaciones` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=856 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+60. rutas_semestrales
+CREATE TABLE `rutas_semestrales` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `estado` int NOT NULL DEFAULT '0',
+  `pcf_cot` int NOT NULL DEFAULT '0',
+  `pcf_rub` int NOT NULL DEFAULT '0',
+  `dd_vb` int NOT NULL DEFAULT '0',
+  `df_vb` int NOT NULL DEFAULT '0',
+  `rsu_cot` int NOT NULL DEFAULT '0',
+  `rsu_rub` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=291 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+61. sm_cronogramas
+CREATE TABLE `sm_cronogramas` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_periodo` int NOT NULL,
+  `tipo` tinyint NOT NULL DEFAULT '1',
+  `apertura` datetime NOT NULL,
+  `cierre` datetime NOT NULL,
+  `activo` tinyint(1) DEFAULT '0',
+  `fecha_creacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `fk_cronograma_periodo` (`id_periodo`),
+  CONSTRAINT `fk_cronograma_periodo` FOREIGN KEY (`id_periodo`) REFERENCES `periodos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+62. sm_formulario_items
+CREATE TABLE `sm_formulario_items` (
+  `id_formulario` int NOT NULL,
+  `id_item` int NOT NULL,
+  `orden` int NOT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `fecha_creacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_formulario`,`id_item`),
+  UNIQUE KEY `uk_orden` (`id_formulario`,`orden`),
+  KEY `idx_activo` (`id_formulario`,`activo`),
+  KEY `fk_fi_item` (`id_item`),
+  CONSTRAINT `fk_fi_form` FOREIGN KEY (`id_formulario`) REFERENCES `sm_formularios` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_fi_item` FOREIGN KEY (`id_item`) REFERENCES `sm_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+63. sm_formularios
+CREATE TABLE `sm_formularios` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_cronograma` int DEFAULT NULL,
+  `nombre` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `descripcion` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `fecha_creacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_nombre_cronograma` (`nombre`,`id_cronograma`),
+  KEY `idx_cronograma_activo` (`id_cronograma`,`activo`),
+  CONSTRAINT `fk_form_cronograma` FOREIGN KEY (`id_cronograma`) REFERENCES `sm_cronogramas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+64. sm_items
+CREATE TABLE `sm_items` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tipo` enum('varchar','longtext','tinyint','int','boolean','datetime','date','decimal','ubicacion','ods','programa_ods','pdf','excel','word') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ejemplo` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `img_ruta` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_ruta` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `link` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `formato` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `video` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `archivo` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
+  `fecha_creacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tipo_activo` (`tipo`,`activo`)
+) ENGINE=InnoDB AUTO_INCREMENT=40 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+65. sm_proyecto_semestres
+CREATE TABLE `sm_proyecto_semestres` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `anio` int NOT NULL,
+  `periodo` enum('I','II') NOT NULL,
+  `fecha_inicio` date NOT NULL,
+  `fecha_fin` date NOT NULL,
+  `tipo` enum('presentacion','semestral') NOT NULL,
+  `numero` int DEFAULT NULL,
+  `final` tinyint(1) NOT NULL DEFAULT '0',
+  `estado` tinyint(1) NOT NULL DEFAULT '0',
+  `vigente` tinyint(1) NOT NULL DEFAULT '1',
+  `titulo` varchar(200) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_py_sem_tipo` (`id_py`,`anio`,`periodo`,`tipo`)
+) ENGINE=InnoDB AUTO_INCREMENT=63795 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+66. sm_respuesta_items
+CREATE TABLE `sm_respuesta_items` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_respuesta` int NOT NULL,
+  `id_item` int NOT NULL,
+  `tipo` enum('varchar','longtext','tinyint','int','boolean','datetime','date','decimal','ubicacion','ods','programa_ods','pdf','excel','word') NOT NULL,
+  `val_varchar` varchar(1000) DEFAULT NULL,
+  `val_longtext` longtext,
+  `val_tinyint` tinyint DEFAULT NULL,
+  `val_int` int DEFAULT NULL,
+  `val_boolean` tinyint(1) DEFAULT NULL,
+  `val_datetime` datetime DEFAULT NULL,
+  `val_date` date DEFAULT NULL,
+  `val_decimal` decimal(18,6) DEFAULT NULL,
+  `archivo_url` varchar(500) DEFAULT NULL,
+  `estado` tinyint NOT NULL DEFAULT '0',
+  `creado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_respuesta_item` (`id_respuesta`,`id_item`),
+  KEY `fk_ri_item` (`id_item`),
+  CONSTRAINT `fk_ri_item` FOREIGN KEY (`id_item`) REFERENCES `sm_items` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_ri_resp` FOREIGN KEY (`id_respuesta`) REFERENCES `sm_respuestas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2431 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+67. sm_respuestas
+CREATE TABLE `sm_respuestas` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `id_formulario` int NOT NULL,
+  `id_cronograma` int NOT NULL,
+  `id_semestre` int NOT NULL,
+  `estado` tinyint NOT NULL DEFAULT '0',
+  `creado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `actualizado_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_respuesta` (`id_py`,`id_formulario`,`id_semestre`),
+  KEY `idx_crono` (`id_cronograma`),
+  KEY `idx_py` (`id_py`),
+  KEY `fk_resp_form` (`id_formulario`),
+  KEY `fk_resp_sem` (`id_semestre`),
+  CONSTRAINT `fk_resp_crono` FOREIGN KEY (`id_cronograma`) REFERENCES `sm_cronogramas` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_resp_form` FOREIGN KEY (`id_formulario`) REFERENCES `sm_formularios` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_resp_sem` FOREIGN KEY (`id_semestre`) REFERENCES `sm_proyecto_semestres` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+68. tipo_revision
+CREATE TABLE `tipo_revision` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+69. tipos_proyecto
+CREATE TABLE `tipos_proyecto` (
+  `id` int NOT NULL,
+  `nombre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+70. ubigeo_peru_departments
+CREATE TABLE `ubigeo_peru_departments` (
+  `id` varchar(2) NOT NULL,
+  `name` varchar(45) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3
+71. ubigeo_peru_districts
+CREATE TABLE `ubigeo_peru_districts` (
+  `id` varchar(6) NOT NULL,
+  `name` varchar(45) DEFAULT NULL,
+  `province_id` varchar(4) DEFAULT NULL,
+  `department_id` varchar(2) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3
+72. ubigeo_peru_provinces
+CREATE TABLE `ubigeo_peru_provinces` (
+  `id` varchar(4) NOT NULL,
+  `name` varchar(45) NOT NULL,
+  `department_id` varchar(2) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3
+73. unidades_multi
+CREATE TABLE `unidades_multi` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_py` int NOT NULL,
+  `facultad_um` varchar(100) DEFAULT NULL,
+  `escuela_um` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `departamento_um` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+74. usuario_contactos
+CREATE TABLE `usuario_contactos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `telefono` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_usuario` (`usuario`)
+) ENGINE=InnoDB AUTO_INCREMENT=75 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+75. usuarios
+CREATE TABLE `usuarios` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `usuario` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `clave` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `id_rol` int NOT NULL,
+  `nombres` varchar(50) NOT NULL,
+  `apellidos` varchar(50) NOT NULL,
+  `id_escuela` int DEFAULT NULL,
+  `id_py` int DEFAULT '0',
+  `id_sede` int NOT NULL DEFAULT '1',
+  `id_depa` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_usuarios_rol` (`id_rol`),
+  KEY `fk_usuarios_escuelas` (`id_escuela`),
+  KEY `fk_usuarios_departamentos` (`id_depa`),
+  CONSTRAINT `fk_usuarios_departamentos` FOREIGN KEY (`id_depa`) REFERENCES `departamentos` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_usuarios_escuelas` FOREIGN KEY (`id_escuela`) REFERENCES `escuelas` (`id_escuela`) ON DELETE CASCADE,
+  CONSTRAINT `fk_usuarios_rol` FOREIGN KEY (`id_rol`) REFERENCES `rol` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=335 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+76. usuarios_proyectos
+CREATE TABLE `usuarios_proyectos` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `id_usuario` int NOT NULL,
+  `id_proyecto` int NOT NULL,
+  `fecha_asignacion` datetime DEFAULT CURRENT_TIMESTAMP,
+  `activo` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unico_usuario_proyecto` (`id_usuario`,`id_proyecto`),
+  KEY `fk_up_proyecto` (`id_proyecto`),
+  CONSTRAINT `fk_up_proyecto` FOREIGN KEY (`id_proyecto`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_up_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=198 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

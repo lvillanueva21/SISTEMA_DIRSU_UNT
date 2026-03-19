@@ -1,0 +1,61 @@
+[15-Sep-2024 01:54:48 UTC] PHP Warning:  include(db.php): failed to open stream: No such file or directory in /home/gla/public_html/sistema_web/componentes/proyecto/crear_proyecto.php on line 6
+[15-Sep-2024 01:54:48 UTC] PHP Warning:  include(db.php): failed to open stream: No such file or directory in /home/gla/public_html/sistema_web/componentes/proyecto/crear_proyecto.php on line 6
+[15-Sep-2024 01:54:48 UTC] PHP Warning:  include(): Failed opening 'db.php' for inclusion (include_path='.:/opt/alt/php74/usr/share/pear') in /home/gla/public_html/sistema_web/componentes/proyecto/crear_proyecto.php on line 6
+[15-Sep-2024 01:54:48 UTC] PHP Notice:  Undefined variable: conexion in /home/gla/public_html/sistema_web/componentes/proyecto/crear_proyecto.php on line 21
+[15-Sep-2024 01:54:48 UTC] PHP Fatal error:  Uncaught Error: Call to a member function begin_transaction() on null in /home/gla/public_html/sistema_web/componentes/proyecto/crear_proyecto.php:21
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/crear_proyecto.php on line 21
+[19-Sep-2024 13:15:53 UTC] PHP Warning:  mysqli_stmt::bind_param(): Number of elements in type definition string doesn't match number of bind variables in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_metodologia.php on line 38
+[29-Sep-2024 05:44:02 UTC] PHP Warning:  mysqli_stmt::bind_param(): Number of elements in type definition string doesn't match number of bind variables in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_financiamiento.php on line 41
+[29-Sep-2024 05:48:49 UTC] PHP Warning:  mysqli_stmt::bind_param(): Number of elements in type definition string doesn't match number of bind variables in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_financiamiento.php on line 41
+[29-Sep-2024 05:49:01 UTC] PHP Warning:  mysqli_stmt::bind_param(): Number of elements in type definition string doesn't match number of bind variables in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_financiamiento.php on line 41
+[29-Sep-2024 15:33:27 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:35:02 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:35:11 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:37:41 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:37:49 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:40:41 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:42:53 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:45:46 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:46:47 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[29-Sep-2024 15:52:15 UTC] PHP Fatal error:  Uncaught Error: Call to a member function close() on bool in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php:59
+Stack trace:
+#0 {main}
+  thrown in /home/gla/public_html/sistema_web/componentes/proyecto/actualizar_diagnostico.php on line 59
+[30-Sep-2024 07:35:13 UTC] PHP Notice:  session_start(): A session had already been started - ignoring in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 2
+[30-Sep-2024 07:35:13 UTC] PHP Notice:  Undefined index: usuario in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 7
+[30-Sep-2024 07:35:13 UTC] PHP Notice:  Undefined index: clave in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 8
+[30-Sep-2024 07:35:31 UTC] PHP Notice:  session_start(): A session had already been started - ignoring in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 2
+[30-Sep-2024 07:35:31 UTC] PHP Notice:  Undefined index: usuario in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 7
+[30-Sep-2024 07:35:31 UTC] PHP Notice:  Undefined index: clave in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 8
+[30-Sep-2024 07:35:44 UTC] PHP Notice:  session_start(): A session had already been started - ignoring in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 2
+[30-Sep-2024 07:35:44 UTC] PHP Notice:  Undefined index: usuario in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 7
+[30-Sep-2024 07:35:44 UTC] PHP Notice:  Undefined index: clave in /home/gla/public_html/sistema_web/componentes/sesion/validarSesion.php on line 8
