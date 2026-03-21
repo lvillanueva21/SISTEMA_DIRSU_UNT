@@ -88,6 +88,39 @@ function downloadDatabaseBackup($conexion, $databaseName, $backupType = 'full') 
   exit;
 }
 
+function fetchSingleValue($conexion, $sql, $defaultValue = 'N/A') {
+  $result = mysqli_query($conexion, $sql);
+  if (!$result) {
+    return $defaultValue;
+  }
+  $row = mysqli_fetch_row($result);
+  mysqli_free_result($result);
+  return isset($row[0]) ? (string)$row[0] : $defaultValue;
+}
+
+function fetchVariableValue($conexion, $variableName, $defaultValue = 'N/A') {
+  $safeName = mysqli_real_escape_string($conexion, $variableName);
+  $result = mysqli_query($conexion, "SHOW VARIABLES LIKE '$safeName'");
+  if (!$result) {
+    return $defaultValue;
+  }
+  $row = mysqli_fetch_assoc($result);
+  mysqli_free_result($result);
+  return (isset($row['Value']) && $row['Value'] !== '') ? (string)$row['Value'] : $defaultValue;
+}
+
+function formatBytesHuman($bytes) {
+  if (!is_numeric($bytes) || (float)$bytes <= 0) {
+    return "0 B";
+  }
+  $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  $size = (float)$bytes;
+  $pow = (int)floor(log($size, 1024));
+  $pow = min($pow, count($units) - 1);
+  $size /= pow(1024, $pow);
+  return number_format($size, 2) . " " . $units[$pow];
+}
+
 if (
   $_SERVER['REQUEST_METHOD'] === 'POST' &&
   isset($_POST['backup_action']) &&
@@ -206,6 +239,135 @@ if (!$tablaSeleccionada && !$consulta_all && count($tablas) > 0) {
     }
   }
 }
+
+$diagnosticTables = [];
+$totalRowsEstimate = 0;
+$totalSizeBytes = 0;
+
+$diagnosticMeta = [
+  'Fecha diagnostico' => date('Y-m-d H:i:s'),
+  'Base de datos activa' => $baseDatos,
+  'Host DB (mysqli)' => mysqli_get_host_info($conexion),
+  'Version servidor DB' => mysqli_get_server_info($conexion),
+  'Version cliente mysqli' => mysqli_get_client_info(),
+  'Protocolo mysqli' => (string)mysqli_get_proto_info($conexion),
+  'Charset conexion' => mysqli_character_set_name($conexion),
+  'Version PHP' => PHP_VERSION,
+  'SAPI PHP' => php_sapi_name(),
+];
+
+$engineCounts = [];
+$resultDiagTables = mysqli_query(
+  $conexion,
+  "SELECT TABLE_NAME, ENGINE, TABLE_COLLATION, TABLE_ROWS, DATA_LENGTH, INDEX_LENGTH, CREATE_TIME, UPDATE_TIME
+   FROM information_schema.TABLES
+   WHERE TABLE_SCHEMA = '" . mysqli_real_escape_string($conexion, $baseDatos) . "'
+   ORDER BY TABLE_NAME"
+);
+
+if ($resultDiagTables) {
+  while ($rowDiag = mysqli_fetch_assoc($resultDiagTables)) {
+    $rowsEstimate = isset($rowDiag['TABLE_ROWS']) ? (int)$rowDiag['TABLE_ROWS'] : 0;
+    $dataLength = isset($rowDiag['DATA_LENGTH']) ? (int)$rowDiag['DATA_LENGTH'] : 0;
+    $indexLength = isset($rowDiag['INDEX_LENGTH']) ? (int)$rowDiag['INDEX_LENGTH'] : 0;
+    $tableSize = $dataLength + $indexLength;
+    $engineName = $rowDiag['ENGINE'] ? $rowDiag['ENGINE'] : 'N/A';
+
+    if (!isset($engineCounts[$engineName])) {
+      $engineCounts[$engineName] = 0;
+    }
+    $engineCounts[$engineName]++;
+
+    $totalRowsEstimate += $rowsEstimate;
+    $totalSizeBytes += $tableSize;
+
+    $diagnosticTables[] = [
+      'name' => $rowDiag['TABLE_NAME'],
+      'engine' => $engineName,
+      'collation' => $rowDiag['TABLE_COLLATION'] ? $rowDiag['TABLE_COLLATION'] : 'N/A',
+      'rows' => $rowsEstimate,
+      'size_bytes' => $tableSize,
+      'size_human' => formatBytesHuman($tableSize),
+      'created_at' => $rowDiag['CREATE_TIME'] ? $rowDiag['CREATE_TIME'] : 'N/A',
+      'updated_at' => $rowDiag['UPDATE_TIME'] ? $rowDiag['UPDATE_TIME'] : 'N/A',
+    ];
+  }
+  mysqli_free_result($resultDiagTables);
+}
+
+$diagnosticServerVars = [
+  'version_comment' => fetchVariableValue($conexion, 'version_comment'),
+  'version_compile_os' => fetchVariableValue($conexion, 'version_compile_os'),
+  'version_compile_machine' => fetchVariableValue($conexion, 'version_compile_machine'),
+  'sql_mode' => fetchVariableValue($conexion, 'sql_mode'),
+  'time_zone' => fetchVariableValue($conexion, 'time_zone'),
+  'system_time_zone' => fetchVariableValue($conexion, 'system_time_zone'),
+  'lower_case_table_names' => fetchVariableValue($conexion, 'lower_case_table_names'),
+  'character_set_server' => fetchVariableValue($conexion, 'character_set_server'),
+  'collation_server' => fetchVariableValue($conexion, 'collation_server'),
+  'max_allowed_packet' => fetchVariableValue($conexion, 'max_allowed_packet'),
+  'innodb_version' => fetchVariableValue($conexion, 'innodb_version'),
+];
+
+$diagnosticCounts = [
+  'Numero de tablas' => (string)count($tablas),
+  'Filas estimadas (information_schema)' => number_format($totalRowsEstimate),
+  'Tamano total estimado' => formatBytesHuman($totalSizeBytes) . " (" . number_format($totalSizeBytes) . " bytes)",
+  'Tipos de engine detectados' => implode(', ', array_map(function ($engine, $count) {
+    return $engine . " (" . $count . ")";
+  }, array_keys($engineCounts), array_values($engineCounts))),
+  'Funciones regex DB' => "REGEXP: " . fetchSingleValue($conexion, "SELECT 'abc123' REGEXP '[0-9]'", 'N/A')
+    . " | REGEXP_LIKE: " . fetchSingleValue($conexion, "SELECT REGEXP_LIKE('123', '^[0-9]+$')", 'No disponible'),
+];
+
+if ($diagnosticCounts['Tipos de engine detectados'] === '') {
+  $diagnosticCounts['Tipos de engine detectados'] = 'N/A';
+}
+
+$diagnosticPhpEnv = [
+  'PHP_INT_SIZE' => (string)PHP_INT_SIZE,
+  'memory_limit' => ini_get('memory_limit'),
+  'max_execution_time' => ini_get('max_execution_time'),
+  'upload_max_filesize' => ini_get('upload_max_filesize'),
+  'post_max_size' => ini_get('post_max_size'),
+  'mysqli extension' => extension_loaded('mysqli') ? 'si' : 'no',
+  'pdo_mysql extension' => extension_loaded('pdo_mysql') ? 'si' : 'no',
+  'mbstring extension' => extension_loaded('mbstring') ? 'si' : 'no',
+];
+
+$diagnosticTextLines = [];
+$diagnosticTextLines[] = "===== RESUMEN DE COMPATIBILIDAD MIGRACION =====";
+$diagnosticTextLines[] = "Fecha: " . $diagnosticMeta['Fecha diagnostico'];
+$diagnosticTextLines[] = "Base de datos activa: " . $diagnosticMeta['Base de datos activa'];
+$diagnosticTextLines[] = "Version servidor DB: " . $diagnosticMeta['Version servidor DB'];
+$diagnosticTextLines[] = "Version PHP: " . $diagnosticMeta['Version PHP'];
+$diagnosticTextLines[] = "Numero de tablas: " . $diagnosticCounts['Numero de tablas'];
+$diagnosticTextLines[] = "Filas estimadas: " . $diagnosticCounts['Filas estimadas (information_schema)'];
+$diagnosticTextLines[] = "Tamano total estimado: " . $diagnosticCounts['Tamano total estimado'];
+$diagnosticTextLines[] = "Engines detectados: " . $diagnosticCounts['Tipos de engine detectados'];
+$diagnosticTextLines[] = "Capacidades regex DB: " . $diagnosticCounts['Funciones regex DB'];
+$diagnosticTextLines[] = "";
+$diagnosticTextLines[] = "--- VARIABLES DEL SERVIDOR DB ---";
+foreach ($diagnosticServerVars as $key => $value) {
+  $diagnosticTextLines[] = $key . ": " . $value;
+}
+$diagnosticTextLines[] = "";
+$diagnosticTextLines[] = "--- ENTORNO PHP ---";
+foreach ($diagnosticPhpEnv as $key => $value) {
+  $diagnosticTextLines[] = $key . ": " . $value;
+}
+$diagnosticTextLines[] = "";
+$diagnosticTextLines[] = "--- TABLAS ---";
+foreach ($diagnosticTables as $tbl) {
+  $diagnosticTextLines[] = $tbl['name']
+    . " | engine=" . $tbl['engine']
+    . " | collation=" . $tbl['collation']
+    . " | rows=" . number_format($tbl['rows'])
+    . " | size=" . $tbl['size_human']
+    . " | created=" . $tbl['created_at']
+    . " | updated=" . $tbl['updated_at'];
+}
+$diagnosticText = implode("\n", $diagnosticTextLines);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -258,6 +420,23 @@ if (!$tablaSeleccionada && !$consulta_all && count($tablas) > 0) {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
+    }
+    .info-fab {
+      position: fixed;
+      right: 20px;
+      bottom: 76px;
+      z-index: 1080;
+      border-radius: 999px;
+      box-shadow: 0 0.35rem 0.9rem rgba(0, 0, 0, 0.2);
+      padding: 0.65rem 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    #diagnosticText {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.82rem;
+      white-space: pre;
     }
   </style>
 </head>
@@ -519,6 +698,16 @@ if (!$tablaSeleccionada && !$consulta_all && count($tablas) > 0) {
 
 <button
   type="button"
+  class="btn btn-info info-fab"
+  data-bs-toggle="modal"
+  data-bs-target="#infoModal"
+  title="Ver diagnostico de entorno"
+>
+  <i class="bi bi-info-circle"></i> Info
+</button>
+
+<button
+  type="button"
   class="btn btn-warning backup-fab"
   data-bs-toggle="modal"
   data-bs-target="#backupModal"
@@ -567,6 +756,137 @@ if (!$tablaSeleccionada && !$consulta_all && count($tablas) > 0) {
           </button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="infoModalLabel">Diagnostico de compatibilidad (DB + PHP)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info py-2 mb-3">
+          Este resumen ayuda a comparar este servidor contra el hosting de migracion para detectar incompatibilidades.
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header">Datos base del entorno</div>
+              <div class="card-body p-0">
+                <table class="table table-sm table-striped mb-0">
+                  <tbody>
+                    <?php foreach ($diagnosticMeta as $label => $value): ?>
+                      <tr>
+                        <th style="width:45%;"><?php echo htmlspecialchars($label); ?></th>
+                        <td><?php echo htmlspecialchars($value); ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                    <?php foreach ($diagnosticCounts as $label => $value): ?>
+                      <tr>
+                        <th><?php echo htmlspecialchars($label); ?></th>
+                        <td><?php echo htmlspecialchars($value); ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header">Variables del servidor DB</div>
+              <div class="card-body p-0">
+                <table class="table table-sm table-striped mb-0">
+                  <tbody>
+                    <?php foreach ($diagnosticServerVars as $key => $value): ?>
+                      <tr>
+                        <th style="width:45%;"><?php echo htmlspecialchars($key); ?></th>
+                        <td><?php echo htmlspecialchars($value); ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">Entorno PHP</div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-striped mb-0">
+              <tbody>
+                <?php foreach ($diagnosticPhpEnv as $key => $value): ?>
+                  <tr>
+                    <th style="width:30%;"><?php echo htmlspecialchars($key); ?></th>
+                    <td><?php echo htmlspecialchars($value); ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">Tablas y motores</div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 280px;">
+              <table class="table table-sm table-bordered table-striped mb-0">
+                <thead>
+                  <tr>
+                    <th>Tabla</th>
+                    <th>Engine</th>
+                    <th>Collation</th>
+                    <th>Rows (est.)</th>
+                    <th>Tamano</th>
+                    <th>Creada</th>
+                    <th>Actualizada</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php if (count($diagnosticTables) > 0): ?>
+                    <?php foreach ($diagnosticTables as $tbl): ?>
+                      <tr>
+                        <td><?php echo htmlspecialchars($tbl['name']); ?></td>
+                        <td><?php echo htmlspecialchars($tbl['engine']); ?></td>
+                        <td><?php echo htmlspecialchars($tbl['collation']); ?></td>
+                        <td><?php echo number_format($tbl['rows']); ?></td>
+                        <td><?php echo htmlspecialchars($tbl['size_human']); ?></td>
+                        <td><?php echo htmlspecialchars($tbl['created_at']); ?></td>
+                        <td><?php echo htmlspecialchars($tbl['updated_at']); ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                  <?php else: ?>
+                    <tr>
+                      <td colspan="7" class="text-center text-muted">No se pudo leer metadata de tablas.</td>
+                    </tr>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Resumen completo para copiar y comparar</span>
+            <span id="copyFeedback" class="small text-success"></span>
+          </div>
+          <div class="card-body">
+            <textarea id="diagnosticText" class="form-control" rows="16" readonly><?php echo htmlspecialchars($diagnosticText); ?></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="copyDiagnosticBtn">
+          <i class="bi bi-clipboard-check"></i> Copiar informacion
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -626,6 +946,38 @@ function setInsertQuery(tabla) {
 function verCodigoTabla(tabla) {
   var createSQL = tableInfo[tabla].create;
   setQuery(createSQL);
+}
+
+function copyDiagnosticInfo() {
+  var diagnosticText = document.getElementById('diagnosticText');
+  var feedback = document.getElementById('copyFeedback');
+  if (!diagnosticText || !feedback) {
+    return;
+  }
+
+  var textToCopy = diagnosticText.value;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(textToCopy).then(function() {
+      feedback.textContent = 'Copiado al portapapeles';
+      setTimeout(function(){ feedback.textContent = ''; }, 2000);
+    }).catch(function() {
+      diagnosticText.select();
+      document.execCommand('copy');
+      feedback.textContent = 'Copiado al portapapeles';
+      setTimeout(function(){ feedback.textContent = ''; }, 2000);
+    });
+    return;
+  }
+
+  diagnosticText.select();
+  document.execCommand('copy');
+  feedback.textContent = 'Copiado al portapapeles';
+  setTimeout(function(){ feedback.textContent = ''; }, 2000);
+}
+
+var copyDiagnosticBtn = document.getElementById('copyDiagnosticBtn');
+if (copyDiagnosticBtn) {
+  copyDiagnosticBtn.addEventListener('click', copyDiagnosticInfo);
 }
 
 <?php if (!$tablaSeleccionada && !$consulta_all && count($tableNames) > 0): ?>
