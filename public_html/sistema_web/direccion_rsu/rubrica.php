@@ -1,5 +1,3 @@
-<!-- Antes de malograr -->
- 
 <?php
 // Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
