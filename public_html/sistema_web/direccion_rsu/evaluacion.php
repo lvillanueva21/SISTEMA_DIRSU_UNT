@@ -6,6 +6,14 @@ error_reporting(E_ALL);
 include "../componentes/configSesion.php";
 // Incluir la conexión a la base de datos
 include('../componentes/db.php');
+
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+$appBasePath = rtrim(dirname(dirname($scriptName)), '/');
+if ($appBasePath === '' || $appBasePath === '.') {
+    $appBasePath = '/sistema_web';
+}
+$evApiUrl = $appBasePath . '/evaluacion/api_eval.php';
+$evJsUrl = $appBasePath . '/evaluacion/evaluacion.js';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -173,11 +181,11 @@ include('../componentes/db.php');
 
   <?php if (!defined('EV_EVAL_ASSETS')): define('EV_EVAL_ASSETS', 1); ?>
     <!-- Define la URL del API ANTES de cargar el JS -->
-    <script>window.EV_API = <?= json_encode('/sistema_web/evaluacion/api_eval.php') ?>;</script>
+    <script>window.EV_API = <?= json_encode($evApiUrl) ?>;</script>
 
     <!-- Modales + JS de evaluación -->
     <?php include __DIR__ . '/../evaluacion/modales_eval.php'; ?>
-    <script src="/sistema_web/evaluacion/evaluacion.js"></script>
+    <script src="<?= htmlspecialchars($evJsUrl, ENT_QUOTES, 'UTF-8') ?>"></script>
   <?php endif; ?>
 </section>
         </div>

@@ -1,4 +1,3 @@
-<!-- Antes de malograr -->
 <?php
 require_once("../../componentes/db.php");
 
@@ -114,6 +113,18 @@ $periodo_q = mysqli_query($conexion, "SELECT pe.nombre FROM proyectos_periodo pp
 
 $periodo = mysqli_fetch_assoc($periodo_q);
 $periodo_nombre = $periodo['nombre'] ?? 'Periodo no definido';
+
+function rsu_filename_safe($value) {
+  $value = trim((string)$value);
+  if ($value === '') return 'sin_dato';
+  $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+  if ($ascii !== false) $value = $ascii;
+  $value = preg_replace('/[^A-Za-z0-9]+/', '_', $value);
+  $value = trim($value, '_');
+  return $value !== '' ? $value : 'sin_dato';
+}
+
+$pdf_title = 'Informe_Semestral_' . rsu_filename_safe($nombre_completo) . '_' . rsu_filename_safe($usuario);
 
 echo '<div style="border: 2px solid black; border-radius: 10px; margin-bottom: 20px;">';
 echo '<table style="width: 100%; table-layout: fixed; border-collapse: collapse;">';
@@ -310,6 +321,7 @@ document.addEventListener("DOMContentLoaded", function () {
 (function(){
   var btn = document.getElementById('btnPrintSemestral');
   if(!btn) return;
+  var printTitle = <?= json_encode($pdf_title, JSON_UNESCAPED_UNICODE) ?>;
 
   btn.addEventListener('click', function(){
     var modal = document.getElementById('contenidoSemestral');
@@ -330,7 +342,7 @@ document.addEventListener("DOMContentLoaded", function () {
       + '</style>';
 
     var html = ''
-      + '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Imprimir</title>'
+      + '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>' + printTitle + '</title>'
       + css
       + '</head><body><div class="print-root">'
       + content.innerHTML

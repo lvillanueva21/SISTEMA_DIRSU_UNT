@@ -989,14 +989,16 @@ if (feed) {
 
     if (window.jQuery) {
       jQuery('#contenidoInforme').html('<p class="text-center text-muted my-4">Cargando informe...</p>');
-      jQuery.get('/sistema_web/evaluacion/ver_informe.php', { id: idpy }, function (html) {
+      jQuery.get('../evaluacion/ver_informe.php', { id: idpy }, function (html) {
         jQuery('#contenidoInforme').html(html);
-      }, 'html');
+      }, 'html').fail(function () {
+        jQuery('#contenidoInforme').html('<div class="text-danger p-3">No se pudo cargar el informe.</div>');
+      });
       jQuery('#modalInforme').modal('show');
       return;
     }
 
-    fetch('/sistema_web/evaluacion/ver_informe.php?id=' + encodeURIComponent(idpy))
+    fetch('../evaluacion/ver_informe.php?id=' + encodeURIComponent(idpy))
       .then((r) => r.text())
       .then((html) => { document.getElementById('contenidoInforme').innerHTML = html; })
       .catch(() => { document.getElementById('contenidoInforme').innerHTML = '<div class="text-danger p-3">Error cargando informe.</div>'; });

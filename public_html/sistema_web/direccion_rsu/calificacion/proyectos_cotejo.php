@@ -701,15 +701,7 @@ if ($filtro_facultad !== 0) {          // <-- ahora se aplica para cualquier rol
         <h5 class="modal-title mb-0 d-flex align-items-center">
           <i class="fas fa-calendar-alt mr-2"></i> Evaluación e informe Semestral
         </h5>
-        <div class="d-flex align-items-center">
-          <button type="button"
-                  class="btn btn-danger btn-sm mr-2 btn-print"
-                  data-target="#contenidoSemestral"
-                  data-title="Semestral - Reporte">
-            <i class="fas fa-file-pdf"></i> Imprimir PDF
-          </button>
-          <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-        </div>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
       </div>
       <div class="modal-body p-0">
         <div id="contenidoSemestral" style="height:78vh; overflow:auto;">
@@ -837,18 +829,15 @@ $(document).on('click','.btn-modal-proyecto',function(){
         .catch(()=>cont.innerHTML='<div class="text-danger">Error al cargar archivos.</div>');
   });
 });
-/* ——— Modal SEMESTRAL (usa ver_informe.php del GRUPO 01) ——— */
-$(document).on('click', '.btn-modal-semestral', function () {
+/* ——— Modal SEMESTRAL ——— */
+$(document).on('click','.btn-modal-semestral',function(){
   const id = $(this).data('id');
-
-  $('#contenidoSemestral').html('<p class="text-center text-muted my-4">Cargando informe…</p>');
+  $('#contenidoSemestral')
+      .html('<p class="text-center text-muted">Cargando informe semestral...</p>');
   $('#modalSemestral').modal('show');
 
-  // Cargamos el renderer del GRUPO 01 para que los longtext/text salgan idénticos
-  $.get('/sistema_web/evaluacion/ver_informe.php', { id: id }, function (html) {
-    $('#contenidoSemestral').html(html);
-  }, 'html').fail(function () {
-    $('#contenidoSemestral').html('<div class="text-danger p-3">No se pudo cargar el informe.</div>');
+  $.get('../comite_facultad/calificacion/semestral.php',{id_py:id},function(html){
+      $('#contenidoSemestral').html(html);
   });
 });
 </script>

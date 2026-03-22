@@ -30,8 +30,13 @@ if ($q3 = mysqli_query($conexion, "SELECT po.programa_id, o.id AS ods_id, o.nomb
 // === Colores oficiales por ODS (ONU) ===  [bg, fg]
 $ODS_STYLES = [ 1=>['#E5243B','#ffffff'], 2=>['#DDA63A','#111111'], 3=>['#4C9F38','#ffffff'], 4=>['#C5192D','#ffffff'], 5=>['#FF3A21','#ffffff'], 6=>['#26BDE2','#ffffff'], 7=>['#FCC30B','#111111'], 8=>['#A21942','#ffffff'], 9=>['#FD6925','#ffffff'], 10=>['#DD1367','#ffffff'], 11=>['#FD9D24','#111111'], 12=>['#BF8B2E','#111111'], 13=>['#3F7E44','#ffffff'], 14=>['#0A97D9','#ffffff'], 15=>['#56C02B','#ffffff'], 16=>['#00689D','#ffffff'], 17=>['#19486A','#ffffff'] ];
 
-// === Ruta web base para servir archivos subidos ===
-$WEB_FILES_BASE = '/sistema_web/files_answer/';
+// === Ruta web base para servir archivos subidos (soporta raíz o subcarpeta, p.ej. /rsu) ===
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+$appBasePath = rtrim(dirname(dirname($scriptName)), '/');
+if ($appBasePath === '' || $appBasePath === '.') {
+  $appBasePath = '/sistema_web';
+}
+$WEB_FILES_BASE = $appBasePath . '/files_answer/';
 
 // === Cabeceras de respuestas de este proyecto ===
 $cabs = [];
