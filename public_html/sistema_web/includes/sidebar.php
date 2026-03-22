@@ -9,6 +9,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     @session_start();
 }
 
+include_once __DIR__ . '/config.php';
 include_once __DIR__ . '/menu_matrix.php';
 
 if (!function_exists('rsu_sidebar_escape')) {
@@ -50,6 +51,11 @@ if (!function_exists('rsu_sidebar_is_active')) {
             return false;
         }
 
+        if (isset($item['active_on_dynamic']) && is_array($item['active_on_dynamic'])) {
+            $current_app_path = rsu_sidebar_current_app_path();
+            return in_array($current_app_path, $item['active_on_dynamic']);
+        }
+
         if (isset($item['active_on']) && is_array($item['active_on'])) {
             return in_array($current_file, $item['active_on']);
         }
@@ -62,14 +68,147 @@ if (!function_exists('rsu_sidebar_is_active')) {
     }
 }
 
-if (!function_exists('rsu_sidebar_tree_has_active_child')) {
-    function rsu_sidebar_tree_has_active_child($tree_item, $current_file)
+if (!function_exists('rsu_sidebar_is_development_mode')) {
+    function rsu_sidebar_is_development_mode()
     {
-        if (!isset($tree_item['children']) || !is_array($tree_item['children'])) {
+        global $RSU_CONFIG;
+
+        $mode = isset($RSU_CONFIG['session_mode']) ? (string)$RSU_CONFIG['session_mode'] : 'production';
+        return strtolower(trim($mode)) === 'development';
+    }
+}
+
+if (!function_exists('rsu_sidebar_item_is_visible')) {
+    function rsu_sidebar_item_is_visible($item)
+    {
+        if (!is_array($item)) {
             return false;
         }
 
+        if (isset($item['dev_only']) && $item['dev_only']) {
+            return rsu_sidebar_is_development_mode();
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('rsu_sidebar_current_app_path')) {
+    function rsu_sidebar_current_app_path()
+    {
+        static $cached_path = null;
+        if ($cached_path !== null) {
+            return $cached_path;
+        }
+
+        $script_file = isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '';
+        $app_root = realpath(__DIR__ . '/..');
+        $script_file_real = $script_file !== '' ? realpath($script_file) : false;
+
+        if (!$app_root || !$script_file_real) {
+            $cached_path = '';
+            return $cached_path;
+        }
+
+        $app_root_norm = str_replace('\\', '/', rtrim($app_root, '\\/'));
+        $script_norm = str_replace('\\', '/', $script_file_real);
+
+        if (stripos($script_norm, $app_root_norm) !== 0) {
+            $cached_path = '';
+            return $cached_path;
+        }
+
+        $relative = ltrim(substr($script_norm, strlen($app_root_norm)), '/');
+        $cached_path = str_replace('\\', '/', $relative);
+        return $cached_path;
+    }
+}
+
+if (!function_exists('rsu_sidebar_is_external_href')) {
+    function rsu_sidebar_is_external_href($href)
+    {
+        $href = trim((string)$href);
+        if ($href === '') {
+            return false;
+        }
+
+        if (strpos($href, '#') === 0 || strpos($href, '/') === 0) {
+            return true;
+        }
+
+        return (bool)preg_match('/^[a-z][a-z0-9+.-]*:/i', $href) || strpos($href, '//') === 0;
+    }
+}
+
+if (!function_exists('rsu_sidebar_build_dynamic_href')) {
+    function rsu_sidebar_build_dynamic_href($target_app_path)
+    {
+        $target_app_path = ltrim(str_replace('\\', '/', (string)$target_app_path), '/');
+        if ($target_app_path === '') {
+            return '#';
+        }
+
+        $script_file = isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '';
+        $app_root = realpath(__DIR__ . '/..');
+        $script_dir = $script_file !== '' ? realpath(dirname($script_file)) : false;
+
+        if (!$app_root || !$script_dir) {
+            return $target_app_path;
+        }
+
+        $app_root_norm = str_replace('\\', '/', rtrim($app_root, '\\/'));
+        $script_dir_norm = str_replace('\\', '/', rtrim($script_dir, '\\/'));
+
+        if (stripos($script_dir_norm, $app_root_norm) !== 0) {
+            return $target_app_path;
+        }
+
+        $relative_dir = ltrim(substr($script_dir_norm, strlen($app_root_norm)), '/');
+        $levels = $relative_dir === '' ? 0 : count(explode('/', $relative_dir));
+        $prefix = str_repeat('../', $levels);
+
+        return $prefix . $target_app_path;
+    }
+}
+
+if (!function_exists('rsu_sidebar_prefix_api_context_path')) {
+    function rsu_sidebar_prefix_api_context_path($path, $context_dir)
+    {
+        $path = trim((string)$path);
+        $context_dir = trim((string)$context_dir, '/');
+
+        if ($path === '' || $context_dir === '' || rsu_sidebar_is_external_href($path)) {
+            return $path;
+        }
+
+        return '../../' . $context_dir . '/' . ltrim($path, '/');
+    }
+}
+
+if (!function_exists('rsu_sidebar_get_visible_children')) {
+    function rsu_sidebar_get_visible_children($tree_item)
+    {
+        $visible_children = array();
+
+        if (!isset($tree_item['children']) || !is_array($tree_item['children'])) {
+            return $visible_children;
+        }
+
         foreach ($tree_item['children'] as $child) {
+            if (rsu_sidebar_item_is_visible($child)) {
+                $visible_children[] = $child;
+            }
+        }
+
+        return $visible_children;
+    }
+}
+
+if (!function_exists('rsu_sidebar_tree_has_active_child')) {
+    function rsu_sidebar_tree_has_active_child($tree_item, $current_file)
+    {
+        $visible_children = rsu_sidebar_get_visible_children($tree_item);
+        foreach ($visible_children as $child) {
             if (rsu_sidebar_is_active($child, $current_file)) {
                 return true;
             }
@@ -80,20 +219,26 @@ if (!function_exists('rsu_sidebar_tree_has_active_child')) {
 }
 
 if (!function_exists('rsu_sidebar_resolve_href')) {
-    function rsu_sidebar_resolve_href($node, $current_file, $fallback = '#')
+    function rsu_sidebar_resolve_href($node, $current_file, $fallback = '#', $ignore_by_page = false, $api_context_dir = '')
     {
         if (!is_array($node)) {
             return $fallback;
         }
 
-        if (isset($node['href_by_page']) && is_array($node['href_by_page'])) {
+        if (isset($node['href_dynamic']) && $node['href_dynamic'] !== '') {
+            return rsu_sidebar_build_dynamic_href($node['href_dynamic']);
+        }
+
+        if (!$ignore_by_page && isset($node['href_by_page']) && is_array($node['href_by_page'])) {
             if (isset($node['href_by_page'][$current_file])) {
-                return (string)$node['href_by_page'][$current_file];
+                $value = (string)$node['href_by_page'][$current_file];
+                return rsu_sidebar_prefix_api_context_path($value, $api_context_dir);
             }
         }
 
         if (isset($node['href']) && $node['href'] !== '') {
-            return (string)$node['href'];
+            $value = (string)$node['href'];
+            return rsu_sidebar_prefix_api_context_path($value, $api_context_dir);
         }
 
         return $fallback;
@@ -101,13 +246,13 @@ if (!function_exists('rsu_sidebar_resolve_href')) {
 }
 
 if (!function_exists('rsu_sidebar_resolve_value_by_page')) {
-    function rsu_sidebar_resolve_value_by_page($data, $value_key, $map_key, $current_file, $fallback = '')
+    function rsu_sidebar_resolve_value_by_page($data, $value_key, $map_key, $current_file, $fallback = '', $ignore_by_page = false)
     {
         if (!is_array($data)) {
             return $fallback;
         }
 
-        if (isset($data[$map_key]) && is_array($data[$map_key])) {
+        if (!$ignore_by_page && isset($data[$map_key]) && is_array($data[$map_key])) {
             if (isset($data[$map_key][$current_file])) {
                 return (string)$data[$map_key][$current_file];
             }
@@ -130,20 +275,29 @@ if (!$sidebar_config) {
 }
 
 $sidebar_current_file = basename(isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SELF'] : '');
+$sidebar_current_app_path = rsu_sidebar_current_app_path();
+$sidebar_is_api_dirsu_context = ($sidebar_current_app_path === 'includes/api_dirsu/index.php');
 $sidebar_brand = isset($sidebar_config['brand']) ? $sidebar_config['brand'] : array();
 $sidebar_items = isset($sidebar_config['items']) ? $sidebar_config['items'] : array();
-$sidebar_brand_href = rsu_sidebar_resolve_value_by_page($sidebar_brand, 'href', 'href_by_page', $sidebar_current_file, 'inicio.php');
-$sidebar_brand_logo = rsu_sidebar_resolve_value_by_page($sidebar_brand, 'logo', 'logo_by_page', $sidebar_current_file, '../dust/img/dirsu_logo_128_128.png');
-$sidebar_avatar = rsu_sidebar_resolve_value_by_page($sidebar_config, 'avatar', 'avatar_by_page', $sidebar_current_file, '../dust/img/avatar.png');
+$sidebar_context_dir = isset($sidebar_config['menu_context_dir']) ? (string)$sidebar_config['menu_context_dir'] : '';
+$sidebar_api_prefix_context = $sidebar_is_api_dirsu_context ? $sidebar_context_dir : '';
+$sidebar_brand_href = rsu_sidebar_resolve_value_by_page($sidebar_brand, 'href', 'href_by_page', $sidebar_current_file, 'inicio.php', $sidebar_is_api_dirsu_context);
+$sidebar_brand_logo = rsu_sidebar_resolve_value_by_page($sidebar_brand, 'logo', 'logo_by_page', $sidebar_current_file, '../dust/img/dirsu_logo_128_128.png', $sidebar_is_api_dirsu_context);
+$sidebar_avatar = rsu_sidebar_resolve_value_by_page($sidebar_config, 'avatar', 'avatar_by_page', $sidebar_current_file, '../dust/img/avatar.png', $sidebar_is_api_dirsu_context);
 $sidebar_user_href = isset($sidebar_config['user_home']) ? (string)$sidebar_config['user_home'] : 'inicio.php';
-$sidebar_user_link_class = rsu_sidebar_resolve_value_by_page($sidebar_config, 'user_link_class', 'user_link_class_by_page', $sidebar_current_file, 'd-block');
-$sidebar_user_link_style = rsu_sidebar_resolve_value_by_page($sidebar_config, 'user_link_style', 'user_link_style_by_page', $sidebar_current_file, '');
+$sidebar_user_link_class = rsu_sidebar_resolve_value_by_page($sidebar_config, 'user_link_class', 'user_link_class_by_page', $sidebar_current_file, 'd-block', $sidebar_is_api_dirsu_context);
+$sidebar_user_link_style = rsu_sidebar_resolve_value_by_page($sidebar_config, 'user_link_style', 'user_link_style_by_page', $sidebar_current_file, '', $sidebar_is_api_dirsu_context);
 
-if (isset($sidebar_config['user_home_by_page']) && is_array($sidebar_config['user_home_by_page'])) {
+if (!$sidebar_is_api_dirsu_context && isset($sidebar_config['user_home_by_page']) && is_array($sidebar_config['user_home_by_page'])) {
     if (isset($sidebar_config['user_home_by_page'][$sidebar_current_file])) {
         $sidebar_user_href = (string)$sidebar_config['user_home_by_page'][$sidebar_current_file];
     }
 }
+
+$sidebar_brand_href = rsu_sidebar_prefix_api_context_path($sidebar_brand_href, $sidebar_api_prefix_context);
+$sidebar_brand_logo = rsu_sidebar_prefix_api_context_path($sidebar_brand_logo, $sidebar_api_prefix_context);
+$sidebar_avatar = rsu_sidebar_prefix_api_context_path($sidebar_avatar, $sidebar_api_prefix_context);
+$sidebar_user_href = rsu_sidebar_prefix_api_context_path($sidebar_user_href, $sidebar_api_prefix_context);
 
 $sidebar_nombres = isset($nombres) ? $nombres : (isset($_SESSION['nombres']) ? $_SESSION['nombres'] : '');
 $sidebar_apellidos = isset($apellidos) ? $apellidos : (isset($_SESSION['apellidos']) ? $_SESSION['apellidos'] : '');
@@ -174,11 +328,17 @@ $sidebar_user_text = rsu_sidebar_display_name($sidebar_nombres, $sidebar_apellid
       <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
         <?php foreach ($sidebar_items as $item): ?>
           <?php
+          if (!rsu_sidebar_item_is_visible($item)) {
+              continue;
+          }
+
           $type = isset($item['type']) ? $item['type'] : 'item';
           if ($type === 'header'):
           ?>
             <li class="nav-header"><?php echo rsu_sidebar_escape(isset($item['label']) ? $item['label'] : ''); ?></li>
           <?php elseif ($type === 'tree'): ?>
+            <?php $visible_children = rsu_sidebar_get_visible_children($item); ?>
+            <?php if (count($visible_children) === 0) { continue; } ?>
             <?php $tree_open = rsu_sidebar_tree_has_active_child($item, $sidebar_current_file); ?>
             <li class="nav-item menu <?php echo $tree_open ? 'menu-open' : ''; ?>">
               <a href="#" class="nav-link <?php echo $tree_open ? 'active' : ''; ?>">
@@ -190,12 +350,11 @@ $sidebar_user_text = rsu_sidebar_display_name($sidebar_nombres, $sidebar_apellid
                 <p><?php echo rsu_sidebar_escape(isset($item['label']) ? $item['label'] : ''); ?></p>
               </a>
               <ul class="nav nav-treeview">
-                <?php if (isset($item['children']) && is_array($item['children'])): ?>
-                  <?php foreach ($item['children'] as $child): ?>
+                <?php foreach ($visible_children as $child): ?>
                     <?php $child_active = rsu_sidebar_is_active($child, $sidebar_current_file); ?>
                     <?php $child_icon = isset($child['icon']) ? trim((string)$child['icon']) : ''; ?>
                     <li class="nav-item">
-                      <a href="<?php echo rsu_sidebar_escape(rsu_sidebar_resolve_href($child, $sidebar_current_file)); ?>"
+                      <a href="<?php echo rsu_sidebar_escape(rsu_sidebar_resolve_href($child, $sidebar_current_file, '#', $sidebar_is_api_dirsu_context, $sidebar_api_prefix_context)); ?>"
                          class="nav-link <?php echo $child_active ? 'active' : ''; ?>">
                         <?php if ($child_icon !== ''): ?>
                           <i class="<?php echo rsu_sidebar_escape($child_icon); ?> nav-icon"></i>
@@ -203,14 +362,13 @@ $sidebar_user_text = rsu_sidebar_display_name($sidebar_nombres, $sidebar_apellid
                         <p><?php echo rsu_sidebar_escape(isset($child['label']) ? $child['label'] : ''); ?></p>
                       </a>
                     </li>
-                  <?php endforeach; ?>
-                <?php endif; ?>
+                <?php endforeach; ?>
               </ul>
             </li>
           <?php else: ?>
             <?php $item_active = rsu_sidebar_is_active($item, $sidebar_current_file); ?>
             <li class="nav-item">
-              <a href="<?php echo rsu_sidebar_escape(rsu_sidebar_resolve_href($item, $sidebar_current_file)); ?>"
+              <a href="<?php echo rsu_sidebar_escape(rsu_sidebar_resolve_href($item, $sidebar_current_file, '#', $sidebar_is_api_dirsu_context, $sidebar_api_prefix_context)); ?>"
                  class="nav-link <?php echo $item_active ? 'active' : ''; ?>">
                 <i class="<?php echo rsu_sidebar_escape(isset($item['icon']) ? $item['icon'] : 'fas fa-circle nav-icon'); ?> nav-icon"></i>
                 <p><?php echo rsu_sidebar_escape(isset($item['label']) ? $item['label'] : ''); ?></p>

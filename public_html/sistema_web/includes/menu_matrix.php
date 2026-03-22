@@ -9,11 +9,87 @@
  * - rol 5: Comite de Facultad
  */
 
+include_once __DIR__ . '/config.php';
+
+if (!function_exists('rsu_menu_is_development_mode')) {
+    function rsu_menu_is_development_mode()
+    {
+        global $RSU_CONFIG;
+
+        $mode = isset($RSU_CONFIG['session_mode']) ? (string)$RSU_CONFIG['session_mode'] : 'production';
+        return strtolower(trim($mode)) === 'development';
+    }
+}
+
+if (!function_exists('rsu_menu_get_api_dirsu_item_by_role')) {
+    function rsu_menu_get_api_dirsu_item_by_role($role_id)
+    {
+        $role_id = (int)$role_id;
+
+        if (in_array($role_id, array(1, 2, 3, 4, 5), true)) {
+            return array(
+                'type' => 'item',
+                'label' => 'Api Dirsu',
+                'icon' => 'fas fa-code',
+                'href_dynamic' => 'includes/api_dirsu/index.php',
+                'active_on_dynamic' => array('includes/api_dirsu/index.php'),
+                'dev_only' => true
+            );
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('rsu_menu_append_development_items')) {
+    function rsu_menu_append_development_items($matrix)
+    {
+        if (!is_array($matrix) || !rsu_menu_is_development_mode()) {
+            return $matrix;
+        }
+
+        foreach ($matrix as $role_id => $role_config) {
+            if (!isset($role_config['items']) || !is_array($role_config['items'])) {
+                continue;
+            }
+
+            $has_api_item = false;
+            foreach ($role_config['items'] as $item) {
+                if (isset($item['label']) && strtolower(trim((string)$item['label'])) === 'api dirsu') {
+                    $has_api_item = true;
+                    break;
+                }
+            }
+
+            if ($has_api_item) {
+                continue;
+            }
+
+            $api_item = rsu_menu_get_api_dirsu_item_by_role($role_id);
+            if (!$api_item) {
+                continue;
+            }
+
+            $role_config['items'][] = array(
+                'type' => 'header',
+                'label' => 'Laboratorio',
+                'dev_only' => true
+            );
+            $role_config['items'][] = $api_item;
+
+            $matrix[$role_id] = $role_config;
+        }
+
+        return $matrix;
+    }
+}
+
 if (!function_exists('rsu_get_menu_matrix')) {
     function rsu_get_menu_matrix()
     {
-        return array(
+        $matrix = array(
             1 => array(
+                'menu_context_dir' => 'direccion_rsu',
                 'brand' => array(
                     'href' => 'inicio.php',
                     'logo' => '../dust/img/dirsu_logo_128_128.png',
@@ -116,6 +192,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                 )
             ),
             2 => array(
+                'menu_context_dir' => 'vistas',
                 'brand' => array(
                     'href' => '../inicio.php',
                     'href_by_page' => array(
@@ -293,6 +370,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                 )
             ),
             3 => array(
+                'menu_context_dir' => 'decanato_facultad',
                 'brand' => array(
                     'href' => 'inicio.php',
                     'logo' => '../dust/img/dirsu_logo_128_128.png',
@@ -335,6 +413,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                 )
             ),
             4 => array(
+                'menu_context_dir' => 'director_departamento',
                 'brand' => array(
                     'href' => 'inicio.php',
                     'logo' => '../dust/img/dirsu_logo_128_128.png',
@@ -377,6 +456,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                 )
             ),
             5 => array(
+                'menu_context_dir' => 'comite_facultad',
                 'brand' => array(
                     'href' => 'inicio.php',
                     'logo' => '../dust/img/dirsu_logo_128_128.png',
@@ -425,6 +505,8 @@ if (!function_exists('rsu_get_menu_matrix')) {
                 )
             )
         );
+
+        return rsu_menu_append_development_items($matrix);
     }
 }
 
