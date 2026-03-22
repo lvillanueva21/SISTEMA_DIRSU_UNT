@@ -119,9 +119,6 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     'name' => 'Sistema DIRSU'
                 ),
                 'user_home' => 'inicio.php',
-                'user_home_by_page' => array(
-                    'perfil.php' => 'perfil.php'
-                ),
                 'avatar' => '../dust/img/avatar.png',
                 'items' => array(
                     array(
@@ -132,19 +129,12 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'active_on' => array('inicio.php', 'inicio_antiguo.php')
                     ),
                     array(
-                        'type' => 'item',
-                        'label' => 'Progreso de Proyectos',
-                        'icon' => 'fa fa-chart-line',
-                        'href' => 'progreso_proyectos.php',
-                        'active_on' => array('progreso_proyectos.php')
-                    ),
-                    array(
                         'type' => 'header',
                         'label' => 'Evaluacion de Proyectos'
                     ),
                     array(
                         'type' => 'item',
-                        'label' => 'Informe Semestral 2025-I',
+                        'label' => 'Informe Semestral 2025 - I',
                         'icon' => 'fa fa-calendar',
                         'href' => 'evaluacion.php',
                         'active_on' => array('evaluacion.php')
@@ -167,13 +157,6 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'active_on' => array('rubrica.php')
                             )
                         )
-                    ),
-                    array(
-                        'type' => 'item',
-                        'label' => 'Mi Perfil',
-                        'icon' => 'fas fa-user-circle',
-                        'href' => 'perfil.php',
-                        'active_on' => array('perfil.php')
                     )
                 )
             )
