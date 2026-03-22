@@ -4,10 +4,10 @@
 ?>
 <div class="image-wrapper">
   <img
-    src="/sistema_web/imagenes/temporal/ruta_informe_semestral2025.jpg"
+    src="../imagenes/temporal/ruta_informe_semestral2025.jpg"
     alt="Ruta de evaluación del informe semestral 2025-I"
     class="img-thumb"
     loading="lazy"
-    data-full-src="/sistema_web/imagenes/temporal/ruta_informe_semestral2025.jpg"
+    data-full-src="../imagenes/temporal/ruta_informe_semestral2025.jpg"
   />
 </div>

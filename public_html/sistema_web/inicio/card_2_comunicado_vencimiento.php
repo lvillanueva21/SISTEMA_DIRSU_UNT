@@ -4,10 +4,10 @@
 ?>
 <div class="image-wrapper">
   <img
-    src="/sistema_web/imagenes/temporal/comunicado_vencimiento.jpeg"
+    src="../imagenes/temporal/comunicado_vencimiento.jpeg"
     alt="Comunicado por el Vencimiento del Plazo de Informe Semestrales"
     class="img-thumb"
     loading="lazy"
-    data-full-src="/sistema_web/imagenes/temporal/comunicado_vencimiento.jpeg"
+    data-full-src="../imagenes/temporal/comunicado_vencimiento.jpeg"
   />
 </div>
