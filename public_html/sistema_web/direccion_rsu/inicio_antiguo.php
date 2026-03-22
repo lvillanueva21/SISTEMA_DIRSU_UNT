@@ -1,8 +1,8 @@
-<?php
-   // Incluir configSesion.php para verificar la sesión
+﻿<?php
+   // Incluir configSesion.php para verificar la sesiÃ³n
    include "../componentes/configSesion.php";
    
-   // Incluir la conexión a la base de datos
+   // Incluir la conexiÃ³n a la base de datos
    include('../componentes/db.php');
    ?>
 <!DOCTYPE html>
@@ -36,7 +36,7 @@
    </head>
    <body class="hold-transition sidebar-mini layout-fixed">
       <div class="wrapper">
-         <!-- Preloader --><!-- Icono que se muestra mientras está cargando el sistema -->
+         <!-- Preloader --><!-- Icono que se muestra mientras estÃ¡ cargando el sistema -->
          <div class="preloader flex-column justify-content-center align-items-center">
             <img class="animation__shake" src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTELogo" height="60" width="60">
          </div>
@@ -58,143 +58,17 @@
                <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                   <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
                      <p style="color: white;
-                        size: 8px">Ir a página DIRSU</p>
+                        size: 8px">Ir a pÃ¡gina DIRSU</p>
                   </a>
                </li>
                <li class="nav-item d-none d-sm-inline-block">
-                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
+                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
                </li>
             </ul>
          </nav>
          <!-- /.navbar -->
          <!-- Main Sidebar Container --><!-- Contenedor de barra lateral principal -->
-         <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <!-- Brand Logo -->
-            <a href="inicio.php" class="brand-link">
-            <img src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-light">Sistema DIRSU</span>
-            </a>
-            <!-- Sidebar -->
-            <div class="sidebar">
-               <!-- Sidebar user panel (optional) -->
-               <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                  <div class="image">
-                     <img src="../dust/img/avatar.png" class="img-circle elevation-2" alt="User Image">
-                  </div>
-                  <?php
-// Suponiendo que $apellidos es una cadena con los apellidos separados por espacios
-$primer_apellido = explode(' ', htmlspecialchars($apellidos))[0]; // Obtener el primer apellido
-
-if (mb_strlen($nombres) > 22) {
-    // Si $nombres tiene más de 22 caracteres, solo se imprime $nombres
-    $texto_a_imprimir = htmlspecialchars($nombres);
-} elseif (mb_strlen($nombres . ' ' . $primer_apellido) <= 23) {
-    // Si la combinación de $nombres y el primer apellido tiene 23 caracteres o menos
-    $texto_a_imprimir = htmlspecialchars($nombres . ' ' . $primer_apellido);
-} else {
-    // Si ninguna de las condiciones anteriores se cumple, imprimir 23 caracteres de $nombres
-    $texto_a_imprimir = htmlspecialchars(mb_substr($nombres, 0, 23));
-}
-?>
-
-<div class="info">
-                     <a href="inicio.php" class="d-block"><?php echo $texto_a_imprimir; ?></a>
-</div>
-
-               </div>
-               <!-- SidebarSearch Form -->
-               <div class="form-inline">
-               </div>
-               <!-- Sidebar Menu -->
-               <nav class="mt-2">
-                  <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                     <!-- Add icons to the links using the .nav-icon class
-                        with font-awesome or any other icon font library -->
-                     <li class="nav-item">
-                        <a href="inicio.php" class="nav-link active">
-                           <i class="nav-icon fas fa-home"></i>
-                           <p>
-                              INICIO
-                              <!-- <span class="right badge badge-danger">2</span> -->
-                           </p>
-                        </a>
-                     </li>
-                     <li class="nav-item">
-                            <a href="panel.php" class="nav-link">
-                                <i class="nav-icon fas fa-users-cog"></i>
-                                <p>PANEL DE CONTROL</p>
-                            </a>
-                        </li>
-                     <li class="nav-item">
-                        <a href="progreso_proyectos.php" class="nav-link">
-                           <i class="fa fa-chart-line nav-icon"></i>
-                           <p>Progreso de Proyectos</p>
-                        </a>
-                     </li>
-                     <li class="nav-header">Evaluación de Proyectos</li>
-                     <li class="nav-item">
-                        <a href="evaluacion.php" class="nav-link">
-                           <i class="fa fa-clipboard-list nav-icon"></i>
-                           <p>Informe Semestral 2025</p>
-                        </a>
-                     </li>
-                     <li class="nav-item">
-                        <a href="cotejo.php" class="nav-link">
-                           <i class="fa fa-clipboard-list nav-icon"></i>
-                           <p>Por Lista de Cotejo</p>
-                        </a>
-                     </li>
-                     <li class="nav-item">
-                        <a href="rubrica.php" class="nav-link">
-                           <i class="fa fa-table nav-icon"></i>
-                           <p>Por Rúbrica</p>
-                        </a>
-                     </li>
-                     <li class="nav-header">Solo administradores</li>
-<li class="nav-item menu">
-    <a href="#" class="nav-link">
-        <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-        <p>Funciones</p>
-    </a>
-    <ul class="nav nav-treeview">
-        <li class="nav-item">
-            <a href="usuarios.php" class="nav-link">
-                <i class="fas fa-users nav-icon"></i>
-                <p>Consulta Usuario</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="general.php" class="nav-link">
-                <i class="fas fa-file-alt nav-icon"></i>
-                <p>Reporte Proyectos</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="estadistica.php" class="nav-link">
-                <i class="fas fa-chart-line nav-icon"></i>
-                <p>Analitics</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="control_eventos.php" class="nav-link">
-                <i class="fas fa-calendar-check nav-icon"></i>
-                <p>Control Eventos</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="control_proyectos.php" class="nav-link">
-                <i class="fas fa-project-diagram nav-icon"></i>
-                <p>Control Proyectos</p>
-            </a>
-        </li>
-    </ul>
-</li>
-                  </ul>
-               </nav>
-               <!-- /.sidebar-menu -->
-            </div>
-            <!-- /.sidebar -->
-         </aside>
+                 <?php include_once "../includes/sidebar.php"; ?>
          <!-- Content Wrapper. Contains page content -->
          <div class="content-wrapper">
             <!-- Content Header (Page header) -->
@@ -202,7 +76,7 @@ if (mb_strlen($nombres) > 22) {
                <div class="container-fluid">
                   <div class="row mb-2">
                      <div class="col-sm-12">
-                        <h5 class="m-0">!Bienvenido al Sistema de gestión de proyectos DIRSU!</h5>
+                        <h5 class="m-0">!Bienvenido al Sistema de gestiÃ³n de proyectos DIRSU!</h5>
                      </div>
                      <!-- /.col -->
                   </div>
@@ -215,7 +89,7 @@ if (mb_strlen($nombres) > 22) {
 <section class="content">
     <div class="container-fluid">
         <div class="row">
-            <!-- Primera fila: Mi buzón de mensajes DIRSU y Mi próxima entrega -->
+            <!-- Primera fila: Mi buzÃ³n de mensajes DIRSU y Mi prÃ³xima entrega -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card bg-light d-flex flex-fill">
@@ -223,7 +97,7 @@ if (mb_strlen($nombres) > 22) {
                             <div class="row">
                                 <div class="col-10">
                                     <div class="card-header">
-                                        <h3 class="card-title">Mi buzón de mensajes DIRSU</h3>
+                                        <h3 class="card-title">Mi buzÃ³n de mensajes DIRSU</h3>
                                     </div>
                                     <br>
                                     <h1 class="lead"><b>Hola <?php echo htmlspecialchars($nombres); ?></b></h1>
@@ -236,28 +110,28 @@ if (mb_strlen($nombres) > 22) {
                         <div class="card-body pt-0">
                             <div class="row">
                                 <div class="col-12">
-                                    <p class="text-muted text-sm text-justify">Como Miembro de la oficina de RSU de la <b>Universidad Nacional de Trujillo</b> serás el encargado de revisar los <b>Informes Semestrales</b> presentados por los coordinadores de proyectos de tu facultad. <br><br>
-                                    Esta revisión se divide en Revisión por Lista de Cotejo y Revisión por Rúbrica.
+                                    <p class="text-muted text-sm text-justify">Como Miembro de la oficina de RSU de la <b>Universidad Nacional de Trujillo</b> serÃ¡s el encargado de revisar los <b>Informes Semestrales</b> presentados por los coordinadores de proyectos de tu facultad. <br><br>
+                                    Esta revisiÃ³n se divide en RevisiÃ³n por Lista de Cotejo y RevisiÃ³n por RÃºbrica.
                                     <br>
-                                        <b>¿Cómo revisar los proyectos por Lista de Cotejo?</b> <br>
-                                        Dirígete a la opción Evaluación de Proyectos --> Por lista de Cotejo. Podrás ver los proyectos que están solicitando revisión, evaluarlos según la lista de cotejo y Aprobarlos u observarlos.
+                                        <b>Â¿CÃ³mo revisar los proyectos por Lista de Cotejo?</b> <br>
+                                        DirÃ­gete a la opciÃ³n EvaluaciÃ³n de Proyectos --> Por lista de Cotejo. PodrÃ¡s ver los proyectos que estÃ¡n solicitando revisiÃ³n, evaluarlos segÃºn la lista de cotejo y Aprobarlos u observarlos.
                                         <br>
                                         
-                                        <b>¿Cómo revisar los proyectos por Rúbrica?</b> <br>
-                                        Dirígete a la opción Evaluación de Proyectos --> Por Rúbrica.
-                                        Podrás ver los proyectos que están solicitando revisión, y poner un puntaje por cada una de las rúbrica de evaluación, este puntaje será sumado y decidirá si el proyecto es aprobado u observado.
+                                        <b>Â¿CÃ³mo revisar los proyectos por RÃºbrica?</b> <br>
+                                        DirÃ­gete a la opciÃ³n EvaluaciÃ³n de Proyectos --> Por RÃºbrica.
+                                        PodrÃ¡s ver los proyectos que estÃ¡n solicitando revisiÃ³n, y poner un puntaje por cada una de las rÃºbrica de evaluaciÃ³n, este puntaje serÃ¡ sumado y decidirÃ¡ si el proyecto es aprobado u observado.
                                         
                                     </p>
                                     <ul class="ml-4 mb-0 fa-ul text-muted">
     <li class="small"><span class="fa-li"><i class="fas fa-lg fa-envelope"></i></span> Correo: dirsu@unitru.edu.pe</li>
-    <li class="small"><span class="fa-li"><i class="fas fa-lg fa-map-marker-alt"></i></span> Jirón Diego De Almagro 344, Trujillo</li>
+    <li class="small"><span class="fa-li"><i class="fas fa-lg fa-map-marker-alt"></i></span> JirÃ³n Diego De Almagro 344, Trujillo</li>
 </ul>
                                 </div>
                             </div>
                         </div>
                         <div class="card-footer">
                             <div class="text-right text-muted small">
-                                Luigi Villanueva - área Informática - DIRSU
+                                Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
                             </div>
                         </div>
                     </div>
@@ -267,18 +141,18 @@ if (mb_strlen($nombres) > 22) {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header" style="background-color: #dc3545; color: white;">
-                        <h5>Mi próxima entrega</h5>
+                        <h5>Mi prÃ³xima entrega</h5>
                     </div>
                     <div class="card-body">
-                        <h3 class="card-title text-center p-3" style="font-size: 1.5rem; margin: 0;">¡IMPORTANTE! Subir Informe Semestral 2024 II en Evaluación e Informe --> INFORME FINAL</h3>
-                        <h3 class="text-center" style="font-size: 1.2rem; margin-bottom: 1.5rem;">Nueva fecha límite: 15 de enero de 2025 a las 23:59</h3>
+                        <h3 class="card-title text-center p-3" style="font-size: 1.5rem; margin: 0;">Â¡IMPORTANTE! Subir Informe Semestral 2024 II en EvaluaciÃ³n e Informe --> INFORME FINAL</h3>
+                        <h3 class="text-center" style="font-size: 1.2rem; margin-bottom: 1.5rem;">Nueva fecha lÃ­mite: 15 de enero de 2025 a las 23:59</h3>
                         <div class="row justify-content-center" style="margin-top: 20px;">
                             <div class="col-md-12 text-center">
                                 <i class="fas fa-clock fa-3x mb-3"></i>
                                 <div id="countdown" style="display: flex; justify-content: center;">
                                     <div class="counter-box text-center" style="margin: 0 10px;">
                                         <h6 id="days" style="font-size: 1.5rem; margin: 0;">0</h6>
-                                        <p style="margin: 0;">Días</p>
+                                        <p style="margin: 0;">DÃ­as</p>
                                     </div>
                                     <div class="counter-box text-center" style="margin: 0 10px;">
                                         <h6 id="hours" style="font-size: 1.5rem; margin: 0;">0</h6>
@@ -304,7 +178,7 @@ if (mb_strlen($nombres) > 22) {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header" style="background-color: #28a745; color: white;">
-                        <h3 class="card-title text-center">Cronograma de proyectos DIRSU - Período I - 2024</h3>
+                        <h3 class="card-title text-center">Cronograma de proyectos DIRSU - PerÃ­odo I - 2024</h3>
                     </div>
                     <div class="card-body">
                     <?php include('../integrados/cronograma_general.php'); ?>
@@ -320,9 +194,9 @@ if (mb_strlen($nombres) > 22) {
          </div>
          <!-- /.content-wrapper -->
          <footer class="main-footer">
-            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-               <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
+               <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
             </div>
          </footer>
          <!-- Control Sidebar -->
@@ -367,15 +241,15 @@ if (mb_strlen($nombres) > 22) {
       <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
       <script src="../dust/js/pages/dashboard.js"></script>
       <script>
-         // Función para actualizar el contador cada segundo
+         // FunciÃ³n para actualizar el contador cada segundo
          function updateCountdown() {
-             // Fecha de deadline en formato Año/Mes/Día Hora:Minutos:Segundos
+             // Fecha de deadline en formato AÃ±o/Mes/DÃ­a Hora:Minutos:Segundos
              const deadlineDate = new Date("2025-01-15T23:59:59").getTime();
          
              const now = new Date().getTime();
              const timeLeft = deadlineDate - now;
          
-             // Cálculo de días, horas, minutos y segundos restantes
+             // CÃ¡lculo de dÃ­as, horas, minutos y segundos restantes
              const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
              const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
              const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
@@ -390,10 +264,10 @@ if (mb_strlen($nombres) > 22) {
              // Si el tiempo ha llegado a 0, se detiene el contador
              if (timeLeft < 0) {
                  clearInterval(countdownInterval);
-                 document.getElementById("countdown").innerHTML = "<div class='alert alert-danger'>¡El deadline ha pasado!</div>";
+                 document.getElementById("countdown").innerHTML = "<div class='alert alert-danger'>Â¡El deadline ha pasado!</div>";
              }
          }
-         // Ejecutar la función de actualización cada segundo
+         // Ejecutar la funciÃ³n de actualizaciÃ³n cada segundo
          const countdownInterval = setInterval(updateCountdown, 1000);
       </script>
    </body>

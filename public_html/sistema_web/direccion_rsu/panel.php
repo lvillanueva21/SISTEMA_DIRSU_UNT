@@ -1,8 +1,8 @@
-<?php 
-// Incluir configSesion.php para verificar la sesión
+﻿<?php 
+// Incluir configSesion.php para verificar la sesiÃ³n
 include "../componentes/configSesion.php";
 
-// Incluir la conexión a la base de datos
+// Incluir la conexiÃ³n a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -41,132 +41,16 @@ include('../componentes/db.php');
       <ul class="navbar-nav ml-auto">
         <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
           <a href="https://rsu.unitru.edu.pe" class="nav-link" target="_blank">
-            <p style="color: white;">Ir a página DIRSU</p>
+            <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
           </a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
+          <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
         </li>
       </ul>
     </nav>
     <!-- Sidebar -->
-    <aside class="main-sidebar sidebar-dark-primary elevation-4">
-      <a href="inicio.php" class="brand-link">
-        <img src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-        <span class="brand-text font-weight-light">Sistema DIRSU</span>
-      </a>
-      <div class="sidebar">
-        <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-          <div class="image">
-            <img src="../dust/img/avatar.png" class="img-circle elevation-2" alt="User Image">
-          </div>
-          <div class="info">
-            <a href="inicio.php" class="d-block"><?php echo htmlspecialchars($nombres) . " " . htmlspecialchars($apellidos); ?></a>
-          </div>
-        </div>
-          <!-- Sidebar Menu -->
-          <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-              <!-- Add icons to the links using the .nav-icon class
-                with font-awesome or any other icon font library -->
-              <li class="nav-item">
-                <a href="inicio.php" class="nav-link">
-                  <i class="nav-icon fas fa-home"></i>
-                  <p>
-                    INICIO
-                    <!-- <span class="right badge badge-danger">2</span> -->
-                  </p>
-                </a>
-              </li>
-              <!-- <li class="nav-item">
-                <a href="progreso_proyectos.php" class="nav-link">
-                   <i class="fa fa-chart-line nav-icon"></i>
-                   <p>Progreso de Proyectos</p>
-                </a>
-                </li> -->
-              <li class="nav-header">Evaluación de Proyectos</li>
-              <li class="nav-item">
-                <a href="evaluacion.php" class="nav-link">
-                  <i class="fa fa-calendar nav-icon"></i>
-                  <p>Informe Semestral 2025-I</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="codigos.php" class="nav-link">
-                  <i class="fa fa-at nav-icon"></i>
-                  <p>Códigos de proyectos</p>
-                </a>
-              </li>
-              <li class="nav-item menu">
-                <a href="#" class="nav-link">
-                  <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-                  <p>Evaluaciones anteriores</p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    <a href="cotejo.php" class="nav-link">
-                      <i class="fa fa-clipboard-list nav-icon"></i>
-                      <p>Lista de Cotejo (2024)</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="rubrica.php" class="nav-link">
-                      <i class="fa fa-table nav-icon"></i>
-                      <p>Rúbrica (2024)</p>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-              <li class="nav-header">Solo administradores</li>
-              <li class="nav-item menu menu-open">
-                <a href="#" class="nav-link active">
-                  <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-                  <p>Funciones</p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    <a href="usuarios.php" class="nav-link">
-                      <i class="fas fa-users nav-icon"></i>
-                      <p>Consulta Usuario</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="general.php" class="nav-link">
-                      <i class="fas fa-file-alt nav-icon"></i>
-                      <p>Reporte Proyectos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="control_proyectos.php" class="nav-link">
-                      <i class="fas fa-project-diagram nav-icon"></i>
-                      <p>Control Proyectos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="panel.php" class="nav-link active">
-                      <i class="nav-icon fas fa-users-cog"></i>
-                      <p>Panel de Control</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="control_eventos.php" class="nav-link">
-                      <i class="fas fa-calendar-check nav-icon"></i>
-                      <p>Control Eventos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="estadistica.php" class="nav-link">
-                      <i class="fas fa-chart-line nav-icon"></i>
-                      <p>Analitics</p>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </nav>
-               <!-- /.sidebar-menu -->
-      </div>
-    </aside>
+            <?php include_once "../includes/sidebar.php"; ?>
     <!-- Content Wrapper -->
     <div class="content-wrapper">
       <section class="content" style="min-height: 400px;">
@@ -189,14 +73,14 @@ include('../componentes/db.php');
                         $alert_type = $_GET['alert'];
                         if ($alert_type == 1) {
                           echo "<div class='alert alert-warning alert-dismissible fade show' role='alert'>
-                                  <strong>Advertencia:</strong> El usuario ingresado ya existe, inicie sesión o registre otro.
+                                  <strong>Advertencia:</strong> El usuario ingresado ya existe, inicie sesiÃ³n o registre otro.
                                   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
                                     <span aria-hidden='true'>&times;</span>
                                   </button>
                                 </div>";
                         } elseif ($alert_type == 2) {
                           echo "<div class='alert alert-success alert-dismissible fade show' role='alert'>
-                                  <strong>Éxito:</strong> Registro exitoso, haz clic para <a href='/sistema_web/login.php'>Iniciar sesión</a>.
+                                  <strong>Ã‰xito:</strong> Registro exitoso, haz clic para <a href='/sistema_web/login.php'>Iniciar sesiÃ³n</a>.
                                   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
                                     <span aria-hidden='true'>&times;</span>
                                   </button>
@@ -210,7 +94,7 @@ include('../componentes/db.php');
                                 </div>";
                         } elseif ($alert_type == 4) {
                           echo "<div class='alert alert-info alert-dismissible fade show' role='alert'>
-                                  <strong>Información:</strong> Las contraseñas ingresadas no coinciden.
+                                  <strong>InformaciÃ³n:</strong> Las contraseÃ±as ingresadas no coinciden.
                                   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
                                     <span aria-hidden='true'>&times;</span>
                                   </button>
@@ -232,7 +116,7 @@ include('../componentes/db.php');
                   </div>
                   <div class="card-footer">
                     <div class="text-right text-muted small">
-                      Luigi Villanueva - área Informática - DIRSU
+                      Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
                     </div>
                   </div>
                 </div>
@@ -264,7 +148,7 @@ include('../componentes/db.php');
                 </div>
                 <div class="card-footer">
                   <div class="text-right text-muted small">
-                    Luigi Villanueva - área Informática - DIRSU
+                    Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
                   </div>
                 </div>
               </div>
@@ -298,7 +182,7 @@ include('../componentes/db.php');
                 </div>
                 <div class="card-footer">
                   <div class="text-right text-muted small">
-                    Luigi Villanueva - área Informática - DIRSU
+                    Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
                   </div>
                 </div>
               </div>
@@ -310,9 +194,9 @@ include('../componentes/db.php');
     </div>
     <!-- Footer -->
     <footer class="main-footer">
-      <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+      <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
       <div class="float-right d-none d-sm-inline-block">
-        <p>Desarrollado por el <a href="#">Área informática - DIRSU</a></p>
+        <p>Desarrollado por el <a href="#">Ãrea informÃ¡tica - DIRSU</a></p>
       </div>
     </footer>
   </div>
@@ -340,3 +224,4 @@ include('../componentes/db.php');
   <script src="../dust/js/pages/dashboard.js"></script>
 </body>
 </html>
+
