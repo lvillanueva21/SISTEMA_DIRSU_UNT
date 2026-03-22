@@ -91,6 +91,13 @@ $sidebar_current_file = basename(isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SEL
 $sidebar_brand = isset($sidebar_config['brand']) ? $sidebar_config['brand'] : array();
 $sidebar_items = isset($sidebar_config['items']) ? $sidebar_config['items'] : array();
 $sidebar_avatar = isset($sidebar_config['avatar']) ? $sidebar_config['avatar'] : '../dust/img/avatar.png';
+$sidebar_user_href = isset($sidebar_config['user_home']) ? (string)$sidebar_config['user_home'] : 'inicio.php';
+
+if (isset($sidebar_config['user_home_by_page']) && is_array($sidebar_config['user_home_by_page'])) {
+    if (isset($sidebar_config['user_home_by_page'][$sidebar_current_file])) {
+        $sidebar_user_href = (string)$sidebar_config['user_home_by_page'][$sidebar_current_file];
+    }
+}
 
 $sidebar_nombres = isset($nombres) ? $nombres : (isset($_SESSION['nombres']) ? $_SESSION['nombres'] : '');
 $sidebar_apellidos = isset($apellidos) ? $apellidos : (isset($_SESSION['apellidos']) ? $_SESSION['apellidos'] : '');
@@ -111,7 +118,7 @@ $sidebar_user_text = rsu_sidebar_display_name($sidebar_nombres, $sidebar_apellid
         <img src="<?php echo rsu_sidebar_escape($sidebar_avatar); ?>" class="img-circle elevation-2" alt="User Image">
       </div>
       <div class="info">
-        <a href="inicio.php" class="d-block"><?php echo rsu_sidebar_escape($sidebar_user_text); ?></a>
+        <a href="<?php echo rsu_sidebar_escape($sidebar_user_href); ?>" class="d-block"><?php echo rsu_sidebar_escape($sidebar_user_text); ?></a>
       </div>
     </div>
 
