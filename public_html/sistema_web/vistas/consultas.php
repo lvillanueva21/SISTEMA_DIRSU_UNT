@@ -34,7 +34,7 @@ function downloadDatabaseBackup($conexion, $databaseName, $backupType = 'full') 
   echo "SET time_zone = \"+00:00\";\n";
   echo "SET FOREIGN_KEY_CHECKS=0;\n\n";
 
-  $resultTables = mysqli_query($conexion, "SHOW TABLES");
+  $resultTables = mysqli_query($conexion, "SHOW FULL TABLES");
   if (!$resultTables) {
     echo "-- Error al obtener tablas: " . mysqli_error($conexion) . "\n";
     echo "SET FOREIGN_KEY_CHECKS=1;\nCOMMIT;\n";
@@ -43,25 +43,55 @@ function downloadDatabaseBackup($conexion, $databaseName, $backupType = 'full') 
 
   $tables = [];
   while ($row = mysqli_fetch_row($resultTables)) {
-    $tables[] = $row[0];
+    $tables[] = [
+      'name' => $row[0],
+      'type' => strtoupper((string)($row[1] ?? 'BASE TABLE')),
+    ];
   }
 
-  foreach ($tables as $table) {
+  foreach ($tables as $tableItem) {
+    $table = $tableItem['name'];
+    $isView = ($tableItem['type'] === 'VIEW');
+
     if ($backupType === 'structure' || $backupType === 'full') {
-      $resultCreate = mysqli_query($conexion, "SHOW CREATE TABLE `$table`");
-      if ($resultCreate && $rowCreate = mysqli_fetch_assoc($resultCreate)) {
-        $createStatement = $rowCreate['Create Table'];
-        echo "-- --------------------------------------------------------\n";
-        echo "-- Estructura de tabla `$table`\n";
-        echo "-- --------------------------------------------------------\n";
-        echo "DROP TABLE IF EXISTS `$table`;\n";
-        echo $createStatement . ";\n\n";
+      if ($isView) {
+        $resultCreate = mysqli_query($conexion, "SHOW CREATE VIEW `$table`");
+        if ($resultCreate && $rowCreate = mysqli_fetch_assoc($resultCreate)) {
+          $createStatement = isset($rowCreate['Create View']) ? (string)$rowCreate['Create View'] : '';
+          // Eliminar DEFINER mejora portabilidad entre servidores.
+          $createStatement = preg_replace('/DEFINER=`[^`]+`@`[^`]+`\s*/i', '', $createStatement);
+
+          echo "-- --------------------------------------------------------\n";
+          echo "-- Estructura de vista `$table`\n";
+          echo "-- --------------------------------------------------------\n";
+          echo "DROP VIEW IF EXISTS `$table`;\n";
+          echo "DROP TABLE IF EXISTS `$table`;\n";
+          echo $createStatement . ";\n\n";
+        } else {
+          echo "-- Error al obtener CREATE VIEW de `$table`: " . mysqli_error($conexion) . "\n\n";
+        }
       } else {
-        echo "-- Error al obtener CREATE TABLE de `$table`: " . mysqli_error($conexion) . "\n\n";
+        $resultCreate = mysqli_query($conexion, "SHOW CREATE TABLE `$table`");
+        if ($resultCreate && $rowCreate = mysqli_fetch_assoc($resultCreate)) {
+          $createStatement = $rowCreate['Create Table'];
+          echo "-- --------------------------------------------------------\n";
+          echo "-- Estructura de tabla `$table`\n";
+          echo "-- --------------------------------------------------------\n";
+          echo "DROP VIEW IF EXISTS `$table`;\n";
+          echo "DROP TABLE IF EXISTS `$table`;\n";
+          echo $createStatement . ";\n\n";
+        } else {
+          echo "-- Error al obtener CREATE TABLE de `$table`: " . mysqli_error($conexion) . "\n\n";
+        }
       }
     }
 
     if ($backupType === 'data' || $backupType === 'full') {
+      if ($isView) {
+        echo "-- Vista `$table` omitida en seccion de datos para compatibilidad.\n\n";
+        continue;
+      }
+
       $resultData = mysqli_query($conexion, "SELECT * FROM `$table`");
       if ($resultData && mysqli_num_rows($resultData) > 0) {
         echo "-- Datos de tabla `$table`\n";
@@ -96,6 +126,27 @@ function fetchSingleValue($conexion, $sql, $defaultValue = 'N/A') {
   $row = mysqli_fetch_row($result);
   mysqli_free_result($result);
   return isset($row[0]) ? (string)$row[0] : $defaultValue;
+}
+
+function fetchRegexLikeCapability($conexion) {
+  $version = fetchSingleValue($conexion, "SELECT VERSION()", '');
+  if ($version !== '' && stripos($version, 'mariadb') !== false) {
+    return 'No';
+  }
+
+  $result = mysqli_query($conexion, "SELECT REGEXP_LIKE('123', '^[0-9]+$') AS supports_regex_like");
+  if (!$result) {
+    return 'No disponible';
+  }
+
+  $row = mysqli_fetch_assoc($result);
+  mysqli_free_result($result);
+
+  if (!isset($row['supports_regex_like'])) {
+    return 'No disponible';
+  }
+
+  return ((string)$row['supports_regex_like'] === '1') ? 'Si' : 'No';
 }
 
 function fetchVariableValue($conexion, $variableName, $defaultValue = 'N/A') {
@@ -317,7 +368,7 @@ $diagnosticCounts = [
     return $engine . " (" . $count . ")";
   }, array_keys($engineCounts), array_values($engineCounts))),
   'Funciones regex DB' => "REGEXP: " . fetchSingleValue($conexion, "SELECT 'abc123' REGEXP '[0-9]'", 'N/A')
-    . " | REGEXP_LIKE: " . fetchSingleValue($conexion, "SELECT REGEXP_LIKE('123', '^[0-9]+$')", 'No disponible'),
+    . " | REGEXP_LIKE: " . fetchRegexLikeCapability($conexion),
 ];
 
 if ($diagnosticCounts['Tipos de engine detectados'] === '') {

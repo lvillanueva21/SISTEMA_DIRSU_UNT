@@ -559,14 +559,16 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     if ($contenedor) $contenedor.html('<p class="text-center text-muted my-4">Cargando informe...</p>');
 
     if (window.jQuery) {
-      jQuery.get('/sistema_web/evaluacion/ver_informe.php', { id: idpy }, function (html) {
+      jQuery.get('../evaluacion/ver_informe.php', { id: idpy }, function (html) {
         jQuery('#contenidoInforme').html(html);
-      }, 'html');
+      }, 'html').fail(function () {
+        jQuery('#contenidoInforme').html('<div class="text-danger p-3">No se pudo cargar el informe.</div>');
+      });
       jQuery('#modalInforme').modal('show');
       return;
     }
 
-    fetch('/sistema_web/evaluacion/ver_informe.php?id=' + encodeURIComponent(idpy))
+    fetch('../evaluacion/ver_informe.php?id=' + encodeURIComponent(idpy))
       .then((r) => r.text())
       .then((html) => { document.getElementById('contenidoInforme').innerHTML = html; })
       .catch(() => { document.getElementById('contenidoInforme').innerHTML = '<div class="text-danger p-3">Error cargando informe.</div>'; });
@@ -618,7 +620,7 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     if ($t) $t.innerHTML = '<i class="fas fa-info-circle"></i> ' + titulo;
     if ($c) $c.innerHTML = '<p class="text-center text-muted my-4">Cargando…</p>';
 
-    const url = '/sistema_web/evaluacion/modales/evaluacion_msg.php?accion='
+    const url = '../evaluacion/modales/evaluacion_msg.php?accion='
               + encodeURIComponent(accion) + '&id=' + encodeURIComponent(idpy);
 
     // jQuery si existe, si no fetch nativo
@@ -665,7 +667,7 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     const $contenedor = window.jQuery ? jQuery('#contenidoDetObs') : null;
     if ($contenedor) $contenedor.html('<p class="text-center text-muted my-4">Cargando…</p>');
 
-    const url = '/sistema_web/evaluacion/modales/detalle_observacion.php?id_py='
+    const url = '../evaluacion/modales/detalle_observacion.php?id_py='
               + encodeURIComponent(idpy) + '&tipo=' + encodeURIComponent(tipo);
 
     if (window.jQuery) {
