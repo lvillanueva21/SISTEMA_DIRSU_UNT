@@ -3,12 +3,6 @@
 // Este archivo es incluido dentro de .../direccion_rsu/inicio.php
 if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 
-$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
-$appBasePath = rtrim(dirname($scriptName), '/');
-if ($appBasePath === '' || $appBasePath === '.') {
-  $appBasePath = '/sistema_web';
-}
-
 $idRol   = isset($_SESSION['id_rol']) ? (int)$_SESSION['id_rol'] : null;
 $usuario = $_SESSION['usuario'] ?? '';
 $rolNombre = '—';
@@ -376,7 +370,7 @@ function fecha_bonita($dt) {
             <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#registroContactoModal">
               <i class="fas fa-edit"></i> Editar mis datos
             </button>
-            <a class="btn btn-outline-secondary btn-sm" href="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/componentes/sesion/cerrarSesion.php">
+            <a class="btn btn-outline-secondary btn-sm" href="../componentes/sesion/cerrarSesion.php">
               <i class="fas fa-sign-out-alt"></i> Salir y cerrar sesión
             </a>
           </div>
@@ -404,7 +398,7 @@ function fecha_bonita($dt) {
     <div class="modal-header" style="background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff;">
       <h6 class="modal-title mb-0"><i class="fas fa-address-card mr-1"></i> Registrar información de contacto</h6>
     </div>
-    <form id="formContacto" method="post" action="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/inicio/guardar_contacto.php" novalidate>
+    <form id="formContacto" method="post" action="../inicio/guardar_contacto.php" novalidate>
       <div class="modal-body">
         <div class="alert alert-info mb-3">
           <b>Obligatorio:</b> Registra <b>Nombres</b>, <b>Apellidos</b>, <b>Correo institucional</b> y <b>Teléfono</b>.
@@ -412,7 +406,7 @@ function fecha_bonita($dt) {
           Nota: <b>Nombres</b> y <b>Apellidos</b> se guardarán en <u>MAYÚSCULA</u>.
         </div>
 
-        <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? ($appBasePath . '/direccion_rsu/inicio.php')) ?>">
+        <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '../direccion_rsu/inicio.php') ?>">
 
         <div class="form-grid">
           <div class="form-col">
@@ -475,7 +469,7 @@ function fecha_bonita($dt) {
       </div>
 
       <div class="modal-footer d-flex justify-content-between">
-        <a href="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/componentes/sesion/cerrarSesion.php" class="btn btn-outline-secondary btn-sm">
+        <a href="../componentes/sesion/cerrarSesion.php" class="btn btn-outline-secondary btn-sm">
           <i class="fas fa-sign-out-alt"></i> Salir y cerrar sesión
         </a>
         <button type="submit" class="btn btn-primary btn-sm">
@@ -511,7 +505,7 @@ function fecha_bonita($dt) {
       </div>
     </div>
     <div class="modal-footer d-flex justify-content-between">
-      <a href="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/componentes/sesion/cerrarSesion.php" class="btn btn-outline-secondary btn-sm">
+      <a href="../componentes/sesion/cerrarSesion.php" class="btn btn-outline-secondary btn-sm">
         <i class="fas fa-sign-out-alt"></i> Salir y cerrar sesión
       </a>
       <div>
@@ -532,9 +526,9 @@ function fecha_bonita($dt) {
     <div class="modal-header" style="background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff;">
       <h6 class="modal-title mb-0"><i class="fas fa-address-card mr-1"></i> Editar información de contacto</h6>
     </div>
-    <form id="formContacto" method="post" action="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/inicio/guardar_contacto.php" novalidate>
+    <form id="formContacto" method="post" action="../inicio/guardar_contacto.php" novalidate>
       <div class="modal-body">
-        <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? ($appBasePath . '/direccion_rsu/inicio.php')) ?>">
+        <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '../direccion_rsu/inicio.php') ?>">
         <div class="form-grid">
           <div class="form-col">
             <div class="form-group mb-2">
@@ -595,7 +589,7 @@ function fecha_bonita($dt) {
         </div>
       </div>
       <div class="modal-footer d-flex justify-content-between">
-        <a href="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/componentes/sesion/cerrarSesion.php" class="btn btn-outline-secondary btn-sm">
+        <a href="../componentes/sesion/cerrarSesion.php" class="btn btn-outline-secondary btn-sm">
           <i class="fas fa-sign-out-alt"></i> Salir y cerrar sesión
         </a>
         <button type="submit" class="btn btn-primary btn-sm">
@@ -619,13 +613,13 @@ $soyAdminDirsu = (int)($idRol ?? -1) === 1;
         <strong><i class="fas fa-route"></i> Ruta de evaluación del informe semestral</strong>
         <div class="btn-group">
           <a class="btn btn-sm btn-light"
-             href="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/imagenes/temporal/ruta_informe_semestral2025.jpg"
+             href="../imagenes/temporal/ruta_informe_semestral2025.jpg"
              download="ruta_informe_semestral2025.jpg"
              title="Descargar imagen" aria-label="Descargar imagen">
             <i class="fas fa-download"></i>
           </a>
           <button type="button" class="btn btn-sm btn-light open-image"
-                  data-src="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/imagenes/temporal/ruta_informe_semestral2025.jpg"
+                  data-src="../imagenes/temporal/ruta_informe_semestral2025.jpg"
                   title="Expandir imagen" aria-label="Expandir imagen">
             <i class="fas fa-expand-arrows-alt"></i>
           </button>
@@ -644,13 +638,13 @@ $soyAdminDirsu = (int)($idRol ?? -1) === 1;
         <strong><i class="fas fa-bullhorn"></i> Comunicado por el Vencimiento del Plazo de Informe Semestrales</strong>
         <div class="btn-group">
           <a class="btn btn-sm btn-light"
-             href="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/imagenes/temporal/comunicado_vencimiento.jpeg"
+             href="../imagenes/temporal/comunicado_vencimiento.jpeg"
              download="comunicado_vencimiento.jpeg"
              title="Descargar imagen" aria-label="Descargar imagen">
             <i class="fas fa-download"></i>
           </a>
           <button type="button" class="btn btn-sm btn-light open-image"
-                  data-src="<?= htmlspecialchars($appBasePath, ENT_QUOTES, 'UTF-8') ?>/imagenes/temporal/comunicado_vencimiento.jpeg"
+                  data-src="../imagenes/temporal/comunicado_vencimiento.jpeg"
                   title="Expandir imagen" aria-label="Expandir imagen">
             <i class="fas fa-expand-arrows-alt"></i>
           </button>
