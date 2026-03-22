@@ -1,8 +1,8 @@
-<?php
-  // Incluir configSesion.php para verificar la sesión
+﻿<?php
+  // Incluir configSesion.php para verificar la sesiÃ³n
   include "../componentes/configSesion.php";
   
-  // Incluir la conexión a la base de datos
+  // Incluir la conexiÃ³n a la base de datos
   include('../componentes/db.php');
   ?>
 <!DOCTYPE html>
@@ -36,7 +36,7 @@
   </head>
   <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
-      <!-- Preloader --><!-- Icono que se muestra mientras está cargando el sistema -->
+      <!-- Preloader --><!-- Icono que se muestra mientras estÃ¡ cargando el sistema -->
       <div class="preloader flex-column justify-content-center align-items-center">
         <img class="animation__shake" src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTELogo" height="60" width="60">
       </div>
@@ -58,155 +58,17 @@
           <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
             <a href="https://rsu.unitru.edu.pe/" class="nav-link" target="_blank">
               <p style="color: white;
-                size: 8px">Ir a página DIRSU</p>
+                size: 8px">Ir a pÃ¡gina DIRSU</p>
             </a>
           </li>
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
+            <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
           </li>
         </ul>
       </nav>
       <!-- /.navbar -->
       <!-- Main Sidebar Container --><!-- Contenedor de barra lateral principal -->
-      <aside class="main-sidebar sidebar-dark-primary elevation-4">
-        <!-- Brand Logo -->
-        <a href="inicio.php" class="brand-link">
-        <img src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-        <span class="brand-text font-weight-light">Sistema DIRSU</span>
-        </a>
-        <!-- Sidebar -->
-        <div class="sidebar">
-          <!-- Sidebar user panel (optional) -->
-          <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-            <div class="image">
-              <img src="../dust/img/avatar.png" class="img-circle elevation-2" alt="User Image">
-            </div>
-            <?php
-              // Suponiendo que $apellidos es una cadena con los apellidos separados por espacios
-              $primer_apellido = explode(' ', htmlspecialchars($apellidos))[0]; // Obtener el primer apellido
-              
-              if (mb_strlen($nombres) > 22) {
-                  // Si $nombres tiene más de 22 caracteres, solo se imprime $nombres
-                  $texto_a_imprimir = htmlspecialchars($nombres);
-              } elseif (mb_strlen($nombres . ' ' . $primer_apellido) <= 23) {
-                  // Si la combinación de $nombres y el primer apellido tiene 23 caracteres o menos
-                  $texto_a_imprimir = htmlspecialchars($nombres . ' ' . $primer_apellido);
-              } else {
-                  // Si ninguna de las condiciones anteriores se cumple, imprimir 23 caracteres de $nombres
-                  $texto_a_imprimir = htmlspecialchars(mb_substr($nombres, 0, 23));
-              }
-              ?>
-            <div class="info">
-              <a href="inicio.php" class="d-block"><?php echo $texto_a_imprimir; ?></a>
-            </div>
-          </div>
-          <!-- SidebarSearch Form -->
-          <div class="form-inline">
-          </div>
-          <!-- Sidebar Menu -->
-          <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-              <!-- Add icons to the links using the .nav-icon class
-                with font-awesome or any other icon font library -->
-              <li class="nav-item">
-                <a href="inicio.php" class="nav-link active">
-                  <i class="nav-icon fas fa-home"></i>
-                  <p>
-                    INICIO
-                    <!-- <span class="right badge badge-danger">2</span> -->
-                  </p>
-                </a>
-              </li>
-              <!-- <li class="nav-item">
-                <a href="progreso_proyectos.php" class="nav-link">
-                   <i class="fa fa-chart-line nav-icon"></i>
-                   <p>Progreso de Proyectos</p>
-                </a>
-                </li> -->
-              <li class="nav-header">Evaluación de Proyectos</li>
-              <li class="nav-item">
-                <a href="evaluacion.php" class="nav-link">
-                  <i class="fa fa-calendar nav-icon"></i>
-                  <p>Informe Semestral 2025-I</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="codigos.php" class="nav-link">
-                  <i class="fa fa-at nav-icon"></i>
-                  <p>Códigos de proyectos</p>
-                </a>
-              </li>
-              <li class="nav-item menu">
-                <a href="#" class="nav-link">
-                  <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-                  <p>Evaluaciones anteriores</p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    <a href="cotejo.php" class="nav-link">
-                      <i class="fa fa-clipboard-list nav-icon"></i>
-                      <p>Lista de Cotejo (2024)</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="rubrica.php" class="nav-link">
-                      <i class="fa fa-table nav-icon"></i>
-                      <p>Rúbrica (2024)</p>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-              <li class="nav-header">Solo administradores</li>
-              <li class="nav-item menu">
-                <a href="#" class="nav-link">
-                  <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-                  <p>Funciones</p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    <a href="usuarios.php" class="nav-link">
-                      <i class="fas fa-users nav-icon"></i>
-                      <p>Consulta Usuario</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="general.php" class="nav-link">
-                      <i class="fas fa-file-alt nav-icon"></i>
-                      <p>Reporte Proyectos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="control_proyectos.php" class="nav-link">
-                      <i class="fas fa-project-diagram nav-icon"></i>
-                      <p>Control Proyectos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="panel.php" class="nav-link">
-                      <i class="nav-icon fas fa-users-cog"></i>
-                      <p>Panel de Control</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="control_eventos.php" class="nav-link">
-                      <i class="fas fa-calendar-check nav-icon"></i>
-                      <p>Control Eventos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="estadistica.php" class="nav-link">
-                      <i class="fas fa-chart-line nav-icon"></i>
-                      <p>Analitics</p>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </nav>
-          <!-- /.sidebar-menu -->
-        </div>
-        <!-- /.sidebar -->
-      </aside>
+              <?php include_once "../includes/sidebar.php"; ?>
       <!-- Content Wrapper. Contains page content -->
       <div class="content-wrapper">
         <!-- Main content -->
@@ -219,9 +81,9 @@
       </div>
       <!-- /.content-wrapper -->
       <footer class="main-footer">
-        <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+        <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
         <div class="float-right d-none d-sm-inline-block">
-          <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
+          <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
         </div>
       </footer>
       <!-- Control Sidebar -->

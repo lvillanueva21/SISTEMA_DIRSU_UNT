@@ -1,10 +1,10 @@
-<?php
+﻿<?php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-// Incluir configSesion.php para verificar la sesión
+// Incluir configSesion.php para verificar la sesiÃ³n
 include "../componentes/configSesion.php";
-// Incluir la conexión a la base de datos
+// Incluir la conexiÃ³n a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -41,152 +41,36 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a página DIRSU</p>
+                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
                 </li>
             </ul>
         </nav>
         <!-- Sidebar -->
-        <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <a href="inicio.php" class="brand-link">
-                <img src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">Sistema DIRSU</span>
-            </a>
-            <div class="sidebar">
-                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                    <div class="image">
-                        <img src="../dust/img/avatar.png" class="img-circle elevation-2" alt="User Image">
-                    </div>
-                    <div class="info">
-                        <a href="inicio.php" class="d-block"><?php echo htmlspecialchars($nombres) . " " . htmlspecialchars($apellidos); ?></a>
-                    </div>
-                </div>
-          <!-- Sidebar Menu -->
-          <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-              <!-- Add icons to the links using the .nav-icon class
-                with font-awesome or any other icon font library -->
-              <li class="nav-item">
-                <a href="inicio.php" class="nav-link">
-                  <i class="nav-icon fas fa-home"></i>
-                  <p>
-                    INICIO
-                    <!-- <span class="right badge badge-danger">2</span> -->
-                  </p>
-                </a>
-              </li>
-              <!-- <li class="nav-item">
-                <a href="progreso_proyectos.php" class="nav-link">
-                   <i class="fa fa-chart-line nav-icon"></i>
-                   <p>Progreso de Proyectos</p>
-                </a>
-                </li> -->
-              <li class="nav-header">Evaluación de Proyectos</li>
-              <li class="nav-item">
-                <a href="evaluacion.php" class="nav-link">
-                  <i class="fa fa-calendar nav-icon"></i>
-                  <p>Informe Semestral 2025-I</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="codigos.php" class="nav-link">
-                  <i class="fa fa-at nav-icon"></i>
-                  <p>Códigos de proyectos</p>
-                </a>
-              </li>
-              <li class="nav-item menu">
-                <a href="#" class="nav-link">
-                  <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-                  <p>Evaluaciones anteriores</p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    <a href="cotejo.php" class="nav-link">
-                      <i class="fa fa-clipboard-list nav-icon"></i>
-                      <p>Lista de Cotejo (2024)</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="rubrica.php" class="nav-link">
-                      <i class="fa fa-table nav-icon"></i>
-                      <p>Rúbrica (2024)</p>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-              <li class="nav-header">Solo administradores</li>
-              <li class="nav-item menu menu-open">
-                <a href="#" class="nav-link active">
-                  <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-                  <p>Funciones</p>
-                </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    <a href="usuarios.php" class="nav-link">
-                      <i class="fas fa-users nav-icon"></i>
-                      <p>Consulta Usuario</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="general.php" class="nav-link">
-                      <i class="fas fa-file-alt nav-icon"></i>
-                      <p>Reporte Proyectos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="control_proyectos.php" class="nav-link active">
-                      <i class="fas fa-project-diagram nav-icon"></i>
-                      <p>Control Proyectos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="panel.php" class="nav-link">
-                      <i class="nav-icon fas fa-users-cog"></i>
-                      <p>Panel de Control</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="control_eventos.php" class="nav-link">
-                      <i class="fas fa-calendar-check nav-icon"></i>
-                      <p>Control Eventos</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="estadistica.php" class="nav-link">
-                      <i class="fas fa-chart-line nav-icon"></i>
-                      <p>Analitics</p>
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-          </nav>
-               <!-- /.sidebar-menu -->
-            </div>
-        </aside>
+                <?php include_once "../includes/sidebar.php"; ?>
         <div class="content-wrapper">
 <section class="content p-3">
-<!--  … archivo control_proyectos.php  -->
+<!--  â€¦ archivo control_proyectos.php  -->
 <div class="col-lg-12 mb-4">
   <?php include "funciones/controlador_proyectos.php"; ?>
 </div>
-<!--  … tarjeta “Administración de formularios”  -->
+<!--  â€¦ tarjeta â€œAdministraciÃ³n de formulariosâ€  -->
 <div class="col-lg-12 mb-4">
   <?php include "funciones/card_crear_formulario.php"; ?>
 </div>
-<!--  ⬇️  NUEVA tarjeta – Ítems del formulario  -->
+<!--  â¬‡ï¸  NUEVA tarjeta â€“ Ãtems del formulario  -->
 <div class="col-lg-12 mb-4">
   <?php include "funciones/card_items.php"; ?>
 </div>
 </section>
         </div>
         <footer class="main-footer">
-            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
             </div>
         </footer>
     </div>
@@ -217,3 +101,4 @@ include('../componentes/db.php');
       <script src="../dust/js/pages/dashboard.js"></script>
 </body>
 </html>
+

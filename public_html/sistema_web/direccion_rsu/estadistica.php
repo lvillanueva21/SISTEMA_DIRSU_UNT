@@ -1,8 +1,8 @@
-<?php
-// Incluir configSesion.php para verificar la sesión
+﻿<?php
+// Incluir configSesion.php para verificar la sesiÃ³n
 include "../componentes/configSesion.php";
 
-// Incluir la conexión a la base de datos
+// Incluir la conexiÃ³n a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -39,73 +39,23 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a página DIRSU</p>
+                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
                 </li>
             </ul>
         </nav>
         <!-- Sidebar -->
-        <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <a href="inicio.php" class="brand-link">
-                <img src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">Sistema DIRSU</span>
-            </a>
-            <div class="sidebar">
-                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                    <div class="image">
-                        <img src="../dust/img/avatar.png" class="img-circle elevation-2" alt="User Image">
-                    </div>
-                    <div class="info">
-                        <a href="inicio.php" class="d-block"><?php echo htmlspecialchars($nombres) . " " . htmlspecialchars($apellidos); ?></a>
-                    </div>
-                </div>
-                <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        <li class="nav-item">
-                            <a href="inicio.php" class="nav-link">
-                                <i class="nav-icon fas fa-home"></i>
-                                <p>INICIO</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="panel.php" class="nav-link">
-                                <i class="nav-icon fas fa-users-cog"></i>
-                                <p>PANEL DE CONTROL</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="progreso_proyectos.php" class="nav-link">
-                                <i class="fa fa-chart-line nav-icon"></i>
-                                <p>Progreso de Proyectos</p>
-                            </a>
-                        </li>
-                        <li class="nav-header">Evaluación de Proyectos</li>
-                        <li class="nav-item">
-                            <a href="cotejo.php" class="nav-link active">
-                                <i class="fa fa-clipboard-list nav-icon"></i>
-                                <p>Por Lista de Cotejo</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="rubrica.php" class="nav-link">
-                                <i class="fa fa-table nav-icon"></i>
-                                <p>Por Rúbrica</p>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </aside>
+                <?php include_once "../includes/sidebar.php"; ?>
         <div class="content-wrapper">
             <section class="content p-3">
-                <!-- =============== CARD ANALÍTICA DIRSU =============== -->
+                <!-- =============== CARD ANALÃTICA DIRSU =============== -->
 <div class="card shadow-sm">
   <div class="card-header bg-primary text-white">
     <h5 class="card-title mb-0">
-      <i class="fas fa-chart-pie"></i> Analítica por Facultad
+      <i class="fas fa-chart-pie"></i> AnalÃ­tica por Facultad
     </h5>
   </div>
 
@@ -114,7 +64,7 @@ include('../componentes/db.php');
     <ul class="nav nav-tabs" id="tabsAnalitica" role="tablist">
       <li class="nav-item">
         <a class="nav-link active" id="tab-periodo" data-toggle="tab" href="#contenido-periodo" role="tab">
-          Período
+          PerÃ­odo
         </a>
       </li>
       <li class="nav-item">
@@ -137,35 +87,35 @@ include('../componentes/db.php');
     <!-- TAB-PANES -->
     <div class="tab-content pt-3">
 
-      <!-- 🔹 TAB 1 : PERÍODO -->
+      <!-- ðŸ”¹ TAB 1 : PERÃODO -->
       <div class="tab-pane fade show active" id="contenido-periodo" role="tabpanel">
         <?php include 'charts/data_periodo.php'; ?>
       </div>
 
-      <!-- 🔹 TAB 2 : ESTADO -->
+      <!-- ðŸ”¹ TAB 2 : ESTADO -->
       <div class="tab-pane fade" id="contenido-estado" role="tabpanel">
         <?php include 'charts/data_estado.php'; ?>
       </div>
 
-      <!-- 🔹 TAB 3 : OFICINA -->
+      <!-- ðŸ”¹ TAB 3 : OFICINA -->
       <div class="tab-pane fade" id="contenido-oficina" role="tabpanel">
         <?php include 'charts/data_oficina.php'; ?>
       </div>
 
-      <!-- 🔹 TAB 4 : AVANCE (vacío de momento) -->
+      <!-- ðŸ”¹ TAB 4 : AVANCE (vacÃ­o de momento) -->
 <div class="tab-pane fade" id="contenido-avance" role="tabpanel">
   <?php include 'charts/data_avance.php'; ?>
 </div>
     </div>
   </div>
 </div>
-<!-- =========== /CARD ANALÍTICA =========== -->
+<!-- =========== /CARD ANALÃTICA =========== -->
             </section>
         </div>
         <footer class="main-footer">
-            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
             </div>
         </footer>
     </div>
@@ -197,3 +147,4 @@ include('../componentes/db.php');
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </body>
 </html>
+

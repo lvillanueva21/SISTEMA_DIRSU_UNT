@@ -1,11 +1,11 @@
-
+﻿
 <?php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-// Incluir configSesion.php para verificar la sesión
+// Incluir configSesion.php para verificar la sesiÃ³n
 include "../componentes/configSesion.php";
-// Incluir la conexión a la base de datos
+// Incluir la conexiÃ³n a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -42,116 +42,20 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a página DIRSU</p>
+                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
                 </li>
             </ul>
         </nav>
         <!-- Sidebar -->
-        <aside class="main-sidebar sidebar-dark-primary elevation-4">
-            <a href="inicio.php" class="brand-link">
-                <img src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-                <span class="brand-text font-weight-light">Sistema DIRSU</span>
-            </a>
-            <div class="sidebar">
-                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-                    <div class="image">
-                        <img src="../dust/img/avatar.png" class="img-circle elevation-2" alt="User Image">
-                    </div>
-                    <div class="info">
-                        <a href="inicio.php" class="d-block"><?php echo htmlspecialchars($nombres) . " " . htmlspecialchars($apellidos); ?></a>
-                    </div>
-                </div>
-               <!-- Sidebar Menu -->
-               <nav class="mt-2">
-                  <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                     <!-- Add icons to the links using the .nav-icon class
-                        with font-awesome or any other icon font library -->
-                     <li class="nav-item">
-                        <a href="inicio.php" class="nav-link">
-                           <i class="nav-icon fas fa-home"></i>
-                           <p>
-                              INICIO
-                              <!-- <span class="right badge badge-danger">2</span> -->
-                           </p>
-                        </a>
-                     </li>
-                     <li class="nav-item">
-                            <a href="panel.php" class="nav-link">
-                                <i class="nav-icon fas fa-users-cog"></i>
-                                <p>PANEL DE CONTROL</p>
-                            </a>
-                        </li>
-                     <li class="nav-item">
-                        <a href="progreso_proyectos.php" class="nav-link">
-                           <i class="fa fa-chart-line nav-icon"></i>
-                           <p>Progreso de Proyectos</p>
-                        </a>
-                     </li>
-                     <li class="nav-header">Evaluación de Proyectos</li>
-                     <li class="nav-item">
-                        <a href="cotejo.php" class="nav-link">
-                           <i class="fa fa-clipboard-list nav-icon"></i>
-                           <p>Por Lista de Cotejo</p>
-                        </a>
-                     </li>
-                     <li class="nav-item">
-                        <a href="rubrica.php" class="nav-link">
-                           <i class="fa fa-table nav-icon"></i>
-                           <p>Por Rúbrica</p>
-                        </a>
-                     </li>
-                     <li class="nav-header">Solo administradores</li>
-<li class="nav-item menu menu-open">
-    <a href="#" class="nav-link active">
-        <span class="badge nav-icon"><i class="fas fa-user-cog"></i></span>
-        <p>Funciones</p>
-    </a>
-    <ul class="nav nav-treeview">
-        <li class="nav-item">
-            <a href="usuarios.php" class="nav-link">
-                <i class="fas fa-users nav-icon"></i>
-                <p>Consulta Usuario</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="general.php" class="nav-link">
-                <i class="fas fa-file-alt nav-icon"></i>
-                <p>Reporte Proyectos</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="estadistica.php" class="nav-link">
-                <i class="fas fa-chart-line nav-icon"></i>
-                <p>Analitics</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="control_eventos.php" class="nav-link">
-                <i class="fas fa-calendar-check nav-icon"></i>
-                <p>Control Eventos</p>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="funciones/control_proyectos.php" class="nav-link active">
-                <i class="fas fa-project-diagram nav-icon"></i>
-                <p>Control Proyectos</p>
-            </a>
-        </li>
-    </ul>
-</li>
-                  </ul>
-               </nav>
-               <!-- /.sidebar-menu -->
-            </div>
-        </aside>
+                <?php include_once "../includes/sidebar.php"; ?>
         <div class="content-wrapper">
 <section class="content p-3">
 <?php
-// ==================== PRE-LOGICA (se ejecuta al cargar la sección) ====================
+// ==================== PRE-LOGICA (se ejecuta al cargar la secciÃ³n) ====================
 $alerts = [];
 $errors = [];
 $readyRows = [];
@@ -160,12 +64,12 @@ $deletedRows = 0;
 $estadoFiltro = isset($_GET['f_estado']) ? trim($_GET['f_estado']) : '';
 if (!in_array($estadoFiltro, ['', '0', '1'], true)) $estadoFiltro = '';
 
-// NUEVO: parámetro para tracker de proyecto por id_py
+// NUEVO: parÃ¡metro para tracker de proyecto por id_py
 $trackPy = isset($_GET['track_py']) ? (int)$_GET['track_py'] : 0;
 $tracker = null;
 
 try {
-    // Forzar zona horaria en MySQL (Lima, Perú)
+    // Forzar zona horaria en MySQL (Lima, PerÃº)
     if (isset($conexion) && $conexion instanceof mysqli) {
         @$conexion->query("SET time_zone='-05:00'");
     }
@@ -190,7 +94,7 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $accion = $_POST['accion'] ?? '';
 
-        // Buscar respuestas listas (estado=1) sin evaluación
+        // Buscar respuestas listas (estado=1) sin evaluaciÃ³n
         if ($accion === 'buscar_listos') {
             $sql = "SELECT r.id, r.id_py, r.id_formulario, r.id_semestre, r.creado_at
                     FROM sm_respuestas r
@@ -205,19 +109,19 @@ try {
         // Crear ruta para seleccionados (PCF)
         if ($accion === 'crear_ruta' && isset($_POST['ids']) && is_array($_POST['ids'])) {
             if (!$firstOfficeId) {
-                $errors[] = "No se encontró la primera oficina (revisa eva_oficinas).";
+                $errors[] = "No se encontrÃ³ la primera oficina (revisa eva_oficinas).";
             } else {
                 foreach ($_POST['ids'] as $rid) {
                     $rid = (int)$rid;
                     // Verificar respuesta estado=1
                     $stmt = $conexion->prepare("SELECT id FROM sm_respuestas WHERE id=? AND estado=1");
                     $stmt->bind_param('i', $rid);
-                    if (!$stmt->execute()) { $errors[]="Error verificación sm_respuestas: ".$stmt->error; continue; }
+                    if (!$stmt->execute()) { $errors[]="Error verificaciÃ³n sm_respuestas: ".$stmt->error; continue; }
                     $rchk = $stmt->get_result();
-                    if (!$rchk->num_rows) { $stmt->close(); continue; } // ignorar si no está lista
+                    if (!$rchk->num_rows) { $stmt->close(); continue; } // ignorar si no estÃ¡ lista
                     $stmt->close();
 
-                    // Saltar si ya tiene evaluación
+                    // Saltar si ya tiene evaluaciÃ³n
                     $stmt = $conexion->prepare("SELECT id FROM eva_evaluaciones WHERE id_respuesta=?");
                     $stmt->bind_param('i', $rid);
                     $stmt->execute(); $echk = $stmt->get_result();
@@ -259,7 +163,7 @@ try {
             $stmt = $conexion->prepare("DELETE FROM eva_evaluaciones WHERE id_respuesta=?");
             $stmt->bind_param('i', $rid);
             if (!$stmt->execute()) { $errors[]="Error delete eva_evaluaciones: ".$stmt->error; }
-            else { $deletedRows = $stmt->affected_rows; if ($deletedRows>0) $alerts[]="Eliminadas $deletedRows evaluación(es) (con cascada)."; }
+            else { $deletedRows = $stmt->affected_rows; if ($deletedRows>0) $alerts[]="Eliminadas $deletedRows evaluaciÃ³n(es) (con cascada)."; }
             $stmt->close();
         }
 
@@ -289,7 +193,7 @@ try {
     }
 
     // -------------------- Contadores --------------------
-    $counts = ['eva_evaluaciones'=>'—','eva_oficina_instancias'=>'—','eva_calificaciones'=>'—','eva_rubrica_aspectos'=>'—'];
+    $counts = ['eva_evaluaciones'=>'â€”','eva_oficina_instancias'=>'â€”','eva_calificaciones'=>'â€”','eva_rubrica_aspectos'=>'â€”'];
     foreach ($counts as $t => $v) {
         if ($tableExists($t)) {
             $res = @$conexion->query("SELECT COUNT(*) c FROM $t");
@@ -328,8 +232,8 @@ try {
     if ($trackPy > 0) {
         $tracker = [
             'py_id'        => $trackPy,
-            'titulo'       => '—',
-            'coordinador'  => '—',
+            'titulo'       => 'â€”',
+            'coordinador'  => 'â€”',
             'current_key'  => 'proceso', // 'proceso' | 'PCF' | 'DD' | 'DF' | 'RSU' | 'aprobado'
             'eval_id'      => null,
             'oficina_cod'  => null,
@@ -340,7 +244,7 @@ try {
 
 // Info de proyecto (titulo) y coordinador via usuarios_proyectos
 if ($tableExists('proyectos')) {
-    // Título del proyecto (p2)
+    // TÃ­tulo del proyecto (p2)
     $sqlP = "SELECT p2 AS titulo FROM proyectos WHERE id = ?";
     if ($stmt = $conexion->prepare($sqlP)) {
         $stmt->bind_param('i', $trackPy);
@@ -348,7 +252,7 @@ if ($tableExists('proyectos')) {
             $res = $stmt->get_result();
             if ($res && $res->num_rows) {
                 $row = $res->fetch_assoc();
-                $tracker['titulo'] = $row['titulo'] ?? '—';
+                $tracker['titulo'] = $row['titulo'] ?? 'â€”';
             }
         }
         $stmt->close();
@@ -357,7 +261,7 @@ if ($tableExists('proyectos')) {
 
 // Coordinador: usuarios_proyectos -> usuarios
 if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
-    // Toma primero los activos; si hay varios, el más reciente por fecha_asignacion
+    // Toma primero los activos; si hay varios, el mÃ¡s reciente por fecha_asignacion
     $sqlU = "SELECT u.nombres, u.apellidos
              FROM usuarios_proyectos up
              JOIN usuarios u ON u.id = up.id_usuario
@@ -378,7 +282,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
     }
 }
 
-        // Evaluación más reciente del proyecto
+        // EvaluaciÃ³n mÃ¡s reciente del proyecto
         if ($tableExists('eva_evaluaciones') && $tableExists('sm_respuestas')) {
             $sqlE = "SELECT e.id AS eval_id, e.situacion, e.id_oficina_actual,
                             o.codigo, o.nombre
@@ -431,7 +335,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
         }
     }
 } catch (Throwable $th) {
-    $errors[] = "Excepción: ".$th->getMessage();
+    $errors[] = "ExcepciÃ³n: ".$th->getMessage();
 }
 ?>
 
@@ -472,7 +376,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
 }
 .chip{
   padding: 4px 8px;                     /* antes 6px 10px */
-  font-size: 12px;                      /* más pequeño */
+  font-size: 12px;                      /* mÃ¡s pequeÃ±o */
   border-radius: 5px;                   /* antes 6px */
 }
 
@@ -494,7 +398,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
   <!-- Aviso si no hay primera oficina -->
   <?php if($firstOfficeId === null): ?>
     <div class="alert alert-warning">
-      No se encontró la primera oficina en <code>eva_oficinas</code>. Asegúrate de haber insertado PCF, DD, DF, RSU (orden 1..4).
+      No se encontrÃ³ la primera oficina en <code>eva_oficinas</code>. AsegÃºrate de haber insertado PCF, DD, DF, RSU (orden 1..4).
     </div>
   <?php endif; ?>
 
@@ -503,16 +407,16 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
     <!-- Card 1: Control (crear / eliminar) -->
     <div class="card cp-card">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-cogs mr-2"></i>Control de creación / eliminación</h3>
+        <h3 class="card-title"><i class="fas fa-cogs mr-2"></i>Control de creaciÃ³n / eliminaciÃ³n</h3>
       </div>
       <div class="card-body">
         <!-- Buscar respuestas listas -->
         <form method="post" class="mb-2">
           <input type="hidden" name="accion" value="buscar_listos">
           <button class="btn btn-primary btn-sm">
-            <i class="fas fa-search mr-1"></i> Buscar respuestas (estado=1) sin evaluación
+            <i class="fas fa-search mr-1"></i> Buscar respuestas (estado=1) sin evaluaciÃ³n
           </button>
-          <small class="text-muted ml-2">Máx. 200</small>
+          <small class="text-muted ml-2">MÃ¡x. 200</small>
         </form>
 
         <?php if(!empty($readyRows)): ?>
@@ -521,7 +425,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
             <div class="mb-2 d-flex justify-content-between align-items-center">
               <div><strong>Resultados:</strong> <?= count($readyRows) ?></div>
               <div>
-                <button type="button" class="btn btn-link btn-sm p-0" onclick="marcar(true)">Marcar todo</button> ·
+                <button type="button" class="btn btn-link btn-sm p-0" onclick="marcar(true)">Marcar todo</button> Â·
                 <button type="button" class="btn btn-link btn-sm p-0" onclick="marcar(false)">Desmarcar</button>
               </div>
             </div>
@@ -556,7 +460,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
             </button>
           </form>
         <?php else: ?>
-          <p class="text-muted">Usa el botón de búsqueda para listar respuestas listas sin evaluación.</p>
+          <p class="text-muted">Usa el botÃ³n de bÃºsqueda para listar respuestas listas sin evaluaciÃ³n.</p>
         <?php endif; ?>
 
         <hr>
@@ -568,12 +472,12 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
             <label for="id_respuesta_del" class="mr-2">Eliminar por <b>id_respuesta</b>:</label>
             <input type="number" class="form-control form-control-sm" id="id_respuesta_del" name="id_respuesta_del" placeholder="ej. 57" required>
           </div>
-          <button class="btn btn-danger btn-sm"><i class="fas fa-trash-alt mr-1"></i> Eliminar evaluación</button>
+          <button class="btn btn-danger btn-sm"><i class="fas fa-trash-alt mr-1"></i> Eliminar evaluaciÃ³n</button>
           <small class="text-muted ml-2">Borrado en cascada</small>
         </form>
 
         <!-- Eliminar TODO -->
-        <form method="post" onsubmit="return confirm('Esta acción eliminará TODAS las evaluaciones y sus dependientes (eva_*), pero NO las respuestas ni las oficinas. ¿Continuar?');">
+        <form method="post" onsubmit="return confirm('Esta acciÃ³n eliminarÃ¡ TODAS las evaluaciones y sus dependientes (eva_*), pero NO las respuestas ni las oficinas. Â¿Continuar?');">
           <input type="hidden" name="accion" value="eliminar_todo">
           <div class="form-check mb-2">
             <input class="form-check-input" type="checkbox" value="1" id="reset_ai" name="reset_ai">
@@ -607,7 +511,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
           </table>
         </div>
         <p class="mt-2 text-muted">
-          Si ves “—”, aún no existe la tabla.  
+          Si ves â€œâ€”â€, aÃºn no existe la tabla.  
           La primera oficina se toma por <b>orden ascendente</b> de <code>eva_oficinas</code>.
         </p>
       </div>
@@ -663,7 +567,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
     <!-- Card 4: Evaluaciones creadas -->
     <div class="card cp-card">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-project-diagram mr-2"></i>Evaluaciones creadas (últimas 200)</h3>
+        <h3 class="card-title"><i class="fas fa-project-diagram mr-2"></i>Evaluaciones creadas (Ãºltimas 200)</h3>
       </div>
       <div class="card-body">
         <div class="table-responsive">
@@ -696,7 +600,7 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
               </tr>
               <?php endforeach; ?>
               <?php if(empty($evalRows)): ?>
-              <tr><td colspan="9" class="text-muted">Aún no hay evaluaciones creadas.</td></tr>
+              <tr><td colspan="9" class="text-muted">AÃºn no hay evaluaciones creadas.</td></tr>
               <?php endif; ?>
             </tbody>
           </table>
@@ -723,8 +627,8 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
       <div class="card-body">
         <?php if($trackPy>0): ?>
           <div class="mb-2">
-            <div><strong>Proyecto:</strong> <?= htmlspecialchars($tracker['titulo'] ?? '—') ?> <small class="text-muted">(id_py <?= (int)$trackPy ?>)</small></div>
-            <div><strong>Coordinador:</strong> <?= htmlspecialchars($tracker['coordinador'] ?? '—') ?></div>
+            <div><strong>Proyecto:</strong> <?= htmlspecialchars($tracker['titulo'] ?? 'â€”') ?> <small class="text-muted">(id_py <?= (int)$trackPy ?>)</small></div>
+            <div><strong>Coordinador:</strong> <?= htmlspecialchars($tracker['coordinador'] ?? 'â€”') ?></div>
           </div>
 
           <?php
@@ -747,18 +651,18 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
 
             <!-- PCF -->
             <div class="stagebox <?= $current==='PCF'?'active':'' ?>">
-              Comité de Facultad
+              ComitÃ© de Facultad
               <?php if($current==='PCF'): ?>
                 <div class="stage-sub">
                   <div class="<?= $chipClass($califs['cotejo'] ?? 'en_espera') ?>">Cotejo</div>
-                  <div class="<?= $chipClass($califs['rubrica'] ?? 'en_espera') ?>">Rúbrica</div>
+                  <div class="<?= $chipClass($califs['rubrica'] ?? 'en_espera') ?>">RÃºbrica</div>
                 </div>
               <?php endif; ?>
             </div>
 
             <!-- DD -->
             <div class="stagebox <?= $current==='DD'?'active':'' ?>">
-              Dirección de Departamento
+              DirecciÃ³n de Departamento
               <?php if($current==='DD'): ?>
                 <div class="stage-sub">
                   <div class="<?= $chipClass($califs['vistobueno'] ?? 'en_espera') ?>">Visto Bueno</div>
@@ -778,25 +682,25 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
 
             <!-- RSU -->
             <div class="stagebox <?= $current==='RSU'?'active':'' ?>">
-              Dirección RSU
+              DirecciÃ³n RSU
               <?php if($current==='RSU'): ?>
                 <div class="stage-sub">
                   <div class="<?= $chipClass($califs['cotejo'] ?? 'en_espera') ?>">Cotejo</div>
-                  <div class="<?= $chipClass($califs['rubrica'] ?? 'en_espera') ?>">Rúbrica</div>
+                  <div class="<?= $chipClass($califs['rubrica'] ?? 'en_espera') ?>">RÃºbrica</div>
                 </div>
               <?php endif; ?>
             </div>
 
-            <!-- Aprobación total -->
-            <div class="stagebox <?= $current==='aprobado'?'active':'' ?>">Aprobación Total</div>
+            <!-- AprobaciÃ³n total -->
+            <div class="stagebox <?= $current==='aprobado'?'active':'' ?>">AprobaciÃ³n Total</div>
           </div>
 
           <?php if($tracker['eval_id']===null): ?>
-            <p class="text-muted mt-2">Este proyecto aún no ha iniciado su ruta de evaluación.</p>
+            <p class="text-muted mt-2">Este proyecto aÃºn no ha iniciado su ruta de evaluaciÃ³n.</p>
           <?php endif; ?>
 
         <?php else: ?>
-          <p class="text-muted">Ingresa un <b>id_py</b> y presiona “Ver” para visualizar el estado.</p>
+          <p class="text-muted">Ingresa un <b>id_py</b> y presiona â€œVerâ€ para visualizar el estado.</p>
         <?php endif; ?>
       </div>
     </div>
@@ -811,9 +715,9 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
 </section>
         </div>
         <footer class="main-footer">
-            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
             </div>
         </footer>
     </div>
@@ -844,3 +748,4 @@ if ($tableExists('usuarios_proyectos') && $tableExists('usuarios')) {
       <script src="../dust/js/pages/dashboard.js"></script>
 </body>
 </html>
+
