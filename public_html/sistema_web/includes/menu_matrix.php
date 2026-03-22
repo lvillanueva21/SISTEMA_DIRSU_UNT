@@ -134,6 +134,9 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     'inicio.php' => 'vistas/perfil.php',
                     'index.php' => '../vistas/perfil.php'
                 ),
+                'user_link_style_by_page' => array(
+                    'perfil.php' => 'color: white; text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);'
+                ),
                 'avatar' => '../dust/img/avatar.png',
                 'avatar_by_page' => array(
                     'inicio.php' => 'dust/img/avatar.png',
@@ -206,11 +209,10 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     array(
                         'type' => 'tree',
                         'label' => 'Formulacion y presentacion',
-                        'icon' => 'fas fa-1',
+                        'icon_badge' => '1',
                         'children' => array(
                             array(
                                 'label' => '1.1. Generalidades',
-                                'icon' => 'fa fa-circle',
                                 'href' => 'datos_principales.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/datos_principales.php',
@@ -220,7 +222,6 @@ if (!function_exists('rsu_get_menu_matrix')) {
                             ),
                             array(
                                 'label' => '1.2. Plan de proyecto',
-                                'icon' => 'fa fa-circle',
                                 'href' => 'desarrollo_informe.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/desarrollo_informe.php',
@@ -230,7 +231,6 @@ if (!function_exists('rsu_get_menu_matrix')) {
                             ),
                             array(
                                 'label' => '1.3. Anexos',
-                                'icon' => 'fa fa-circle',
                                 'href' => 'anexos.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/anexos.php',
@@ -243,11 +243,10 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     array(
                         'type' => 'tree',
                         'label' => 'Ejecucion y monitoreo',
-                        'icon' => 'fas fa-2',
+                        'icon_badge' => '2',
                         'children' => array(
                             array(
                                 'label' => '2.1. Cronograma de ejecucion',
-                                'icon' => 'fa fa-circle',
                                 'href' => 'cronograma.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/cronograma.php',
@@ -257,7 +256,6 @@ if (!function_exists('rsu_get_menu_matrix')) {
                             ),
                             array(
                                 'label' => '2.2. Revision de cronograma',
-                                'icon' => 'fa fa-circle',
                                 'href' => 'revision_cronograma.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/revision_cronograma.php',
@@ -270,11 +268,10 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     array(
                         'type' => 'tree',
                         'label' => 'Evaluacion e informe',
-                        'icon' => 'fas fa-3',
+                        'icon_badge' => '3',
                         'children' => array(
                             array(
                                 'label' => '3.1. Informe semestral',
-                                'icon' => 'fa fa-circle',
                                 'href' => '../semestral/index.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'semestral/index.php',
@@ -284,7 +281,6 @@ if (!function_exists('rsu_get_menu_matrix')) {
                             ),
                             array(
                                 'label' => '3.2. Revision de informe',
-                                'icon' => 'fa fa-circle',
                                 'href' => 'revision_informe_final.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/revision_informe_final.php',

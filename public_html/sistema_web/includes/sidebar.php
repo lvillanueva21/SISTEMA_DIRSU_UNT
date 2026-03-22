@@ -136,6 +136,8 @@ $sidebar_brand_href = rsu_sidebar_resolve_value_by_page($sidebar_brand, 'href', 
 $sidebar_brand_logo = rsu_sidebar_resolve_value_by_page($sidebar_brand, 'logo', 'logo_by_page', $sidebar_current_file, '../dust/img/dirsu_logo_128_128.png');
 $sidebar_avatar = rsu_sidebar_resolve_value_by_page($sidebar_config, 'avatar', 'avatar_by_page', $sidebar_current_file, '../dust/img/avatar.png');
 $sidebar_user_href = isset($sidebar_config['user_home']) ? (string)$sidebar_config['user_home'] : 'inicio.php';
+$sidebar_user_link_class = rsu_sidebar_resolve_value_by_page($sidebar_config, 'user_link_class', 'user_link_class_by_page', $sidebar_current_file, 'd-block');
+$sidebar_user_link_style = rsu_sidebar_resolve_value_by_page($sidebar_config, 'user_link_style', 'user_link_style_by_page', $sidebar_current_file, '');
 
 if (isset($sidebar_config['user_home_by_page']) && is_array($sidebar_config['user_home_by_page'])) {
     if (isset($sidebar_config['user_home_by_page'][$sidebar_current_file])) {
@@ -162,7 +164,9 @@ $sidebar_user_text = rsu_sidebar_display_name($sidebar_nombres, $sidebar_apellid
         <img src="<?php echo rsu_sidebar_escape($sidebar_avatar); ?>" class="img-circle elevation-2" alt="User Image">
       </div>
       <div class="info">
-        <a href="<?php echo rsu_sidebar_escape($sidebar_user_href); ?>" class="d-block"><?php echo rsu_sidebar_escape($sidebar_user_text); ?></a>
+        <a href="<?php echo rsu_sidebar_escape($sidebar_user_href); ?>"
+           class="<?php echo rsu_sidebar_escape($sidebar_user_link_class); ?>"
+           <?php if ($sidebar_user_link_style !== ''): ?>style="<?php echo rsu_sidebar_escape($sidebar_user_link_style); ?>"<?php endif; ?>><?php echo rsu_sidebar_escape($sidebar_user_text); ?></a>
       </div>
     </div>
 
@@ -178,17 +182,24 @@ $sidebar_user_text = rsu_sidebar_display_name($sidebar_nombres, $sidebar_apellid
             <?php $tree_open = rsu_sidebar_tree_has_active_child($item, $sidebar_current_file); ?>
             <li class="nav-item menu <?php echo $tree_open ? 'menu-open' : ''; ?>">
               <a href="#" class="nav-link <?php echo $tree_open ? 'active' : ''; ?>">
-                <span class="badge nav-icon"><i class="<?php echo rsu_sidebar_escape(isset($item['icon']) ? $item['icon'] : 'fas fa-circle'); ?>"></i></span>
+                <?php if (isset($item['icon_badge']) && $item['icon_badge'] !== ''): ?>
+                  <span class="badge nav-icon"><?php echo rsu_sidebar_escape($item['icon_badge']); ?></span>
+                <?php else: ?>
+                  <span class="badge nav-icon"><i class="<?php echo rsu_sidebar_escape(isset($item['icon']) ? $item['icon'] : 'fas fa-circle'); ?>"></i></span>
+                <?php endif; ?>
                 <p><?php echo rsu_sidebar_escape(isset($item['label']) ? $item['label'] : ''); ?></p>
               </a>
               <ul class="nav nav-treeview">
                 <?php if (isset($item['children']) && is_array($item['children'])): ?>
                   <?php foreach ($item['children'] as $child): ?>
                     <?php $child_active = rsu_sidebar_is_active($child, $sidebar_current_file); ?>
+                    <?php $child_icon = isset($child['icon']) ? trim((string)$child['icon']) : ''; ?>
                     <li class="nav-item">
                       <a href="<?php echo rsu_sidebar_escape(rsu_sidebar_resolve_href($child, $sidebar_current_file)); ?>"
                          class="nav-link <?php echo $child_active ? 'active' : ''; ?>">
-                        <i class="<?php echo rsu_sidebar_escape(isset($child['icon']) ? $child['icon'] : 'fas fa-circle nav-icon'); ?> nav-icon"></i>
+                        <?php if ($child_icon !== ''): ?>
+                          <i class="<?php echo rsu_sidebar_escape($child_icon); ?> nav-icon"></i>
+                        <?php endif; ?>
                         <p><?php echo rsu_sidebar_escape(isset($child['label']) ? $child['label'] : ''); ?></p>
                       </a>
                     </li>
