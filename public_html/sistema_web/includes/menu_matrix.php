@@ -3,6 +3,7 @@
  * Matriz de menus por rol.
  * Fases habilitadas:
  * - rol 1: Direccion RSU
+ * - rol 2: Coordinador de Proyecto
  * - rol 3: Decanato de Facultad
  * - rol 4: Director de Departamento
  * - rol 5: Comite de Facultad
@@ -109,6 +110,187 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'icon' => 'fas fa-chart-line',
                                 'href' => 'estadistica.php',
                                 'active_on' => array('estadistica.php')
+                            )
+                        )
+                    )
+                )
+            ),
+            2 => array(
+                'brand' => array(
+                    'href' => '../inicio.php',
+                    'href_by_page' => array(
+                        'inicio.php' => 'inicio.php',
+                        'index.php' => '../inicio.php'
+                    ),
+                    'logo' => '../dust/img/dirsu_logo_128_128.png',
+                    'logo_by_page' => array(
+                        'inicio.php' => 'dust/img/dirsu_logo_128_128.png',
+                        'index.php' => '../dust/img/dirsu_logo_128_128.png'
+                    ),
+                    'name' => 'Sistema DIRSU'
+                ),
+                'user_home' => 'perfil.php',
+                'user_home_by_page' => array(
+                    'inicio.php' => 'vistas/perfil.php',
+                    'index.php' => '../vistas/perfil.php'
+                ),
+                'avatar' => '../dust/img/avatar.png',
+                'avatar_by_page' => array(
+                    'inicio.php' => 'dust/img/avatar.png',
+                    'index.php' => '../dust/img/avatar.png'
+                ),
+                'items' => array(
+                    array(
+                        'type' => 'item',
+                        'label' => 'INICIO',
+                        'icon' => 'fas fa-home',
+                        'href' => '../inicio.php',
+                        'href_by_page' => array(
+                            'inicio.php' => 'inicio.php',
+                            'index.php' => '../inicio.php'
+                        ),
+                        'active_on' => array('inicio.php')
+                    ),
+                    array(
+                        'type' => 'item',
+                        'label' => 'Guia de trabajo',
+                        'icon' => 'fa fa-road',
+                        'href' => 'guia.php',
+                        'href_by_page' => array(
+                            'inicio.php' => 'vistas/guia.php',
+                            'index.php' => '../vistas/guia.php'
+                        ),
+                        'active_on' => array('guia.php')
+                    ),
+                    array(
+                        'type' => 'header',
+                        'label' => 'Informacion de proyecto'
+                    ),
+                    array(
+                        'type' => 'item',
+                        'label' => 'Mi proyecto',
+                        'icon' => 'fa fa-users',
+                        'href' => 'proyecto.php',
+                        'href_by_page' => array(
+                            'inicio.php' => 'vistas/proyecto.php',
+                            'index.php' => '../vistas/proyecto.php'
+                        ),
+                        'active_on' => array('proyecto.php')
+                    ),
+                    array(
+                        'type' => 'item',
+                        'label' => 'Mi progreso',
+                        'icon' => 'fa fa-chart-line',
+                        'href' => 'progreso.php',
+                        'href_by_page' => array(
+                            'inicio.php' => 'vistas/progreso.php',
+                            'index.php' => '../vistas/progreso.php'
+                        ),
+                        'active_on' => array('progreso.php')
+                    ),
+                    array(
+                        'type' => 'item',
+                        'label' => 'Formatos',
+                        'icon' => 'fa fa-file-word',
+                        'href' => 'formato.php',
+                        'href_by_page' => array(
+                            'inicio.php' => 'vistas/formato.php',
+                            'index.php' => '../vistas/formato.php'
+                        ),
+                        'active_on' => array('formato.php')
+                    ),
+                    array(
+                        'type' => 'header',
+                        'label' => 'Fases de proyecto'
+                    ),
+                    array(
+                        'type' => 'tree',
+                        'label' => 'Formulacion y presentacion',
+                        'icon' => 'fas fa-1',
+                        'children' => array(
+                            array(
+                                'label' => '1.1. Generalidades',
+                                'icon' => 'fa fa-circle',
+                                'href' => 'datos_principales.php',
+                                'href_by_page' => array(
+                                    'inicio.php' => 'vistas/datos_principales.php',
+                                    'index.php' => '../vistas/datos_principales.php'
+                                ),
+                                'active_on' => array('datos_principales.php', 'registro_proyecto.php', 'exregistro.php', 'proyecto_final.php')
+                            ),
+                            array(
+                                'label' => '1.2. Plan de proyecto',
+                                'icon' => 'fa fa-circle',
+                                'href' => 'desarrollo_informe.php',
+                                'href_by_page' => array(
+                                    'inicio.php' => 'vistas/desarrollo_informe.php',
+                                    'index.php' => '../vistas/desarrollo_informe.php'
+                                ),
+                                'active_on' => array('desarrollo_informe.php')
+                            ),
+                            array(
+                                'label' => '1.3. Anexos',
+                                'icon' => 'fa fa-circle',
+                                'href' => 'anexos.php',
+                                'href_by_page' => array(
+                                    'inicio.php' => 'vistas/anexos.php',
+                                    'index.php' => '../vistas/anexos.php'
+                                ),
+                                'active_on' => array('anexos.php')
+                            )
+                        )
+                    ),
+                    array(
+                        'type' => 'tree',
+                        'label' => 'Ejecucion y monitoreo',
+                        'icon' => 'fas fa-2',
+                        'children' => array(
+                            array(
+                                'label' => '2.1. Cronograma de ejecucion',
+                                'icon' => 'fa fa-circle',
+                                'href' => 'cronograma.php',
+                                'href_by_page' => array(
+                                    'inicio.php' => 'vistas/cronograma.php',
+                                    'index.php' => '../vistas/cronograma.php'
+                                ),
+                                'active_on' => array('cronograma.php')
+                            ),
+                            array(
+                                'label' => '2.2. Revision de cronograma',
+                                'icon' => 'fa fa-circle',
+                                'href' => 'revision_cronograma.php',
+                                'href_by_page' => array(
+                                    'inicio.php' => 'vistas/revision_cronograma.php',
+                                    'index.php' => '../vistas/revision_cronograma.php'
+                                ),
+                                'active_on' => array('revision_cronograma.php')
+                            )
+                        )
+                    ),
+                    array(
+                        'type' => 'tree',
+                        'label' => 'Evaluacion e informe',
+                        'icon' => 'fas fa-3',
+                        'children' => array(
+                            array(
+                                'label' => '3.1. Informe semestral',
+                                'icon' => 'fa fa-circle',
+                                'href' => '../semestral/index.php',
+                                'href_by_page' => array(
+                                    'inicio.php' => 'semestral/index.php',
+                                    'index.php' => 'index.php'
+                                ),
+                                'active_on' => array('index.php', 'informe_final.php')
+                            ),
+                            array(
+                                'label' => '3.2. Revision de informe',
+                                'icon' => 'fa fa-circle',
+                                'href' => 'revision_informe_final.php',
+                                'href_by_page' => array(
+                                    'inicio.php' => 'vistas/revision_informe_final.php',
+                                    'index.php' => '../vistas/revision_informe_final.php'
+                                ),
+                                'active_on' => array('revision_informe_final.php')
                             )
                         )
                     )

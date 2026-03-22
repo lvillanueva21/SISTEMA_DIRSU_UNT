@@ -73,65 +73,7 @@ require_once DIR_COMPONENTES . '/db.php';
       </nav>
 
       <!-- Sidebar -->
-      <aside class="main-sidebar sidebar-dark-primary elevation-4">
-        <a href="../inicio.php" class="brand-link">
-          <img src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity:.8">
-          <span class="brand-text font-weight-light">Sistema DIRSU</span>
-        </a>
-        <div class="sidebar">
-          <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-            <div class="image"><img src="../dust/img/avatar.png" class="img-circle elevation-2" alt="User Image"></div>
-            <?php
-              $primer_apellido = explode(' ', htmlspecialchars($apellidos ?? ''))[0] ?? '';
-              if (mb_strlen($nombres ?? '') > 22) {
-                $texto_a_imprimir = htmlspecialchars($nombres ?? '');
-              } elseif (mb_strlen(($nombres ?? '') . ' ' . $primer_apellido) <= 23) {
-                $texto_a_imprimir = htmlspecialchars(($nombres ?? '') . ' ' . $primer_apellido);
-              } else {
-                $texto_a_imprimir = htmlspecialchars(mb_substr(($nombres ?? ''), 0, 23));
-              }
-            ?>
-            <div class="info"><a href="../vistas/perfil.php" class="d-block"><?php echo $texto_a_imprimir; ?></a></div>
-          </div>
-
-          <nav class="mt-2">
-            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-              <li class="nav-item"><a href="../inicio.php" class="nav-link"><i class="nav-icon fas fa-home"></i><p>INICIO</p></a></li>
-              <li class="nav-item"><a href="../vistas/guia.php" class="nav-link"><i class="fa fa-road nav-icon"></i><p>Guía de trabajo</p></a></li>
-
-              <li class="nav-header">Información de proyecto</li>
-              <li class="nav-item"><a href="../vistas/proyecto.php" class="nav-link"><i class="fa fa-users nav-icon"></i><p>Mi proyecto</p></a></li>
-              <li class="nav-item"><a href="../vistas/progreso.php" class="nav-link"><i class="fa fa-chart-line nav-icon"></i><p>Mi progreso</p></a></li>
-              <li class="nav-item"><a href="../vistas/formato.php" class="nav-link"><i class="fa fa-file-word nav-icon"></i><p>Formatos</p></a></li>
-
-              <li class="nav-header">Fases de proyecto</li>
-              <li class="nav-item menu">
-                <a href="#" class="nav-link"><span class="badge nav-icon">1</span><p>Formulación y presentación</p></a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item"><a href="../vistas/datos_principales.php" class="nav-link"><p>1.1. Generalidades</p></a></li>
-                  <li class="nav-item"><a href="../vistas/desarrollo_informe.php" class="nav-link"><p>1.2. Plan de proyecto</p></a></li>
-                  <li class="nav-item"><a href="../vistas/anexos.php" class="nav-link"><p>1.3. Anexos</p></a></li>
-                </ul>
-              </li>
-              <li class="nav-item menu">
-                <a href="#" class="nav-link"><span class="badge nav-icon">2</span><p>Ejecución y monitoreo</p></a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item"><a href="../vistas/cronograma.php" class="nav-link"><p>2.1. Cronograma de ejecución</p></a></li>
-                  <li class="nav-item"><a href="../vistas/revision_cronograma.php" class="nav-link"><p>2.2. Revisión de cronograma</p></a></li>
-                </ul>
-              </li>
-              <li class="nav-item menu menu-open">
-                <a href="#" class="nav-link active"><span class="badge nav-icon">3</span><p>Evaluación e informe</p></a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item"><a href="../semestral/index.php" class="nav-link active"><p>3.1. Informe semestral</p></a></li>
-                  <li class="nav-item"><a href="../vistas/revision_informe_final.php" class="nav-link"><p>3.2. Revisión de informe</p></a></li>
-                </ul>
-              </li>
-              <li class="nav-item" style="height:100px;"></li>
-            </ul>
-          </nav>
-        </div>
-      </aside>
+      <?php include_once __DIR__ . '/../includes/sidebar.php'; ?>
 
       <!-- Content Wrapper -->
       <div class="content-wrapper">
