@@ -3,6 +3,7 @@
  * Matriz de menus por rol.
  * Fases habilitadas:
  * - rol 1: Direccion RSU
+ * - rol 3: Decanato de Facultad
  * - rol 4: Director de Departamento
  * - rol 5: Comite de Facultad
  */
@@ -108,6 +109,48 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'icon' => 'fas fa-chart-line',
                                 'href' => 'estadistica.php',
                                 'active_on' => array('estadistica.php')
+                            )
+                        )
+                    )
+                )
+            ),
+            3 => array(
+                'brand' => array(
+                    'href' => 'inicio.php',
+                    'logo' => '../dust/img/dirsu_logo_128_128.png',
+                    'name' => 'Sistema DIRSU'
+                ),
+                'user_home' => 'inicio.php',
+                'avatar' => '../dust/img/avatar.png',
+                'items' => array(
+                    array(
+                        'type' => 'item',
+                        'label' => 'INICIO',
+                        'icon' => 'fas fa-home',
+                        'href' => 'inicio.php',
+                        'active_on' => array('inicio.php', 'inicio_antiguo.php')
+                    ),
+                    array(
+                        'type' => 'header',
+                        'label' => 'Evaluacion de Proyectos'
+                    ),
+                    array(
+                        'type' => 'item',
+                        'label' => 'Informe Semestral 2025-I',
+                        'icon' => 'fa fa-calendar',
+                        'href' => 'evaluacion.php',
+                        'active_on' => array('evaluacion.php')
+                    ),
+                    array(
+                        'type' => 'tree',
+                        'label' => 'Evaluaciones anteriores',
+                        'icon' => 'fas fa-user-cog',
+                        'children' => array(
+                            array(
+                                'label' => 'Visto Bueno (2024)',
+                                'icon' => 'fa fa-clipboard-list',
+                                'href' => 'visto.php',
+                                'active_on' => array('visto.php')
                             )
                         )
                     )
