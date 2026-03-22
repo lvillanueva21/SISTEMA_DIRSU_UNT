@@ -1,24 +1,24 @@
-﻿<?php
-// Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+// Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
 
-// Incluir la conexiÃ³n a la base de datos
+// Incluir la conexión a la base de datos
 include('../componentes/db.php');
 
 // Arreglo de facultades para el filtro y nombre de facultad
 $facultades = [
     '1' => 'Ciencias Agropecuarias', 
-    '2' => 'Ciencias BiolÃ³gicas', 
-    '3' => 'Ciencias EconÃ³micas', 
-    '4' => 'Ciencias FÃ­sicas y MatemÃ¡ticas',
+    '2' => 'Ciencias Biológicas', 
+    '3' => 'Ciencias Económicas', 
+    '4' => 'Ciencias Físicas y Matemáticas',
     '5' => 'Ciencias Sociales', 
-    '6' => 'Derecho y Ciencias PolÃ­ticas', 
-    '7' => 'EducaciÃ³n y Ciencias de la ComunicaciÃ³n', 
-    '8' => 'EnfermerÃ­a',
-    '9' => 'EstomatologÃ­a', 
-    '10' => 'Farmacia y BioquÃ­mica', 
-    '11' => 'IngenierÃ­a', 
-    '12' => 'IngenierÃ­a QuÃ­mica', 
+    '6' => 'Derecho y Ciencias Políticas', 
+    '7' => 'Educación y Ciencias de la Comunicación', 
+    '8' => 'Enfermería',
+    '9' => 'Estomatología', 
+    '10' => 'Farmacia y Bioquímica', 
+    '11' => 'Ingeniería', 
+    '12' => 'Ingeniería Química', 
     '13' => 'Medicina'
 ];
 ?>
@@ -44,14 +44,14 @@ $facultades = [
     <link rel="stylesheet" href="../plogins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="../plogins/summernote/summernote-bs4.min.css">
-    <!-- LibrerÃ­a para imprimir info en excel -->
+    <!-- Librería para imprimir info en excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
     function verDetalle(id_py) {
         // Abre el modal
         $('#modalVerDetalle').modal('show');
        
-        // Realiza la peticiÃ³n AJAX
+        // Realiza la petición AJAX
         $.ajax({
             url: '../direccion_rsu/logica/presentacion_py.php',
             method: 'GET',
@@ -61,7 +61,7 @@ $facultades = [
                 $('#contenidoModal').html(response);
             },
             error: function() {
-                alert('Hubo un error al cargar la PresentaciÃ³n de proyecto');
+                alert('Hubo un error al cargar la Presentación de proyecto');
             }
         });
     }
@@ -69,7 +69,7 @@ $facultades = [
         // Abre el modal
         $('#modalVerSemestre').modal('show');
        
-        // Realiza la peticiÃ³n AJAX
+        // Realiza la petición AJAX
         $.ajax({
             url: '../direccion_rsu/logica/semestre_py.php',
             method: 'GET',
@@ -87,7 +87,7 @@ $facultades = [
         // Abre el modal
         $('#modalVerEvaluacion').modal('show');
        
-        // Realiza la peticiÃ³n AJAX
+        // Realiza la petición AJAX
         $.ajax({
             url: '../direccion_rsu/logica/evaluacion_py.php',
             method: 'GET',
@@ -115,11 +115,11 @@ $facultades = [
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
+                        <p style="color: white;">Ir a página DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                 </li>
             </ul>
         </nav>
@@ -129,7 +129,7 @@ $facultades = [
             <section class="content" style="height: 400px;">
                 <div class="card">
                 <h6 class="card-header bg-primary text-white">
-    Estado de informe semestral de proyectos del perÃ­odo <b><u>2024-II</u></b> Facultad de 
+    Estado de informe semestral de proyectos del período <b><u>2024-II</u></b> Facultad de 
     <b><?php echo isset($facultades[$id_escuela]) ? $facultades[$id_escuela] : 'Facultad no encontrada'; ?></b>
 </h6>
                     <div class="card">
@@ -137,13 +137,13 @@ $facultades = [
   <div class="row mx-3">
     <div class="col-md-4">
       <label for="keyword">Texto:</label>
-      <input type="text" class="form-control" name="keyword" id="keyword" placeholder="Ingrese nombre, apellido o tÃ­tulo" value="<?php echo isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword']) : ''; ?>">
+      <input type="text" class="form-control" name="keyword" id="keyword" placeholder="Ingrese nombre, apellido o título" value="<?php echo isset($_GET['keyword']) ? htmlspecialchars($_GET['keyword']) : ''; ?>">
     </div>
     <div class="col-md-2">
       <label for="estado">Estado:</label>
       <select class="form-control" name="estado" id="estado">
         <option value="">Todos</option>
-        <option value="1" <?php echo (isset($_GET['estado']) && $_GET['estado'] === "1") ? 'selected' : ''; ?>>RevisiÃ³n</option>
+        <option value="1" <?php echo (isset($_GET['estado']) && $_GET['estado'] === "1") ? 'selected' : ''; ?>>Revisión</option>
         <option value="0" <?php echo (isset($_GET['estado']) && $_GET['estado'] === "0") ? 'selected' : ''; ?>>En Espera</option>
         <option value="2" <?php echo (isset($_GET['estado']) && $_GET['estado'] === "2") ? 'selected' : ''; ?>>Aprobado</option>
       </select>
@@ -152,11 +152,11 @@ $facultades = [
     <button type="submit" class="btn btn-primary btn-sm">
   <i class="fas fa-filter"></i>
 </button>
-<!-- BotÃ³n para imprimir la tabla -->
+<!-- Botón para imprimir la tabla -->
 <button type="button" class="btn btn-secondary btn-sm ml-2" onclick="imprimirTabla()">
   <i class="fas fa-print"></i>
 </button>
-<!-- BotÃ³n para exportar a Excel -->
+<!-- Botón para exportar a Excel -->
 <button type="button" id="btnExportExcel" class="btn btn-success btn-sm ml-2" onclick="exportTableToExcel()">
   <i class="fas fa-file-excel"></i>
 </button>
@@ -169,9 +169,9 @@ $facultades = [
             </section>
         </div>
         <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
             </div>
         </footer>
     </div>
@@ -207,7 +207,7 @@ $facultades = [
     <script src="../plogins/summernote/lang/summernote-es-ES.js"></script>
     <script>
     $(function () {
-        // InicializaciÃ³n de editor de texto Summernote con el idioma en espaÃ±ol
+        // Inicialización de editor de texto Summernote con el idioma en español
         $('#summernote').summernote({
             lang: 'es-ES'
         });
@@ -219,13 +219,13 @@ $facultades = [
         <div class="modal-dialog" role="document" style="max-width: 95%; width: 95%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalVerDetalleLabel">Fase 01: PresentaciÃ³n y formulaciÃ³n de Proyecto</h5>
+                    <h5 class="modal-title" id="modalVerDetalleLabel">Fase 01: Presentación y formulación de Proyecto</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body" id="contenidoModal" style="max-width: 100%; overflow-x: auto; white-space: nowrap;">
-                    <!-- AquÃ­ se cargarÃ¡n los detalles del proyecto con AJAX -->
+                    <!-- Aquí se cargarán los detalles del proyecto con AJAX -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
@@ -239,13 +239,13 @@ $facultades = [
         <div class="modal-dialog" role="document" style="max-width: 95%; width: 95%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalVerSemestreLabel">Fase 03: EvaluaciÃ³n e informe Semestral / Final</h5>
+                    <h5 class="modal-title" id="modalVerSemestreLabel">Fase 03: Evaluación e informe Semestral / Final</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body" id="contenidoModal2" style="max-width: 100%; overflow-x: auto; white-space: nowrap;">
-                    <!-- AquÃ­ se cargarÃ¡n los detalles del proyecto con AJAX -->
+                    <!-- Aquí se cargarán los detalles del proyecto con AJAX -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
@@ -259,13 +259,13 @@ $facultades = [
         <div class="modal-dialog" role="document" style="max-width: 95%; width: 95%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalVerEvaluacionLabel">EvaluaciÃ³n de Informe Semestral de Proyectos 2024 - II</h5>
+                    <h5 class="modal-title" id="modalVerEvaluacionLabel">Evaluación de Informe Semestral de Proyectos 2024 - II</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body" id="contenidoModal3" style="max-width: 100%; overflow-x: auto; white-space: nowrap;">
-                    <!-- AquÃ­ se cargarÃ¡n los detalles del proyecto con AJAX -->
+                    <!-- Aquí se cargarán los detalles del proyecto con AJAX -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
@@ -280,7 +280,7 @@ function imprimirTabla(){
     // Abrir una nueva ventana
     var newWin = window.open("", "Print-Window");
     newWin.document.open();
-    newWin.document.write('<html><head><title>Estado de informe semestral de proyectos del perÃ­odo 2024-II</title>');
+    newWin.document.write('<html><head><title>Estado de informe semestral de proyectos del período 2024-II</title>');
     // Incluir hojas de estilo para mantener la apariencia
     newWin.document.write('<link rel="stylesheet" href="../dust/css/adminlte.min.css">');
     newWin.document.write('<link rel="stylesheet" href="../plogins/bootstrap/css/bootstrap.min.css">');
@@ -292,7 +292,7 @@ function imprimirTabla(){
     newWin.document.close();
 }
 function exportTableToExcel(){
-    // Obtiene la tabla por su id (asegÃºrate de que el id coincida con el que asignaste en la tabla)
+    // Obtiene la tabla por su id (asegúrate de que el id coincida con el que asignaste en la tabla)
     var table = document.getElementById("tablaProyectosTable");
     // Convierte la tabla a un libro Excel
     var workbook = XLSX.utils.table_to_book(table, {sheet:"Sheet1"});

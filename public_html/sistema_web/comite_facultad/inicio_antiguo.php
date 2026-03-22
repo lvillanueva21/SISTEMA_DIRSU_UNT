@@ -1,24 +1,24 @@
-﻿<?php
-   // Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+   // Incluir configSesion.php para verificar la sesión
    include "../componentes/configSesion.php";
    
-   // Incluir la conexiÃ³n a la base de datos
+   // Incluir la conexión a la base de datos
    include('../componentes/db.php');
 
    // Arreglo de facultades para el filtro y nombre de facultad
 $facultades = [
     '1' => 'Ciencias Agropecuarias', 
-    '2' => 'Ciencias BiolÃ³gicas', 
-    '3' => 'Ciencias EconÃ³micas', 
-    '4' => 'Ciencias FÃ­sicas y MatemÃ¡ticas',
+    '2' => 'Ciencias Biológicas', 
+    '3' => 'Ciencias Económicas', 
+    '4' => 'Ciencias Físicas y Matemáticas',
     '5' => 'Ciencias Sociales', 
-    '6' => 'Derecho y Ciencias PolÃ­ticas', 
-    '7' => 'EducaciÃ³n y Ciencias de la ComunicaciÃ³n', 
-    '8' => 'EnfermerÃ­a',
-    '9' => 'EstomatologÃ­a', 
-    '10' => 'Farmacia y BioquÃ­mica', 
-    '11' => 'IngenierÃ­a', 
-    '12' => 'IngenierÃ­a QuÃ­mica', 
+    '6' => 'Derecho y Ciencias Políticas', 
+    '7' => 'Educación y Ciencias de la Comunicación', 
+    '8' => 'Enfermería',
+    '9' => 'Estomatología', 
+    '10' => 'Farmacia y Bioquímica', 
+    '11' => 'Ingeniería', 
+    '12' => 'Ingeniería Química', 
     '13' => 'Medicina'
 ];
    ?>
@@ -53,7 +53,7 @@ $facultades = [
    </head>
    <body class="hold-transition sidebar-mini layout-fixed">
       <div class="wrapper">
-         <!-- Preloader --><!-- Icono que se muestra mientras estÃ¡ cargando el sistema -->
+         <!-- Preloader --><!-- Icono que se muestra mientras está cargando el sistema -->
          <div class="preloader flex-column justify-content-center align-items-center">
             <img class="animation__shake" src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTELogo" height="60" width="60">
          </div>
@@ -75,11 +75,11 @@ $facultades = [
                <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                   <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
                      <p style="color: white;
-                        size: 8px">Ir a pÃ¡gina DIRSU</p>
+                        size: 8px">Ir a página DIRSU</p>
                   </a>
                </li>
                <li class="nav-item d-none d-sm-inline-block">
-                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                </li>
             </ul>
          </nav>
@@ -93,7 +93,7 @@ $facultades = [
                <div class="container-fluid">
                   <div class="row mb-2">
                      <div class="col-sm-12">
-                        <h5 class="m-0">!Bienvenido al Sistema de gestiÃ³n de proyectos DIRSU!</h5>
+                        <h5 class="m-0">!Bienvenido al Sistema de gestión de proyectos DIRSU!</h5>
                      </div>
                      <!-- /.col -->
                   </div>
@@ -106,7 +106,7 @@ $facultades = [
 <section class="content">
     <div class="container-fluid">
         <div class="row">
-            <!-- Card 01: Mi buzÃ³n de mensajes DIRSU -->
+            <!-- Card 01: Mi buzón de mensajes DIRSU -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card bg-light d-flex flex-fill">
@@ -114,7 +114,7 @@ $facultades = [
                             <div class="row">
                                 <div class="col-10">
                                     <div class="card-header">
-                                        <h3 class="card-title">Mi buzÃ³n de mensajes DIRSU</h3>
+                                        <h3 class="card-title">Mi buzón de mensajes DIRSU</h3>
                                     </div>
                                     <br>
                                     <h1 class="lead"><b>Hola <?php echo htmlspecialchars($nombres); ?></b></h1>
@@ -128,25 +128,25 @@ $facultades = [
                             <div class="row">
                                 <div class="col-12">
                                     <p class="text-muted text-sm text-justify">
-                                        Como Presidente del comitÃ© de RSU de la Facultad de 
+                                        Como Presidente del comité de RSU de la Facultad de 
                                         <b><?php echo isset($facultades[$id_escuela]) ? $facultades[$id_escuela] : 'Facultad no encontrada'; ?></b> 
-                                        serÃ¡s el encargado de revisar los <b>Informes Semestrales</b> presentados por los coordinadores de proyectos de tu facultad.
-                                        <br><br>Esta revisiÃ³n se divide en RevisiÃ³n por Lista de Cotejo y RevisiÃ³n por RÃºbrica.
-                                        <br><b>Â¿CÃ³mo revisar los proyectos por Lista de Cotejo?</b>
-                                        <br>DirÃ­gete a la opciÃ³n EvaluaciÃ³n de Proyectos --> Por lista de Cotejo.
-                                        <br><b>Â¿CÃ³mo revisar los proyectos por RÃºbrica?</b>
-                                        <br>DirÃ­gete a la opciÃ³n EvaluaciÃ³n de Proyectos --> Por RÃºbrica.
+                                        serás el encargado de revisar los <b>Informes Semestrales</b> presentados por los coordinadores de proyectos de tu facultad.
+                                        <br><br>Esta revisión se divide en Revisión por Lista de Cotejo y Revisión por Rúbrica.
+                                        <br><b>¿Cómo revisar los proyectos por Lista de Cotejo?</b>
+                                        <br>Dirígete a la opción Evaluación de Proyectos --> Por lista de Cotejo.
+                                        <br><b>¿Cómo revisar los proyectos por Rúbrica?</b>
+                                        <br>Dirígete a la opción Evaluación de Proyectos --> Por Rúbrica.
                                     </p>
                                     <ul class="ml-4 mb-0 fa-ul text-muted">
                                         <li class="small"><span class="fa-li"><i class="fas fa-lg fa-envelope"></i></span> Correo: dirsu@unitru.edu.pe</li>
-                                        <li class="small"><span class="fa-li"><i class="fas fa-lg fa-map-marker-alt"></i></span> JirÃ³n Diego De Almagro 344, Trujillo</li>
+                                        <li class="small"><span class="fa-li"><i class="fas fa-lg fa-map-marker-alt"></i></span> Jirón Diego De Almagro 344, Trujillo</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                         <div class="card-footer">
                             <div class="text-right text-muted small">
-                                Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
+                                Luigi Villanueva - área Informática - DIRSU
                             </div>
                         </div>
                     </div>
@@ -164,7 +164,7 @@ $facultades = [
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header" style="background-color: #28a745; color: white;">
-                        <h3 class="card-title text-center">Cronograma de proyectos DIRSU - PerÃ­odo I - 2024</h3>
+                        <h3 class="card-title text-center">Cronograma de proyectos DIRSU - Período I - 2024</h3>
                     </div>
                     <div class="card-body">
                         <?php include('../integrados/cronograma_general.php'); ?>
@@ -172,22 +172,22 @@ $facultades = [
                 </div>
             </div>
 
-            <!-- Card 04 (antes 02): Mi prÃ³xima entrega -->
+            <!-- Card 04 (antes 02): Mi próxima entrega -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header" style="background-color: #dc3545; color: white;">
-                        <h5>Mi prÃ³xima entrega</h5>
+                        <h5>Mi próxima entrega</h5>
                     </div>
                     <div class="card-body">
-                        <h3 class="card-title text-center p-3" style="font-size: 1.5rem; margin: 0;">Â¡IMPORTANTE! Subir Informe Semestral 2024 II en EvaluaciÃ³n e Informe --> INFORME FINAL</h3>
-                        <h3 class="text-center" style="font-size: 1.2rem; margin-bottom: 1.5rem;">Nueva fecha lÃ­mite: 15 de enero de 2025 a las 23:59</h3>
+                        <h3 class="card-title text-center p-3" style="font-size: 1.5rem; margin: 0;">¡IMPORTANTE! Subir Informe Semestral 2024 II en Evaluación e Informe --> INFORME FINAL</h3>
+                        <h3 class="text-center" style="font-size: 1.2rem; margin-bottom: 1.5rem;">Nueva fecha límite: 15 de enero de 2025 a las 23:59</h3>
                         <div class="row justify-content-center" style="margin-top: 20px;">
                             <div class="col-md-12 text-center">
                                 <i class="fas fa-clock fa-3x mb-3"></i>
                                 <div id="countdown" style="display: flex; justify-content: center;">
                                     <div class="counter-box text-center" style="margin: 0 10px;">
                                         <h6 id="days" style="font-size: 1.5rem; margin: 0;">0</h6>
-                                        <p style="margin: 0;">DÃ­as</p>
+                                        <p style="margin: 0;">Días</p>
                                     </div>
                                     <div class="counter-box text-center" style="margin: 0 10px;">
                                         <h6 id="hours" style="font-size: 1.5rem; margin: 0;">0</h6>
@@ -215,9 +215,9 @@ $facultades = [
          </div>
          <!-- /.content-wrapper -->
          <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-               <p>Desarrollado por el <a href="#"> Ãrea  informÃ¡tica - DIRSU</a></p>
+               <p>Desarrollado por el <a href="#"> Área  informática - DIRSU</a></p>
             </div>
          </footer>
          <!-- Control Sidebar -->
@@ -262,15 +262,15 @@ $facultades = [
       <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
       <script src="../dust/js/pages/dashboard.js"></script>
       <script>
-         // FunciÃ³n para actualizar el contador cada segundo
+         // Función para actualizar el contador cada segundo
          function updateCountdown() {
-             // Fecha de deadline en formato AÃ±o/Mes/DÃ­a Hora:Minutos:Segundos
+             // Fecha de deadline en formato Año/Mes/Día Hora:Minutos:Segundos
              const deadlineDate = new Date("2025-01-15T23:59:59").getTime();
          
              const now = new Date().getTime();
              const timeLeft = deadlineDate - now;
          
-             // CÃ¡lculo de dÃ­as, horas, minutos y segundos restantes
+             // Cálculo de días, horas, minutos y segundos restantes
              const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
              const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
              const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
@@ -285,10 +285,10 @@ $facultades = [
              // Si el tiempo ha llegado a 0, se detiene el contador
              if (timeLeft < 0) {
                  clearInterval(countdownInterval);
-                 document.getElementById("countdown").innerHTML = "<div class='alert alert-danger'>Â¡El deadline ha pasado!</div>";
+                 document.getElementById("countdown").innerHTML = "<div class='alert alert-danger'>¡El deadline ha pasado!</div>";
              }
          }
-         // Ejecutar la funciÃ³n de actualizaciÃ³n cada segundo
+         // Ejecutar la función de actualización cada segundo
          const countdownInterval = setInterval(updateCountdown, 1000);
       </script>
    </body>

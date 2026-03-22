@@ -1,7 +1,7 @@
-﻿<?php
-    // Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+    // Incluir configSesion.php para verificar la sesión
     include "../componentes/configSesion.php"; 
-    // Incluir la conexiÃ³n a la base de datos
+    // Incluir la conexión a la base de datos
     include('../componentes/db.php');
     // Incluir el archivo que carga los datos del proyecto
     include('../componentes/proyecto/cargar_proyecto.php');
@@ -30,7 +30,7 @@
    </head>
    <body class="hold-transition sidebar-mini layout-fixed">
       <div class="wrapper">
-         <!-- Preloader --><!-- Icono que se muestra mientras estÃ¡ cargando el sistema -->
+         <!-- Preloader --><!-- Icono que se muestra mientras está cargando el sistema -->
          <div class="preloader flex-column justify-content-center align-items-center">
             <img class="animation__shake" src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTELogo" height="60" width="60">
          </div>
@@ -52,12 +52,12 @@
                <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                   <a href="https://rsu.unitru.edu.pe/" class="nav-link" target="_blank">
                      <p style="color: white;
-                        size: 8px">Ir a pÃ¡gina DIRSU</p>
+                        size: 8px">Ir a página DIRSU</p>
                   </a>
                </li>
                </li>
                <li class="nav-item d-none d-sm-inline-block">
-                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a> 
+                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a> 
                </li>
             </ul>
          </nav>
@@ -99,67 +99,67 @@
                               <p class="text-muted text-center">Coordinador de Proyecto</p>
                               <ul class="list-group list-group-unbordered mb-3">
                                  <li class="list-group-item">
-                                    <b>Departamento AcadÃ©mico</b> <a class="float-right"><?php
-                                    // Array de departamentos acadÃ©micos
+                                    <b>Departamento Académico</b> <a class="float-right"><?php
+                                    // Array de departamentos académicos
                                     $departamentos_academicos = [
-                                        '1' => 'AgronomÃ­a y Zootecnia',
+                                        '1' => 'Agronomía y Zootecnia',
                                         '2' => 'Ciencias Agroindustriales',
-                                        '3' => 'Ciencias BiolÃ³gicas',
-                                        '4' => 'MicrobiologÃ­a y ParasitologÃ­a',
-                                        '5' => 'PesquerÃ­a',
-                                        '6' => 'QuÃ­mica BiolÃ³gica y FisiologÃ­a Animal',
-                                        '7' => 'AdministraciÃ³n',
+                                        '3' => 'Ciencias Biológicas',
+                                        '4' => 'Microbiología y Parasitología',
+                                        '5' => 'Pesquería',
+                                        '6' => 'Química Biológica y Fisiología Animal',
+                                        '7' => 'Administración',
                                         '8' => 'Contabilidad y Finanzas',
-                                        '9' => 'EconomÃ­a',
-                                        '10' => 'Ciencias BÃ¡sicas EstomatolÃ³gicas',
-                                        '11' => 'EstomatologÃ­a',
-                                        '12' => 'EstadÃ­stica',
-                                        '13' => 'FÃ­sica',
-                                        '14' => 'InformÃ¡tica',
-                                        '15' => 'MatemÃ¡ticas',
-                                        '16' => 'ArqueologÃ­a y AntropologÃ­a',
+                                        '9' => 'Economía',
+                                        '10' => 'Ciencias Básicas Estomatológicas',
+                                        '11' => 'Estomatología',
+                                        '12' => 'Estadística',
+                                        '13' => 'Física',
+                                        '14' => 'Informática',
+                                        '15' => 'Matemáticas',
+                                        '16' => 'Arqueología y Antropología',
                                         '17' => 'Ciencias Sociales',
-                                        '18' => 'Ciencias JurÃ­dicas PÃºblicas y PolÃ­ticas',
-                                        '19' => 'Ciencias JurÃ­dicas Privadas y Sociales',
-                                        '20' => 'Ciencia PolÃ­tica y Gobernabilidad',
-                                        '21' => 'Ciencias de la EducaciÃ³n',
-                                        '22' => 'Ciencias PsicolÃ³gicas',
-                                        '23' => 'ComunicaciÃ³n Social',
-                                        '24' => 'FilosofÃ­a y Arte',
-                                        '25' => 'Historia y GeografÃ­a',
-                                        '26' => 'Idiomas y LingÃ¼Ã­stica',
+                                        '18' => 'Ciencias Jurídicas Públicas y Políticas',
+                                        '19' => 'Ciencias Jurídicas Privadas y Sociales',
+                                        '20' => 'Ciencia Política y Gobernabilidad',
+                                        '21' => 'Ciencias de la Educación',
+                                        '22' => 'Ciencias Psicológicas',
+                                        '23' => 'Comunicación Social',
+                                        '24' => 'Filosofía y Arte',
+                                        '25' => 'Historia y Geografía',
+                                        '26' => 'Idiomas y Lingüística',
                                         '27' => 'Lengua Nacional y Literatura',
-                                        '28' => 'EnfermerÃ­a de la Mujer, NiÃ±o y Adolescente',
+                                        '28' => 'Enfermería de la Mujer, Niño y Adolescente',
                                         '29' => 'Salud del Adulto',
                                         '30' => 'Salud Familiar y Comunitaria',
                                         '31' => 'Farmacotecnia',
-                                        '32' => 'FarmacologÃ­a',
-                                        '33' => 'BioquÃ­mica',
-                                        '34' => 'IngenierÃ­a Civil, Arquitectura y Urbanismo',
-                                        '35' => 'IngenierÃ­a Industrial',
-                                        '36' => 'IngenierÃ­a de Materiales',
-                                        '37' => 'MecÃ¡nica y EnergÃ­a',
-                                        '38' => 'IngenierÃ­a MetalÃºrgica',
-                                        '39' => 'IngenierÃ­a de Minas',
-                                        '40' => 'IngenierÃ­a de Sistemas',
-                                        '41' => 'IngenierÃ­a QuÃ­mica',
-                                        '42' => 'IngenierÃ­a Ambiental',
-                                        '43' => 'QuÃ­mica',
-                                        '44' => 'Ciencias BÃ¡sicas MÃ©dicas',
-                                        '45' => 'CirugÃ­a',
-                                        '46' => 'FisiologÃ­a Humana',
-                                        '47' => 'GinecologÃ­a-Obstetricia',
+                                        '32' => 'Farmacología',
+                                        '33' => 'Bioquímica',
+                                        '34' => 'Ingeniería Civil, Arquitectura y Urbanismo',
+                                        '35' => 'Ingeniería Industrial',
+                                        '36' => 'Ingeniería de Materiales',
+                                        '37' => 'Mecánica y Energía',
+                                        '38' => 'Ingeniería Metalúrgica',
+                                        '39' => 'Ingeniería de Minas',
+                                        '40' => 'Ingeniería de Sistemas',
+                                        '41' => 'Ingeniería Química',
+                                        '42' => 'Ingeniería Ambiental',
+                                        '43' => 'Química',
+                                        '44' => 'Ciencias Básicas Médicas',
+                                        '45' => 'Cirugía',
+                                        '46' => 'Fisiología Humana',
+                                        '47' => 'Ginecología-Obstetricia',
                                         '48' => 'Medicina',
-                                        '49' => 'Medicina Preventiva y Salud PÃºblica',
-                                        '50' => 'MorfologÃ­a Humana',
-                                        '51' => 'PediatrÃ­a',
+                                        '49' => 'Medicina Preventiva y Salud Pública',
+                                        '50' => 'Morfología Humana',
+                                        '51' => 'Pediatría',
                                     ];
                                     
-                                    // Verificar si el departamento acadÃ©mico existe y mostrarlo
+                                    // Verificar si el departamento académico existe y mostrarlo
                                     if (isset($id_depa) && isset($departamentos_academicos[$id_depa])) {
                                         echo htmlspecialchars($departamentos_academicos[$id_depa]);
                                     } else {
-                                        echo '<h5>No hay departamento acadÃ©mico seleccionado</h5>';
+                                        echo '<h5>No hay departamento académico seleccionado</h5>';
                                     }
                                     ?></a>
                                  </li>
@@ -168,7 +168,7 @@
                                  </li>
                                  <li class="list-group-item">
                                     <b>Mi proyecto actual</b> <a class="float-right"><?php
-echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proyecto");
+echo (!empty($p2) ? $p2 : "</b> aún no has registrado el título de tu proyecto");
 ?></a>
                                  </li>
                               </ul>
@@ -183,7 +183,7 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                            <div class="card-header p-2">
                               <ul class="nav nav-pills">
                                  <li class="nav-item"><a class="nav-link" href="#dpersonales" data-toggle="tab">Datos Personales</a></li>
-                                 <li class="nav-item"><a class="nav-link active" href="#dacademicos" data-toggle="tab">Datos AcadÃ©micos</a></li>
+                                 <li class="nav-item"><a class="nav-link active" href="#dacademicos" data-toggle="tab">Datos Académicos</a></li>
                               </ul>
                            </div>
                            <div class="card-body">
@@ -196,7 +196,7 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                                            <div class="alert alert-info alert-dismissible">
                   <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                   <h5><i class="icon fas fa-info"></i> A tener en cuenta</h5>
-                  Puedes editar uno o varios datos a la vez. Las casillas en gris son automÃ¡ticas, no se pueden editar manualmente.
+                  Puedes editar uno o varios datos a la vez. Las casillas en gris son automáticas, no se pueden editar manualmente.
                 </div>
                                            </div>
                                            </div>
@@ -213,9 +213,9 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                                           </div>
                                        </div>
                                        <div class="form-group row">
-                                          <label for="inputUsuarioPerfil" class="col-sm-3 col-form-label">Usuario <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="Para actualizar tu usuario, escrÃ­benos a dirsu@unitru.edu.pe">
+                                          <label for="inputUsuarioPerfil" class="col-sm-3 col-form-label">Usuario <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="Para actualizar tu usuario, escríbenos a dirsu@unitru.edu.pe">
                                           <i class="fa fa-info-circle"></i>
-                                          </button> <br>(CÃ³digo docente)</label>
+                                          </button> <br>(Código docente)</label>
                                           <div class="col-sm-9">
                                              <input type="text" class="form-control" id="UsuarioPerfil" name="UsuarioPerfil" placeholder="Ingresar Usuario" value="<?php echo htmlspecialchars($usuario); ?>" required readonly>
                                           </div>
@@ -231,9 +231,9 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                                                    </button>
                                                 </div>
                                              </div>
-                                             <!-- Mensaje que se mostrarÃ¡ cuando el usuario escriba en la clave -->
+                                             <!-- Mensaje que se mostrará cuando el usuario escriba en la clave -->
                                              <small id="passwordMessage" class="form-text text-danger" style="display:none;">
-                                             EstÃ¡s escribiendo una nueva clave, si presionas <b>Actualizar</b>, tu clave cambiarÃ¡.
+                                             Estás escribiendo una nueva clave, si presionas <b>Actualizar</b>, tu clave cambiará.
                                              </small>
                                           </div>
                                        </div>
@@ -245,7 +245,7 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                                     </form>
                                  </div>
                                  <!-- .Tab Datos Personales -->
-                                 <!-- Tab Datos AcadÃ©micos -->
+                                 <!-- Tab Datos Académicos -->
                                  <div class="active tab-pane" id="dacademicos">
                                     <form class="form-horizontal" method="POST" action="../componentes/perfil/actualizar_dacademicos.php">
                                        <div class="form-group row">
@@ -261,7 +261,7 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                                           <label for="inputSedePerfil" class="col-sm-3 col-form-label">Sede</label>
                                           <div class="col-sm-9">
                                              <select class="form-control" id="id_sede" name="id_sede" required>
-                                                <option value="">Seleccione una opciÃ³n</option>
+                                                <option value="">Seleccione una opción</option>
                                                 <option value="1" <?php echo (isset($id_sede) && $id_sede == '1') ? 'selected' : ''; ?>>Trujillo</option>
                                                 <option value="2" <?php echo (isset($id_sede) && $id_sede == '2') ? 'selected' : ''; ?>>Jequetepeque</option>
                                                 <option value="3" <?php echo (isset($id_sede) && $id_sede == '3') ? 'selected' : ''; ?>>Huamachuco</option>
@@ -270,67 +270,67 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                                           </div>
                                        </div>
                                        <div class="form-group row">
-                                          <label for="inputDepaPerfil" class="col-sm-3 col-form-label">Departamento AcadÃ©mico</label>
+                                          <label for="inputDepaPerfil" class="col-sm-3 col-form-label">Departamento Académico</label>
                                           <div class="col-sm-9">
                                              <select class="form-control" id="id_depa" name="id_depa" required>
-                                                <option value="">Seleccione una opciÃ³n</option>
-                                                <option value="1" <?php echo (isset($id_depa) && $id_depa == '1') ? 'selected' : ''; ?>>AgronomÃ­a y Zootecnia</option>
+                                                <option value="">Seleccione una opción</option>
+                                                <option value="1" <?php echo (isset($id_depa) && $id_depa == '1') ? 'selected' : ''; ?>>Agronomía y Zootecnia</option>
                                                 <option value="2" <?php echo (isset($id_depa) && $id_depa == '2') ? 'selected' : ''; ?>>Ciencias Agroindustriales</option>
-                                                <option value="3" <?php echo (isset($id_depa) && $id_depa == '3') ? 'selected' : ''; ?>>Ciencias BiolÃ³gicas</option>
-                                                <option value="4" <?php echo (isset($id_depa) && $id_depa == '4') ? 'selected' : ''; ?>>MicrobiologÃ­a y ParasitologÃ­a</option>
-                                                <option value="5" <?php echo (isset($id_depa) && $id_depa == '5') ? 'selected' : ''; ?>>PesquerÃ­a</option>
-                                                <option value="6" <?php echo (isset($id_depa) && $id_depa == '6') ? 'selected' : ''; ?>>QuÃ­mica BiolÃ³gica y FisiologÃ­a Animal</option>
-                                                <option value="7" <?php echo (isset($id_depa) && $id_depa == '7') ? 'selected' : ''; ?>>AdministraciÃ³n</option>
+                                                <option value="3" <?php echo (isset($id_depa) && $id_depa == '3') ? 'selected' : ''; ?>>Ciencias Biológicas</option>
+                                                <option value="4" <?php echo (isset($id_depa) && $id_depa == '4') ? 'selected' : ''; ?>>Microbiología y Parasitología</option>
+                                                <option value="5" <?php echo (isset($id_depa) && $id_depa == '5') ? 'selected' : ''; ?>>Pesquería</option>
+                                                <option value="6" <?php echo (isset($id_depa) && $id_depa == '6') ? 'selected' : ''; ?>>Química Biológica y Fisiología Animal</option>
+                                                <option value="7" <?php echo (isset($id_depa) && $id_depa == '7') ? 'selected' : ''; ?>>Administración</option>
                                                 <option value="8" <?php echo (isset($id_depa) && $id_depa == '8') ? 'selected' : ''; ?>>Contabilidad y Finanzas</option>
-                                                <option value="9" <?php echo (isset($id_depa) && $id_depa == '9') ? 'selected' : ''; ?>>EconomÃ­a</option>
-                                                <option value="10" <?php echo (isset($id_depa) && $id_depa == '10') ? 'selected' : ''; ?>>Ciencias BÃ¡sicas EstomatolÃ³gicas</option>
-                                                <option value="11" <?php echo (isset($id_depa) && $id_depa == '11') ? 'selected' : ''; ?>>EstomatologÃ­a</option>
-                                                <option value="12" <?php echo (isset($id_depa) && $id_depa == '12') ? 'selected' : ''; ?>>EstadÃ­stica</option>
-                                                <option value="13" <?php echo (isset($id_depa) && $id_depa == '13') ? 'selected' : ''; ?>>FÃ­sica</option>
-                                                <option value="14" <?php echo (isset($id_depa) && $id_depa == '14') ? 'selected' : ''; ?>>InformÃ¡tica</option>
-                                                <option value="15" <?php echo (isset($id_depa) && $id_depa == '15') ? 'selected' : ''; ?>>MatemÃ¡ticas</option>
-                                                <option value="16" <?php echo (isset($id_depa) && $id_depa == '16') ? 'selected' : ''; ?>>ArqueologÃ­a y AntropologÃ­a</option>
+                                                <option value="9" <?php echo (isset($id_depa) && $id_depa == '9') ? 'selected' : ''; ?>>Economía</option>
+                                                <option value="10" <?php echo (isset($id_depa) && $id_depa == '10') ? 'selected' : ''; ?>>Ciencias Básicas Estomatológicas</option>
+                                                <option value="11" <?php echo (isset($id_depa) && $id_depa == '11') ? 'selected' : ''; ?>>Estomatología</option>
+                                                <option value="12" <?php echo (isset($id_depa) && $id_depa == '12') ? 'selected' : ''; ?>>Estadística</option>
+                                                <option value="13" <?php echo (isset($id_depa) && $id_depa == '13') ? 'selected' : ''; ?>>Física</option>
+                                                <option value="14" <?php echo (isset($id_depa) && $id_depa == '14') ? 'selected' : ''; ?>>Informática</option>
+                                                <option value="15" <?php echo (isset($id_depa) && $id_depa == '15') ? 'selected' : ''; ?>>Matemáticas</option>
+                                                <option value="16" <?php echo (isset($id_depa) && $id_depa == '16') ? 'selected' : ''; ?>>Arqueología y Antropología</option>
                                                 <option value="17" <?php echo (isset($id_depa) && $id_depa == '17') ? 'selected' : ''; ?>>Ciencias Sociales</option>
-                                                <option value="18" <?php echo (isset($id_depa) && $id_depa == '18') ? 'selected' : ''; ?>>Ciencias JurÃ­dicas PÃºblicas y PolÃ­ticas</option>
-                                                <option value="19" <?php echo (isset($id_depa) && $id_depa == '19') ? 'selected' : ''; ?>>Ciencias JurÃ­dicas Privadas y Sociales</option>
-                                                <option value="20" <?php echo (isset($id_depa) && $id_depa == '20') ? 'selected' : ''; ?>>Ciencia PolÃ­tica y Gobernabilidad</option>
-                                                <option value="21" <?php echo (isset($id_depa) && $id_depa == '21') ? 'selected' : ''; ?>>Ciencias de la EducaciÃ³n</option>
-                                                <option value="22" <?php echo (isset($id_depa) && $id_depa == '22') ? 'selected' : ''; ?>>Ciencias PsicolÃ³gicas</option>
-                                                <option value="23" <?php echo (isset($id_depa) && $id_depa == '23') ? 'selected' : ''; ?>>ComunicaciÃ³n Social</option>
-                                                <option value="24" <?php echo (isset($id_depa) && $id_depa == '24') ? 'selected' : ''; ?>>FilosofÃ­a y Arte</option>
-                                                <option value="25" <?php echo (isset($id_depa) && $id_depa == '25') ? 'selected' : ''; ?>>Historia y GeografÃ­a</option>
-                                                <option value="26" <?php echo (isset($id_depa) && $id_depa == '26') ? 'selected' : ''; ?>>Idiomas y LingÃ¼Ã­stica</option>
+                                                <option value="18" <?php echo (isset($id_depa) && $id_depa == '18') ? 'selected' : ''; ?>>Ciencias Jurídicas Públicas y Políticas</option>
+                                                <option value="19" <?php echo (isset($id_depa) && $id_depa == '19') ? 'selected' : ''; ?>>Ciencias Jurídicas Privadas y Sociales</option>
+                                                <option value="20" <?php echo (isset($id_depa) && $id_depa == '20') ? 'selected' : ''; ?>>Ciencia Política y Gobernabilidad</option>
+                                                <option value="21" <?php echo (isset($id_depa) && $id_depa == '21') ? 'selected' : ''; ?>>Ciencias de la Educación</option>
+                                                <option value="22" <?php echo (isset($id_depa) && $id_depa == '22') ? 'selected' : ''; ?>>Ciencias Psicológicas</option>
+                                                <option value="23" <?php echo (isset($id_depa) && $id_depa == '23') ? 'selected' : ''; ?>>Comunicación Social</option>
+                                                <option value="24" <?php echo (isset($id_depa) && $id_depa == '24') ? 'selected' : ''; ?>>Filosofía y Arte</option>
+                                                <option value="25" <?php echo (isset($id_depa) && $id_depa == '25') ? 'selected' : ''; ?>>Historia y Geografía</option>
+                                                <option value="26" <?php echo (isset($id_depa) && $id_depa == '26') ? 'selected' : ''; ?>>Idiomas y Lingüística</option>
                                                 <option value="27" <?php echo (isset($id_depa) && $id_depa == '27') ? 'selected' : ''; ?>>Lengua Nacional y Literatura</option>
-                                                <option value="28" <?php echo (isset($id_depa) && $id_depa == '28') ? 'selected' : ''; ?>>EnfermerÃ­a de la Mujer, NiÃ±o y Adolescente</option>
+                                                <option value="28" <?php echo (isset($id_depa) && $id_depa == '28') ? 'selected' : ''; ?>>Enfermería de la Mujer, Niño y Adolescente</option>
                                                 <option value="29" <?php echo (isset($id_depa) && $id_depa == '29') ? 'selected' : ''; ?>>Salud del Adulto</option>
                                                 <option value="30" <?php echo (isset($id_depa) && $id_depa == '30') ? 'selected' : ''; ?>>Salud Familiar y Comunitaria</option>
                                                 <option value="31" <?php echo (isset($id_depa) && $id_depa == '31') ? 'selected' : ''; ?>>Farmacotecnia</option>
-                                                <option value="32" <?php echo (isset($id_depa) && $id_depa == '32') ? 'selected' : ''; ?>>FarmacologÃ­a</option>
-                                                <option value="33" <?php echo (isset($id_depa) && $id_depa == '33') ? 'selected' : ''; ?>>BioquÃ­mica</option>
-                                                <option value="34" <?php echo (isset($id_depa) && $id_depa == '34') ? 'selected' : ''; ?>>IngenierÃ­a Civil, Arquitectura y Urbanismo</option>
-                                                <option value="35" <?php echo (isset($id_depa) && $id_depa == '35') ? 'selected' : ''; ?>>IngenierÃ­a Industrial</option>
-                                                <option value="36" <?php echo (isset($id_depa) && $id_depa == '36') ? 'selected' : ''; ?>>IngenierÃ­a de Materiales</option>
-                                                <option value="37" <?php echo (isset($id_depa) && $id_depa == '37') ? 'selected' : ''; ?>>MecÃ¡nica y EnergÃ­a</option>
-                                                <option value="38" <?php echo (isset($id_depa) && $id_depa == '38') ? 'selected' : ''; ?>>IngenierÃ­a MetalÃºrgica</option>
-                                                <option value="39" <?php echo (isset($id_depa) && $id_depa == '39') ? 'selected' : ''; ?>>IngenierÃ­a de Minas</option>
-                                                <option value="40" <?php echo (isset($id_depa) && $id_depa == '40') ? 'selected' : ''; ?>>IngenierÃ­a de Sistemas</option>
-                                                <option value="41" <?php echo (isset($id_depa) && $id_depa == '41') ? 'selected' : ''; ?>>IngenierÃ­a QuÃ­mica</option>
-                                                <option value="42" <?php echo (isset($id_depa) && $id_depa == '42') ? 'selected' : ''; ?>>IngenierÃ­a Ambiental</option>
-                                                <option value="43" <?php echo (isset($id_depa) && $id_depa == '43') ? 'selected' : ''; ?>>QuÃ­mica</option>
-                                                <option value="44" <?php echo (isset($id_depa) && $id_depa == '44') ? 'selected' : ''; ?>>Ciencias BÃ¡sicas MÃ©dicas</option>
-                                                <option value="45" <?php echo (isset($id_depa) && $id_depa == '45') ? 'selected' : ''; ?>>CirugÃ­a</option>
-                                                <option value="46" <?php echo (isset($id_depa) && $id_depa == '46') ? 'selected' : ''; ?>>FisiologÃ­a Humana</option>
-                                                <option value="47" <?php echo (isset($id_depa) && $id_depa == '47') ? 'selected' : ''; ?>>GinecologÃ­a-Obstetricia</option>
+                                                <option value="32" <?php echo (isset($id_depa) && $id_depa == '32') ? 'selected' : ''; ?>>Farmacología</option>
+                                                <option value="33" <?php echo (isset($id_depa) && $id_depa == '33') ? 'selected' : ''; ?>>Bioquímica</option>
+                                                <option value="34" <?php echo (isset($id_depa) && $id_depa == '34') ? 'selected' : ''; ?>>Ingeniería Civil, Arquitectura y Urbanismo</option>
+                                                <option value="35" <?php echo (isset($id_depa) && $id_depa == '35') ? 'selected' : ''; ?>>Ingeniería Industrial</option>
+                                                <option value="36" <?php echo (isset($id_depa) && $id_depa == '36') ? 'selected' : ''; ?>>Ingeniería de Materiales</option>
+                                                <option value="37" <?php echo (isset($id_depa) && $id_depa == '37') ? 'selected' : ''; ?>>Mecánica y Energía</option>
+                                                <option value="38" <?php echo (isset($id_depa) && $id_depa == '38') ? 'selected' : ''; ?>>Ingeniería Metalúrgica</option>
+                                                <option value="39" <?php echo (isset($id_depa) && $id_depa == '39') ? 'selected' : ''; ?>>Ingeniería de Minas</option>
+                                                <option value="40" <?php echo (isset($id_depa) && $id_depa == '40') ? 'selected' : ''; ?>>Ingeniería de Sistemas</option>
+                                                <option value="41" <?php echo (isset($id_depa) && $id_depa == '41') ? 'selected' : ''; ?>>Ingeniería Química</option>
+                                                <option value="42" <?php echo (isset($id_depa) && $id_depa == '42') ? 'selected' : ''; ?>>Ingeniería Ambiental</option>
+                                                <option value="43" <?php echo (isset($id_depa) && $id_depa == '43') ? 'selected' : ''; ?>>Química</option>
+                                                <option value="44" <?php echo (isset($id_depa) && $id_depa == '44') ? 'selected' : ''; ?>>Ciencias Básicas Médicas</option>
+                                                <option value="45" <?php echo (isset($id_depa) && $id_depa == '45') ? 'selected' : ''; ?>>Cirugía</option>
+                                                <option value="46" <?php echo (isset($id_depa) && $id_depa == '46') ? 'selected' : ''; ?>>Fisiología Humana</option>
+                                                <option value="47" <?php echo (isset($id_depa) && $id_depa == '47') ? 'selected' : ''; ?>>Ginecología-Obstetricia</option>
                                                 <option value="48" <?php echo (isset($id_depa) && $id_depa == '48') ? 'selected' : ''; ?>>Medicina</option>
-                                                <option value="49" <?php echo (isset($id_depa) && $id_depa == '49') ? 'selected' : ''; ?>>Medicina Preventiva y Salud PÃºblica</option>
-                                                <option value="50" <?php echo (isset($id_depa) && $id_depa == '50') ? 'selected' : ''; ?>>MorfologÃ­a Humana</option>
-                                                <option value="51" <?php echo (isset($id_depa) && $id_depa == '51') ? 'selected' : ''; ?>>PediatrÃ­a</option>
+                                                <option value="49" <?php echo (isset($id_depa) && $id_depa == '49') ? 'selected' : ''; ?>>Medicina Preventiva y Salud Pública</option>
+                                                <option value="50" <?php echo (isset($id_depa) && $id_depa == '50') ? 'selected' : ''; ?>>Morfología Humana</option>
+                                                <option value="51" <?php echo (isset($id_depa) && $id_depa == '51') ? 'selected' : ''; ?>>Pediatría</option>
                                              </select>
                                           </div>
                                        </div>
                                        <div class="form-group row">
         <label for="inputEscuelaPerfil" class="col-sm-3 col-form-label">Facultad
-            <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="La facultad dependerÃ¡ del departamento seleccionado.">
+            <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="La facultad dependerá del departamento seleccionado.">
                 <i class="fa fa-info-circle"></i>
             </button>
         </label>
@@ -346,7 +346,7 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
                                        </div>
                                     </form>
                                  </div>
-                                 <!-- .Tab Datos AcadÃ©micos -->
+                                 <!-- .Tab Datos Académicos -->
                               </div>
                               <!-- /.tab-content -->
                            </div>
@@ -365,9 +365,9 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
          </div>
          <!-- /.content-wrapper -->
          <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-               <p>Desarrollado por el <a href="#"> Ãrea  informÃ¡tica - DIRSU</a></p>
+               <p>Desarrollado por el <a href="#"> Área  informática - DIRSU</a></p>
             </div>
          </footer>
          <!-- Control Sidebar -->
@@ -473,7 +473,7 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
          
       </script>
       <script>
-         // FunciÃ³n para alternar la visibilidad de la contraseÃ±a
+         // Función para alternar la visibilidad de la contraseña
          function togglePassword(inputId) {
              var input = document.getElementById(inputId);
              var icon = document.getElementById('toggleClaveIcon');
@@ -498,7 +498,7 @@ echo (!empty($p2) ? $p2 : "</b> aÃºn no has registrado el tÃ­tulo de tu proy
              if (passwordField.value) {
                  message.style.display = 'block';  // Muestra el mensaje si hay texto
              } else {
-                 message.style.display = 'none';  // Oculta el mensaje si el campo estÃ¡ vacÃ­o
+                 message.style.display = 'none';  // Oculta el mensaje si el campo está vacío
              }
          }
       </script>

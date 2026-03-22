@@ -1,24 +1,24 @@
-﻿<?php
-  // Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+  // Incluir configSesion.php para verificar la sesión
   include "../componentes/configSesion.php";
   
-  // Incluir la conexiÃ³n a la base de datos
+  // Incluir la conexión a la base de datos
   include('../componentes/db.php');
   
   // Arreglo de facultades para el filtro y nombre de facultad
   $facultades = [
    '1' => 'Ciencias Agropecuarias', 
-   '2' => 'Ciencias BiolÃ³gicas', 
-   '3' => 'Ciencias EconÃ³micas', 
-   '4' => 'Ciencias FÃ­sicas y MatemÃ¡ticas',
+   '2' => 'Ciencias Biológicas', 
+   '3' => 'Ciencias Económicas', 
+   '4' => 'Ciencias Físicas y Matemáticas',
    '5' => 'Ciencias Sociales', 
-   '6' => 'Derecho y Ciencias PolÃ­ticas', 
-   '7' => 'EducaciÃ³n y Ciencias de la ComunicaciÃ³n', 
-   '8' => 'EnfermerÃ­a',
-   '9' => 'EstomatologÃ­a', 
-   '10' => 'Farmacia y BioquÃ­mica', 
-   '11' => 'IngenierÃ­a', 
-   '12' => 'IngenierÃ­a QuÃ­mica', 
+   '6' => 'Derecho y Ciencias Políticas', 
+   '7' => 'Educación y Ciencias de la Comunicación', 
+   '8' => 'Enfermería',
+   '9' => 'Estomatología', 
+   '10' => 'Farmacia y Bioquímica', 
+   '11' => 'Ingeniería', 
+   '12' => 'Ingeniería Química', 
    '13' => 'Medicina'
   ];
   ?>
@@ -53,7 +53,7 @@
   </head>
   <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
-      <!-- Preloader --><!-- Icono que se muestra mientras estÃ¡ cargando el sistema -->
+      <!-- Preloader --><!-- Icono que se muestra mientras está cargando el sistema -->
       <div class="preloader flex-column justify-content-center align-items-center">
         <img class="animation__shake" src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTELogo" height="60" width="60">
       </div>
@@ -75,11 +75,11 @@
           <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
             <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
               <p style="color: white;
-                size: 8px">Ir a pÃ¡gina DIRSU</p>
+                size: 8px">Ir a página DIRSU</p>
             </a>
           </li>
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+            <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
           </li>
         </ul>
       </nav>
@@ -93,7 +93,7 @@
           <div class="container-fluid">
             <div class="row mb-2">
               <div class="col-sm-12">
-                <h5 class="m-0">!Bienvenido al Sistema de gestiÃ³n de proyectos DIRSU!</h5>
+                <h5 class="m-0">!Bienvenido al Sistema de gestión de proyectos DIRSU!</h5>
               </div>
               <!-- /.col -->
             </div>
@@ -112,9 +112,9 @@
       </div>
       <!-- /.content-wrapper -->
       <footer class="main-footer">
-        <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+        <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
         <div class="float-right d-none d-sm-inline-block">
-          <p>Desarrollado por el <a href="#"> Ãrea  informÃ¡tica - DIRSU</a></p>
+          <p>Desarrollado por el <a href="#"> Área  informática - DIRSU</a></p>
         </div>
       </footer>
       <!-- Control Sidebar -->
@@ -159,15 +159,15 @@
     <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
     <script src="../dust/js/pages/dashboard.js"></script>
     <script>
-      // FunciÃ³n para actualizar el contador cada segundo
+      // Función para actualizar el contador cada segundo
       function updateCountdown() {
-          // Fecha de deadline en formato AÃ±o/Mes/DÃ­a Hora:Minutos:Segundos
+          // Fecha de deadline en formato Año/Mes/Día Hora:Minutos:Segundos
           const deadlineDate = new Date("2025-01-15T23:59:59").getTime();
       
           const now = new Date().getTime();
           const timeLeft = deadlineDate - now;
       
-          // CÃ¡lculo de dÃ­as, horas, minutos y segundos restantes
+          // Cálculo de días, horas, minutos y segundos restantes
           const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
           const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
@@ -182,10 +182,10 @@
           // Si el tiempo ha llegado a 0, se detiene el contador
           if (timeLeft < 0) {
               clearInterval(countdownInterval);
-              document.getElementById("countdown").innerHTML = "<div class='alert alert-danger'>Â¡El deadline ha pasado!</div>";
+              document.getElementById("countdown").innerHTML = "<div class='alert alert-danger'>¡El deadline ha pasado!</div>";
           }
       }
-      // Ejecutar la funciÃ³n de actualizaciÃ³n cada segundo
+      // Ejecutar la función de actualización cada segundo
       const countdownInterval = setInterval(updateCountdown, 1000);
     </script>
   </body>
