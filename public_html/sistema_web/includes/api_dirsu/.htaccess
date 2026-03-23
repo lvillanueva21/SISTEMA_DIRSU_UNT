@@ -7,12 +7,21 @@ Options -Indexes
     <Files "index.php">
         Require all granted
     </Files>
+
+    <Files "api.php">
+        Require all granted
+    </Files>
 </IfModule>
 
 <IfModule !mod_authz_core.c>
     Deny from all
 
     <Files "index.php">
+        Order allow,deny
+        Allow from all
+    </Files>
+
+    <Files "api.php">
         Order allow,deny
         Allow from all
     </Files>

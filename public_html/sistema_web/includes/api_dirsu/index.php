@@ -1,7 +1,7 @@
 <?php
 include_once __DIR__ . '/../../componentes/configSesion.php';
 include_once __DIR__ . '/guard.php';
-include_once __DIR__ . '/mock.php';
+include_once __DIR__ . '/url_helper.php';
 
 rsu_api_dirsu_guard(array());
 
@@ -18,8 +18,50 @@ $rsu_api_dirsu_page_title = 'Api Dirsu - Sistema DIRSU';
 $rsu_api_dirsu_favicon = $rsu_api_dirsu_assets_prefix . 'imagenes/dirsu_128_128.ico';
 $rsu_api_dirsu_logo = $rsu_api_dirsu_assets_prefix . 'dust/img/dirsu_logo_128_128.png';
 $rsu_api_dirsu_logout_href = $rsu_api_dirsu_assets_prefix . 'componentes/sesion/cerrarSesion.php';
+$rsu_api_dirsu_api_url = rsu_api_dirsu_api_url();
+if (trim((string)$rsu_api_dirsu_api_url) === '' || strpos((string)$rsu_api_dirsu_api_url, 'includes/includes/') !== false) {
+    $rsu_api_dirsu_api_url = 'api.php';
+}
 
-$rsu_api_dirsu_data = rsu_api_dirsu_mock_items();
+$rsu_api_dirsu_data = array(
+    array(
+        'id' => 1,
+        'nombre' => 'Consulta de usuario',
+        'modulo' => 'usuarios',
+        'metodo' => 'GET',
+        'endpoint' => 'api.php?action=user.get&usuario={usuario}|id={id}',
+        'estado' => 'activo',
+        'actualizado_en' => '2026-03-22 09:00:00',
+        'responsable' => 'api_dirsu',
+        'action' => 'user.get',
+        'soporte_live' => 1
+    ),
+    array(
+        'id' => 2,
+        'nombre' => 'Listado de proyectos vigentes',
+        'modulo' => 'proyectos',
+        'metodo' => 'GET',
+        'endpoint' => 'api.php?action=project.list',
+        'estado' => 'borrador',
+        'actualizado_en' => '2026-03-22 09:10:00',
+        'responsable' => 'api_dirsu',
+        'action' => 'project.list',
+        'soporte_live' => 0
+    ),
+    array(
+        'id' => 3,
+        'nombre' => 'Actualizar cronograma',
+        'modulo' => 'cronograma',
+        'metodo' => 'PATCH',
+        'endpoint' => 'api.php?action=schedule.update&id={id}',
+        'estado' => 'deshabilitado',
+        'actualizado_en' => '2026-03-22 09:20:00',
+        'responsable' => 'api_dirsu',
+        'action' => 'schedule.update',
+        'soporte_live' => 0
+    )
+);
+
 $rsu_api_dirsu_json = json_encode($rsu_api_dirsu_data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 if ($rsu_api_dirsu_json === false) {
     $rsu_api_dirsu_json = '[]';
@@ -50,7 +92,7 @@ if ($rsu_api_dirsu_json === false) {
       font-size: 13px;
     }
     .api-dirsu-table-wrap {
-      max-height: 360px;
+      max-height: 300px;
       overflow: auto;
     }
     .api-dirsu-filter .form-control {
@@ -59,6 +101,18 @@ if ($rsu_api_dirsu_json === false) {
     .api-dirsu-empty {
       color: #6c757d;
       text-align: center;
+    }
+    .api-dirsu-params {
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: #fdfdfd;
+    }
+    .api-dirsu-note {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 6px;
     }
   </style>
 </head>
@@ -131,6 +185,21 @@ if ($rsu_api_dirsu_json === false) {
                   </div>
                 </div>
 
+                <div class="api-dirsu-params">
+                  <div class="form-group mb-2">
+                    <label for="apiUsuarioInput" class="mb-1">Usuario (codigo o DNI)</label>
+                    <input type="text" id="apiUsuarioInput" class="form-control" placeholder="Ejemplo: 67676767 o 6407">
+                  </div>
+                  <div class="form-group mb-2">
+                    <label for="apiIdInput" class="mb-1">ID interno</label>
+                    <input type="number" id="apiIdInput" class="form-control" min="1" step="1" placeholder="Ejemplo: 37">
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm" id="apiRunBtn">
+                    <i class="fas fa-play"></i> Consultar API seleccionada
+                  </button>
+                  <div class="api-dirsu-note" id="apiActionNote">Selecciona una fila y luego consulta por usuario o id.</div>
+                </div>
+
                 <div class="table-responsive api-dirsu-table-wrap">
                   <table class="table table-sm table-hover" id="apiTableLeft">
                     <thead>
@@ -157,7 +226,11 @@ if ($rsu_api_dirsu_json === false) {
                 <pre id="apiJsonOutput" class="api-dirsu-json"></pre>
               </div>
             </div>
+          </div>
+        </div>
 
+        <div class="row">
+          <div class="col-12">
             <div class="card card-outline card-secondary">
               <div class="card-header">
                 <h3 class="card-title">Vista tabular</h3>
@@ -168,6 +241,7 @@ if ($rsu_api_dirsu_json === false) {
                     <thead>
                       <tr>
                         <th>Campo</th>
+                        <th>Alias</th>
                         <th>Valor</th>
                       </tr>
                     </thead>
@@ -198,6 +272,7 @@ if ($rsu_api_dirsu_json === false) {
 <script>
 (function () {
   var apiData = <?php echo $rsu_api_dirsu_json; ?>;
+  var apiBaseUrl = <?php echo json_encode($rsu_api_dirsu_api_url, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
   var selectedId = null;
 
   var inputText = document.getElementById('apiFilterText');
@@ -205,6 +280,10 @@ if ($rsu_api_dirsu_json === false) {
   var leftBody = document.querySelector('#apiTableLeft tbody');
   var rightBody = document.querySelector('#apiTableRight tbody');
   var jsonOutput = document.getElementById('apiJsonOutput');
+  var inputUsuario = document.getElementById('apiUsuarioInput');
+  var inputId = document.getElementById('apiIdInput');
+  var runBtn = document.getElementById('apiRunBtn');
+  var actionNote = document.getElementById('apiActionNote');
 
   function toLower(value) {
     if (value === null || value === undefined) {
@@ -212,6 +291,14 @@ if ($rsu_api_dirsu_json === false) {
     }
 
     return String(value).toLowerCase();
+  }
+
+  function trimValue(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return String(value).replace(/^\s+|\s+$/g, '');
   }
 
   function clearNode(node) {
@@ -299,7 +386,7 @@ if ($rsu_api_dirsu_json === false) {
       btn.type = 'button';
       btn.className = 'btn btn-xs btn-outline-primary btn-api-view';
       btn.setAttribute('data-api-id', item.id);
-      btn.appendChild(document.createTextNode('Ver'));
+      btn.appendChild(document.createTextNode(item.soporte_live ? 'Probar' : 'Ver'));
       tdAction.appendChild(btn);
       tr.appendChild(tdAction);
 
@@ -318,14 +405,55 @@ if ($rsu_api_dirsu_json === false) {
     return null;
   }
 
-  function renderRightPreview(item) {
+  function getAliasForField(field) {
+    var aliasMap = {
+      'id': 'ID interno',
+      'usuario': 'Codigo de usuario',
+      'codigo_usuario': 'Codigo de usuario',
+      'nombres': 'Nombres',
+      'apellidos': 'Apellidos',
+      'nombres_completos': 'Nombre completo',
+      'rol.id': 'ID de rol',
+      'rol.nombre': 'Nombre del rol',
+      'sede.id': 'ID de sede',
+      'sede.nombre': 'Nombre de sede',
+      'facultad.id': 'ID de facultad',
+      'facultad.nombre': 'Nombre de facultad',
+      'facultad.origen': 'Origen de facultad',
+      'escuela.id': 'ID de escuela',
+      'escuela.nombre': 'Nombre de escuela',
+      'departamento_academico.id': 'ID de departamento academico',
+      'departamento_academico.nombre': 'Nombre de Departamento Academico',
+      'contacto.email': 'Correo principal',
+      'contacto.telefono': 'Telefono principal',
+      'contacto.telefono_asistente': 'Telefono de asistente',
+      'contacto.correo_asistente': 'Correo de asistente',
+      'contacto.origen': 'Origen de contacto',
+      'proyecto.id': 'ID de proyecto principal',
+      'meta.search_mode': 'Modo de busqueda',
+      'meta.search_value': 'Valor de busqueda',
+      'meta.requested_at': 'Fecha de consulta',
+      'meta.requested_by': 'Usuario que consulta',
+      'ok': 'Estado de respuesta',
+      'message': 'Mensaje de respuesta',
+      'code': 'Codigo de error'
+    };
+
+    if (aliasMap.hasOwnProperty(field)) {
+      return aliasMap[field];
+    }
+
+    var pretty = String(field).replace(/\./g, ' > ').replace(/_/g, ' ');
+    return pretty.charAt(0).toUpperCase() + pretty.slice(1);
+  }
+
+  function renderKeyValueRows(payload) {
     clearNode(rightBody);
 
-    if (!item) {
-      jsonOutput.textContent = '{}';
+    if (!payload) {
       var trEmpty = document.createElement('tr');
       var tdEmpty = document.createElement('td');
-      tdEmpty.colSpan = 2;
+      tdEmpty.colSpan = 3;
       tdEmpty.className = 'api-dirsu-empty';
       tdEmpty.appendChild(document.createTextNode('Selecciona una fila para ver su detalle.'));
       trEmpty.appendChild(tdEmpty);
@@ -333,24 +461,104 @@ if ($rsu_api_dirsu_json === false) {
       return;
     }
 
-    jsonOutput.textContent = JSON.stringify(item, null, 2);
+    var rows = [];
 
-    var keys = ['id', 'nombre', 'modulo', 'metodo', 'endpoint', 'estado', 'actualizado_en', 'responsable'];
+    function isArray(value) {
+      return Object.prototype.toString.call(value) === '[object Array]';
+    }
+
+    function pushRow(key, value) {
+      var printable = value;
+      if (printable === null || printable === undefined) {
+        printable = '';
+      } else if (typeof printable === 'object') {
+        printable = JSON.stringify(printable);
+      } else {
+        printable = String(printable);
+      }
+
+      rows.push({
+        key: key,
+        alias: getAliasForField(key),
+        value: printable
+      });
+    }
+
+    function flattenObject(obj, prefix) {
+      var key;
+      for (key in obj) {
+        if (!obj.hasOwnProperty(key)) {
+          continue;
+        }
+
+        var fullKey = prefix ? (prefix + '.' + key) : key;
+        var value = obj[key];
+
+        if (value !== null && typeof value === 'object' && !isArray(value)) {
+          flattenObject(value, fullKey);
+        } else {
+          pushRow(fullKey, value);
+        }
+      }
+    }
+
+    if (payload !== null && typeof payload === 'object') {
+      flattenObject(payload, '');
+    } else {
+      pushRow('resultado', payload);
+    }
+
+    if (!rows.length) {
+      pushRow('resultado', 'Sin datos.');
+    }
+
     var i;
-    for (i = 0; i < keys.length; i++) {
-      var key = keys[i];
+    for (i = 0; i < rows.length; i++) {
       var tr = document.createElement('tr');
-
       var tdKey = document.createElement('td');
-      tdKey.appendChild(document.createTextNode(key));
-      tr.appendChild(tdKey);
-
+      var tdAlias = document.createElement('td');
       var tdValue = document.createElement('td');
-      tdValue.appendChild(document.createTextNode(item[key]));
-      tr.appendChild(tdValue);
 
+      tdKey.appendChild(document.createTextNode(rows[i].key));
+      tdAlias.appendChild(document.createTextNode(rows[i].alias));
+      tdValue.appendChild(document.createTextNode(rows[i].value));
+
+      tr.appendChild(tdKey);
+      tr.appendChild(tdAlias);
+      tr.appendChild(tdValue);
       rightBody.appendChild(tr);
     }
+  }
+
+  function renderJson(payload) {
+    if (payload === null || payload === undefined) {
+      jsonOutput.textContent = '{}';
+      return;
+    }
+
+    try {
+      jsonOutput.textContent = JSON.stringify(payload, null, 2);
+    } catch (error) {
+      jsonOutput.textContent = String(payload);
+    }
+  }
+
+  function showCatalogPreview(item) {
+    if (!item) {
+      actionNote.textContent = 'Selecciona una fila y luego consulta por usuario o id.';
+      renderJson({});
+      renderKeyValueRows(null);
+      return;
+    }
+
+    if (item.soporte_live) {
+      actionNote.textContent = 'Endpoint activo. Puedes consultar por usuario o por id sin recargar la pagina.';
+    } else {
+      actionNote.textContent = 'Endpoint de muestra. Aun no tiene backend activo.';
+    }
+
+    renderJson(item);
+    renderKeyValueRows(item);
   }
 
   function ensureSelectedFromRows(rows) {
@@ -373,7 +581,88 @@ if ($rsu_api_dirsu_json === false) {
     var filtered = getFilteredRows();
     ensureSelectedFromRows(filtered);
     renderLeftTable(filtered);
-    renderRightPreview(findRowById(selectedId));
+    showCatalogPreview(findRowById(selectedId));
+  }
+
+  function requestJson(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) {
+        return;
+      }
+
+      var payload = null;
+      if (xhr.responseText) {
+        try {
+          payload = JSON.parse(xhr.responseText);
+        } catch (e) {
+          payload = null;
+        }
+      }
+
+      callback(xhr.status, payload, xhr.responseText || '');
+    };
+
+    xhr.send(null);
+  }
+
+  function runSelectedApi() {
+    var item = findRowById(selectedId);
+
+    if (!item) {
+      actionNote.textContent = 'Selecciona una API en la tabla izquierda antes de ejecutar.';
+      return;
+    }
+
+    if (!item.soporte_live || item.action !== 'user.get') {
+      actionNote.textContent = 'Esta API aun no tiene implementacion activa. Solo muestra datos de prueba.';
+      showCatalogPreview(item);
+      return;
+    }
+
+    var usuario = trimValue(inputUsuario.value);
+    var id = trimValue(inputId.value);
+
+    if (id !== '' && !/^\d+$/.test(id)) {
+      actionNote.textContent = 'El id debe ser numerico.';
+      return;
+    }
+
+    if (id === '' && usuario === '') {
+      actionNote.textContent = 'Ingresa un usuario o un id para consultar.';
+      return;
+    }
+
+    var requestUrl = apiBaseUrl + '?action=user.get';
+    if (id !== '') {
+      requestUrl += '&id=' + encodeURIComponent(id);
+    } else {
+      requestUrl += '&usuario=' + encodeURIComponent(usuario);
+    }
+
+    actionNote.textContent = 'Consultando API...';
+    renderJson({ status: 'loading', url: requestUrl });
+
+    requestJson(requestUrl, function (status, payload, rawText) {
+      if (payload !== null) {
+        renderJson(payload);
+        if (payload.ok && payload.data) {
+          renderKeyValueRows(payload.data);
+          actionNote.textContent = 'Consulta completada sin recarga de pagina.';
+        } else {
+          renderKeyValueRows(payload);
+          actionNote.textContent = 'La API respondio con un mensaje de error (HTTP ' + status + ').';
+        }
+        return;
+      }
+
+      renderJson({ ok: false, status: status, raw: rawText });
+      renderKeyValueRows({ status: status, mensaje: 'No se pudo parsear el JSON de respuesta.' });
+      actionNote.textContent = 'Respuesta no valida del endpoint (HTTP ' + status + ').';
+    });
   }
 
   inputText.addEventListener('input', refreshView);
@@ -388,6 +677,22 @@ if ($rsu_api_dirsu_json === false) {
 
     selectedId = parseInt(target.getAttribute('data-api-id'), 10);
     refreshView();
+  });
+
+  runBtn.addEventListener('click', runSelectedApi);
+
+  inputUsuario.addEventListener('keypress', function (event) {
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      runSelectedApi();
+    }
+  });
+
+  inputId.addEventListener('keypress', function (event) {
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      runSelectedApi();
+    }
   });
 
   refreshView();
