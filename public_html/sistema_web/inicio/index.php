@@ -661,14 +661,7 @@ $soyAdminDirsu = (int)($idRol ?? -1) === 1;
 <div class="row home-row">
   <!-- Card 3 -->
   <div class="col-md-6 home-col">
-    <div class="card home-card">
-      <div class="card-header bg-warning text-white">
-        <strong><i class="fas fa-bell"></i> Alertas & vencimientos</strong>
-      </div>
-      <div class="card-body">
-        <div class="text-muted small">Contenido próximo…</div>
-      </div>
-    </div>
+    <?php include __DIR__ . '/../includes/cards/card_periodos_activos.php'; ?>
   </div>
 
   <!-- Card 4 -->
