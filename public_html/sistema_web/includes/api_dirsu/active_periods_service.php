@@ -95,6 +95,160 @@ if (!function_exists('rsu_api_active_periods_window_status')) {
     }
 }
 
+if (!function_exists('rsu_api_active_periods_interface_definitions')) {
+    function rsu_api_active_periods_interface_definitions()
+    {
+        return array(
+            'F1-GENERALIDADES' => array(
+                'nombre' => 'Generalidades',
+                'ruta' => '/vistas/datos_principales.php'
+            ),
+            'F1-PLAN' => array(
+                'nombre' => 'Plan de proyecto',
+                'ruta' => '/vistas/desarrollo_informe.php'
+            ),
+            'F1-ANEXOS' => array(
+                'nombre' => 'Anexos',
+                'ruta' => '/vistas/anexos.php'
+            ),
+            'F3-SEMESTRAL' => array(
+                'nombre' => 'Informe semestral',
+                'ruta' => '/semestral/index.php'
+            )
+        );
+    }
+}
+
+if (!function_exists('rsu_api_active_periods_fetch_interface_rules')) {
+    function rsu_api_active_periods_fetch_interface_rules($conexion, $period_names)
+    {
+        $map = array();
+        $names_source = (array)$period_names;
+        $names_clean = array();
+        $i = 0;
+        for ($i = 0; $i < count($names_source); $i++) {
+            $name = trim((string)$names_source[$i]);
+            if ($name !== '') {
+                $names_clean[$name] = $name;
+            }
+        }
+
+        if (empty($names_clean)) {
+            return $map;
+        }
+
+        $definitions = rsu_api_active_periods_interface_definitions();
+        $codes = array_keys($definitions);
+        if (empty($codes)) {
+            return $map;
+        }
+
+        $names_list = array_values($names_clean);
+        $names_placeholders = implode(',', array_fill(0, count($names_list), '?'));
+        $codes_placeholders = implode(',', array_fill(0, count($codes), '?'));
+
+        $sql = "SELECT id,
+                       periodo,
+                       codigo,
+                       descripcion,
+                       DATE_FORMAT(inicio, '%Y-%m-%d %H:%i:%s') AS inicio,
+                       DATE_FORMAT(fin, '%Y-%m-%d %H:%i:%s') AS fin,
+                       estado
+                FROM cronogramas
+                WHERE periodo IN (" . $names_placeholders . ")
+                  AND codigo IN (" . $codes_placeholders . ")
+                ORDER BY periodo ASC, codigo ASC, actualizado_en DESC, id DESC";
+
+        $stmt = mysqli_prepare($conexion, $sql);
+        if (!$stmt) {
+            return null;
+        }
+
+        $params = array_merge($names_list, $codes);
+        $types = str_repeat('s', count($params));
+        mysqli_stmt_bind_param($stmt, $types, ...$params);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        if ($res instanceof mysqli_result) {
+            while ($row = mysqli_fetch_assoc($res)) {
+                $periodo = isset($row['periodo']) ? (string)$row['periodo'] : '';
+                $codigo = isset($row['codigo']) ? (string)$row['codigo'] : '';
+                if ($periodo === '' || $codigo === '') {
+                    continue;
+                }
+                if (!isset($map[$periodo])) {
+                    $map[$periodo] = array();
+                }
+                if (!isset($map[$periodo][$codigo])) {
+                    $map[$periodo][$codigo] = $row;
+                }
+            }
+            mysqli_free_result($res);
+        }
+        mysqli_stmt_close($stmt);
+
+        return $map;
+    }
+}
+
+if (!function_exists('rsu_api_active_periods_interface_payload')) {
+    function rsu_api_active_periods_interface_payload($codigo, $definition, $row, $timezone_name)
+    {
+        $nombre = isset($definition['nombre']) ? (string)$definition['nombre'] : $codigo;
+        $ruta = isset($definition['ruta']) ? (string)$definition['ruta'] : null;
+
+        if (!is_array($row)) {
+            return array(
+                'codigo' => $codigo,
+                'nombre' => $nombre,
+                'ruta' => $ruta,
+                'configurada' => false,
+                'regla_activa' => false,
+                'visible_ahora' => false,
+                'estado_visualizacion' => 'sin_regla',
+                'estado_texto' => 'Sin regla',
+                'ventana_estado' => 'sin_fechas',
+                'inicio' => null,
+                'fin' => null,
+                'descripcion' => null
+            );
+        }
+
+        $inicio = (string)rsu_api_active_periods_value($row, 'inicio');
+        $fin = (string)rsu_api_active_periods_value($row, 'fin');
+        $regla_activa = (int)rsu_api_active_periods_value($row, 'estado') === 1;
+        $ventana_estado = rsu_api_active_periods_window_status($inicio, $fin, $timezone_name);
+        $visible_ahora = ($regla_activa && $ventana_estado === 'abierto');
+
+        $estado_visualizacion = 'inactiva';
+        $estado_texto = 'Inactiva';
+        if ($regla_activa) {
+            if ($visible_ahora) {
+                $estado_visualizacion = 'visible_ahora';
+                $estado_texto = 'Visible ahora';
+            } else {
+                $estado_visualizacion = 'activa_fuera_ventana';
+                $estado_texto = 'Activa fuera de ventana';
+            }
+        }
+
+        return array(
+            'codigo' => $codigo,
+            'nombre' => $nombre,
+            'ruta' => $ruta,
+            'configurada' => true,
+            'regla_activa' => $regla_activa,
+            'visible_ahora' => $visible_ahora,
+            'estado_visualizacion' => $estado_visualizacion,
+            'estado_texto' => $estado_texto,
+            'ventana_estado' => $ventana_estado,
+            'inicio' => ($inicio !== '' ? $inicio : null),
+            'fin' => ($fin !== '' ? $fin : null),
+            'descripcion' => (string)rsu_api_active_periods_value($row, 'descripcion')
+        );
+    }
+}
+
 if (!function_exists('rsu_api_active_periods_fetch_periods')) {
     function rsu_api_active_periods_fetch_periods($conexion, $id_periodo)
     {
@@ -277,6 +431,24 @@ if (!function_exists('rsu_api_periods_active_snapshot_get')) {
             }
         }
 
+        $period_names = array();
+        for ($i = 0; $i < count($periods); $i++) {
+            $period_name = trim((string)rsu_api_active_periods_value($periods[$i], 'nombre'));
+            if ($period_name !== '') {
+                $period_names[$period_name] = $period_name;
+            }
+        }
+
+        $interface_rules_by_period = rsu_api_active_periods_fetch_interface_rules($conexion, array_values($period_names));
+        if ($interface_rules_by_period === null) {
+            return array(
+                'ok' => false,
+                'error_code' => 'db_query_error',
+                'error_message' => 'No se pudo consultar reglas de visibilidad por periodo.'
+            );
+        }
+        $interface_definitions = rsu_api_active_periods_interface_definitions();
+
         $cronograms = rsu_api_active_periods_fetch_cronograms($conexion, $period_ids);
         if ($cronograms === null) {
             return array(
@@ -344,6 +516,10 @@ if (!function_exists('rsu_api_periods_active_snapshot_get')) {
         $total_cron_con_formulario = 0;
         $total_cron_sin_formulario = 0;
         $total_cron_form_sin_items = 0;
+        $total_interfaces_configuradas = 0;
+        $total_interfaces_regla_activa = 0;
+        $total_interfaces_visibles_ahora = 0;
+        $total_interfaces_sin_regla = 0;
 
         for ($i = 0; $i < count($periods); $i++) {
             $period = $periods[$i];
@@ -427,6 +603,28 @@ if (!function_exists('rsu_api_periods_active_snapshot_get')) {
             }
 
             $total_cronogramas += count($cron_payload);
+            $period_name = (string)rsu_api_active_periods_value($period, 'nombre');
+            $rules_for_period = isset($interface_rules_by_period[$period_name]) && is_array($interface_rules_by_period[$period_name])
+                ? $interface_rules_by_period[$period_name]
+                : array();
+            $interfaces_payload = array();
+            foreach ($interface_definitions as $codigo_if => $definition_if) {
+                $rule_if = isset($rules_for_period[$codigo_if]) ? $rules_for_period[$codigo_if] : null;
+                $interface_item = rsu_api_active_periods_interface_payload($codigo_if, $definition_if, $rule_if, $timezone_name);
+                $interfaces_payload[] = $interface_item;
+
+                if (!empty($interface_item['configurada'])) {
+                    $total_interfaces_configuradas++;
+                } else {
+                    $total_interfaces_sin_regla++;
+                }
+                if (!empty($interface_item['regla_activa'])) {
+                    $total_interfaces_regla_activa++;
+                }
+                if (!empty($interface_item['visible_ahora'])) {
+                    $total_interfaces_visibles_ahora++;
+                }
+            }
 
             $period_items[] = array(
                 'id' => $period_id,
@@ -435,7 +633,8 @@ if (!function_exists('rsu_api_periods_active_snapshot_get')) {
                 'fecha_fin' => (string)rsu_api_active_periods_value($period, 'fecha_fin'),
                 'activo' => 1,
                 'estado_periodo' => $has_cronograms ? 'con_cronogramas_activos' : 'sin_cronogramas_activos',
-                'cronogramas_activos' => $cron_payload
+                'cronogramas_activos' => $cron_payload,
+                'visibilidad_interfaces' => $interfaces_payload
             );
         }
 
@@ -450,6 +649,7 @@ if (!function_exists('rsu_api_periods_active_snapshot_get')) {
                 'cronograma_activo' => 'sm_cronogramas.activo = 1',
                 'formulario_activo' => 'sm_formularios.activo = 1',
                 'item_activo' => 'sm_formulario_items.activo = 1',
+                'visibilidad_interfaces' => 'cronogramas(periodo+codigo) para F1-GENERALIDADES, F1-PLAN, F1-ANEXOS y F3-SEMESTRAL.',
                 'consistencia' => 'Se detectan cronogramas con multiples formularios activos, sin alterar datos.'
             )
         );
@@ -470,7 +670,11 @@ if (!function_exists('rsu_api_periods_active_snapshot_get')) {
                     'total_formularios_activos_vinculados' => $total_formularios,
                     'total_cronogramas_con_formulario' => $total_cron_con_formulario,
                     'total_cronogramas_sin_formulario' => $total_cron_sin_formulario,
-                    'total_cronogramas_con_formulario_sin_items' => $total_cron_form_sin_items
+                    'total_cronogramas_con_formulario_sin_items' => $total_cron_form_sin_items,
+                    'total_interfaces_configuradas' => $total_interfaces_configuradas,
+                    'total_interfaces_con_regla_activa' => $total_interfaces_regla_activa,
+                    'total_interfaces_visibles_ahora' => $total_interfaces_visibles_ahora,
+                    'total_interfaces_sin_regla' => $total_interfaces_sin_regla
                 ),
                 'periodos' => $period_items
             ),

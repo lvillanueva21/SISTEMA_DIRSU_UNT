@@ -81,6 +81,34 @@ if (!isset($rsu_card_periodos_api_url)) {
     color: #198754;
     font-weight: 700;
   }
+  .periodos-activos-card .interfaces-wrap {
+    border: 1px dashed #d7dbe0;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #f9fbfd;
+  }
+  .periodos-activos-card .interfaces-title {
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .periodos-activos-card .interface-item {
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #eceff3;
+  }
+  .periodos-activos-card .interface-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .periodos-activos-card .interface-meta {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 2px;
+  }
 </style>
 
 <div class="card home-card periodos-activos-card">
@@ -148,10 +176,10 @@ if (!isset($rsu_card_periodos_api_url)) {
   function renderCronogramas(periodo) {
     var cronogramas = (periodo && periodo.cronogramas_activos) ? periodo.cronogramas_activos : [];
     if (!cronogramas.length) {
-      return '<div class="text-danger small"><strong>Sin cronogramas activos en este periodo.</strong></div>';
+      return '<div class="interfaces-title">Cronogramas activos</div><div class="text-danger small"><strong>Sin cronogramas activos en este periodo.</strong></div>';
     }
 
-    var html = '';
+    var html = '<div class="interfaces-title">Cronogramas activos</div>';
     var i;
     for (i = 0; i < cronogramas.length; i++) {
       var cron = cronogramas[i] || {};
@@ -161,6 +189,39 @@ if (!isset($rsu_card_periodos_api_url)) {
       html += '<div class="mt-2">' + renderFormulario(cron.formulario || null) + '</div>';
       html += '</div>';
     }
+    return html;
+  }
+
+  function interfazBadge(interfaz) {
+    var estado = interfaz && interfaz.estado_visualizacion ? String(interfaz.estado_visualizacion) : '';
+    if (estado === 'visible_ahora') {
+      return '<span class="badge badge-success">Visible ahora</span>';
+    }
+    if (estado === 'activa_fuera_ventana') {
+      return '<span class="badge badge-warning">Activa fuera de ventana</span>';
+    }
+    if (estado === 'inactiva') {
+      return '<span class="badge badge-secondary">Inactiva</span>';
+    }
+    return '<span class="badge bg-white text-danger border border-danger">Sin regla</span>';
+  }
+
+  function renderInterfaces(periodo) {
+    var interfaces = (periodo && periodo.visibilidad_interfaces) ? periodo.visibilidad_interfaces : [];
+    if (!interfaces.length) {
+      return '<div class="interfaces-wrap"><div class="interfaces-title">Visibilidad de p&aacute;ginas</div><div class="small text-muted">Sin datos de visibilidad.</div></div>';
+    }
+
+    var html = '<div class="interfaces-wrap"><div class="interfaces-title">Visibilidad de p&aacute;ginas</div>';
+    var i;
+    for (i = 0; i < interfaces.length; i++) {
+      var it = interfaces[i] || {};
+      html += '<div class="interface-item">';
+      html += '<div><strong>' + esc(it.nombre || it.codigo || 'Interfaz') + '</strong> ' + interfazBadge(it) + '</div>';
+      html += '<div class="interface-meta">Inicio: ' + esc(it.inicio || '-') + ' | Fin: ' + esc(it.fin || '-') + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
     return html;
   }
 
@@ -215,7 +276,8 @@ if (!isset($rsu_card_periodos_api_url)) {
     resumenNode.innerHTML =
       'Per&iacute;odos activos: <strong>' + esc(resumen.total_periodos_activos || 0) + '</strong> | ' +
       'Cronogramas activos: <strong>' + esc(resumen.total_cronogramas_activos || 0) + '</strong> | ' +
-      'Cronogramas sin formulario: <strong>' + esc(resumen.total_cronogramas_sin_formulario || 0) + '</strong>';
+      'Cronogramas sin formulario: <strong>' + esc(resumen.total_cronogramas_sin_formulario || 0) + '</strong> | ' +
+      'Interfaces visibles ahora: <strong>' + esc(resumen.total_interfaces_visibles_ahora || 0) + '</strong>';
 
     if (!periodos.length) {
       bodyNode.innerHTML = '<div class="alert alert-info mb-0">No hay periodos activos para mostrar.</div>';
@@ -232,6 +294,7 @@ if (!isset($rsu_card_periodos_api_url)) {
       html += '<div class="period-row-meta">Inicio: ' + esc(periodo.fecha_inicio || '-') + ' | Fin: ' + esc(periodo.fecha_fin || '-') + '</div>';
       html += '</button>';
       html += '<div id="' + panelId + '" class="period-panel">';
+      html += renderInterfaces(periodo);
       html += renderCronogramas(periodo);
       html += '</div>';
     }

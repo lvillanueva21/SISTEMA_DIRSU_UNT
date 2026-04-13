@@ -111,8 +111,8 @@ case 'list':
             $res2 = mysqli_stmt_get_result($st2);
             $rowP = mysqli_fetch_assoc($res2);
 
-            if ($tipo === 1 && $rowP && isset($rowP['periodo'])) {
-                rsu_vf1_ensure_rows_for_period($conexion, $rowP['periodo'], $apertura, $cierre, $id_new);
+            if (in_array($tipo, array(1, 2), true) && $rowP && isset($rowP['periodo'])) {
+                rsu_vf1_ensure_rows_for_period($conexion, $rowP['periodo'], $apertura, $cierre, $id_new, $tipo);
             }
             mysqli_commit($conexion);
 
@@ -169,7 +169,7 @@ echo json_encode([
             mysqli_stmt_bind_param($st, 'iissii', $id_periodo, $tipo, $apertura, $cierre, $activo, $id);
             mysqli_stmt_execute($st);
 
-            if ($tipo === 1) {
+            if (in_array($tipo, array(1, 2), true)) {
                 $sqlP = "SELECT nombre AS periodo FROM periodos WHERE id=?";
                 $stP = mysqli_prepare($conexion, $sqlP);
                 mysqli_stmt_bind_param($stP, 'i', $id_periodo);
@@ -177,7 +177,7 @@ echo json_encode([
                 $resP = mysqli_stmt_get_result($stP);
                 $rowP = $resP ? mysqli_fetch_assoc($resP) : null;
                 if ($rowP && isset($rowP['periodo'])) {
-                    rsu_vf1_ensure_rows_for_period($conexion, $rowP['periodo'], $apertura, $cierre, $id);
+                    rsu_vf1_ensure_rows_for_period($conexion, $rowP['periodo'], $apertura, $cierre, $id, $tipo);
                 }
             }
 

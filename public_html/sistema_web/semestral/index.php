@@ -31,6 +31,7 @@ define('DIR_LOGICA',      realpath(__DIR__ . '/logica'));
 
 require_once DIR_COMPONENTES . '/configSesion.php';
 require_once DIR_COMPONENTES . '/db.php';
+require_once DIR_COMPONENTES . '/cronograma/visibilidad_fase1.php';
 
 ?>
 <!DOCTYPE html>
@@ -117,13 +118,17 @@ endif;
 
 
 // ================== LÓGICA PRINCIPAL ==================
-require_once DIR_LOGICA . '/funciones.php';
-$sm_info = obtenerInfoSemestral($conexion, $id_py);
+$accesoFuerteSemestral = rsu_vf1_can_access_interface($conexion, 'F3-SEMESTRAL');
 
 // Si hubo error
-if (isset($sm_info['error'])) {
-    echo "<p style='color:#b00;font-weight:bold'>" . htmlspecialchars($sm_info['error']) . "</p>";
+if (empty($accesoFuerteSemestral['permitido'])) {
+    include __DIR__ . '/../integrados/mensaje_fuera_tiempo.php';
 } else {
+    require_once DIR_LOGICA . '/funciones.php';
+    $sm_info = obtenerInfoSemestral($conexion, $id_py);
+    if (isset($sm_info['error'])) {
+        echo "<p style='color:#b00;font-weight:bold'>" . htmlspecialchars($sm_info['error']) . "</p>";
+    } else {
     // Resumen mínimo
     //echo "Inicio: "     . htmlspecialchars((string)($sm_info['inicio'] ?? '')) . "<br>";
     //echo "Fin: "        . htmlspecialchars((string)($sm_info['fin'] ?? '')) . "<br>";
@@ -197,6 +202,7 @@ if (isset($sm_info['error'])) {
             echo $html ?: ($DEBUG ? "<div class='alert alert-warning' style='margin:10px'>El include no produjo salida (0 bytes).</div>" : "");
         }
     }
+}
 }
 
 // Tablas (solo en debug)

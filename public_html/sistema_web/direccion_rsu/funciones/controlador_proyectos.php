@@ -190,7 +190,8 @@ $(function(){
       }
       r.forEach((c,i)=>{
         const estado=parseInt(c.activo)===1?'✅':'⛔';
-        const btnVisibilidad = parseInt(c.tipo,10)===1
+        const tipoCronograma = parseInt(c.tipo,10);
+        const btnVisibilidad = (tipoCronograma===1 || tipoCronograma===2)
           ? '<button class="btn btn-sm btn-secondary btnVisibilidad" title="Control de visibilidad"><i class="fas fa-sliders-h"></i></button>'
           : '';
         $tb.append(`
