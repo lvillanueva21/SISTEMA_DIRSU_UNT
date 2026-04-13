@@ -5,8 +5,51 @@ if (!function_exists('rsu_vf1_codes')) {
         return array(
             'F1-GENERALIDADES' => 'Generalidades',
             'F1-PLAN' => 'Plan de proyecto',
-            'F1-ANEXOS' => 'Anexos'
+            'F1-ANEXOS' => 'Anexos',
+            'F3-SEMESTRAL' => 'Informe semestral'
         );
+    }
+}
+
+if (!function_exists('rsu_vf1_codes_by_tipo')) {
+    function rsu_vf1_codes_by_tipo($tipo)
+    {
+        $tipo = (int)$tipo;
+        if ($tipo === 1) {
+            return array(
+                'F1-GENERALIDADES' => 'Generalidades',
+                'F1-PLAN' => 'Plan de proyecto',
+                'F1-ANEXOS' => 'Anexos'
+            );
+        }
+        if ($tipo === 2) {
+            return array(
+                'F3-SEMESTRAL' => 'Informe semestral'
+            );
+        }
+        return array();
+    }
+}
+
+if (!function_exists('rsu_vf1_codigo_to_tipo')) {
+    function rsu_vf1_codigo_to_tipo($codigo)
+    {
+        $codigo = trim((string)$codigo);
+        if ($codigo === 'F1-GENERALIDADES' || $codigo === 'F1-PLAN' || $codigo === 'F1-ANEXOS') {
+            return 1;
+        }
+        if ($codigo === 'F3-SEMESTRAL') {
+            return 2;
+        }
+        return 0;
+    }
+}
+
+if (!function_exists('rsu_vf1_is_supported_tipo')) {
+    function rsu_vf1_is_supported_tipo($tipo)
+    {
+        $tipo = (int)$tipo;
+        return ($tipo === 1 || $tipo === 2);
     }
 }
 
@@ -77,33 +120,52 @@ if (!function_exists('rsu_vf1_get_cronograma_by_id')) {
     }
 }
 
-if (!function_exists('rsu_vf1_get_active_presentacion')) {
-    function rsu_vf1_get_active_presentacion(mysqli $conexion)
+if (!function_exists('rsu_vf1_get_active_cronograma_by_tipo')) {
+    function rsu_vf1_get_active_cronograma_by_tipo(mysqli $conexion, $tipo)
     {
+        $tipo = (int)$tipo;
+        if (!rsu_vf1_is_supported_tipo($tipo)) {
+            return null;
+        }
+
         $sql = "SELECT c.id, c.id_periodo, c.tipo, c.activo, c.apertura, c.cierre, p.nombre AS periodo
                 FROM sm_cronogramas c
                 INNER JOIN periodos p ON p.id = c.id_periodo
-                WHERE c.tipo = 1 AND c.activo = 1
+                WHERE c.tipo = ? AND c.activo = 1
                 ORDER BY c.fecha_creacion DESC, c.id DESC
                 LIMIT 1";
-        $res = mysqli_query($conexion, $sql);
-        if (!$res) {
+        $stmt = mysqli_prepare($conexion, $sql);
+        if (!$stmt) {
             return null;
         }
+        mysqli_stmt_bind_param($stmt, 'i', $tipo);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
         $row = mysqli_fetch_assoc($res);
+        mysqli_stmt_close($stmt);
         return $row ?: null;
     }
 }
 
+if (!function_exists('rsu_vf1_get_active_presentacion')) {
+    function rsu_vf1_get_active_presentacion(mysqli $conexion)
+    {
+        return rsu_vf1_get_active_cronograma_by_tipo($conexion, 1);
+    }
+}
+
 if (!function_exists('rsu_vf1_get_rows_by_period')) {
-    function rsu_vf1_get_rows_by_period(mysqli $conexion, $periodo)
+    function rsu_vf1_get_rows_by_period(mysqli $conexion, $periodo, $codes = null)
     {
         $periodo = trim((string)$periodo);
         if ($periodo === '') {
             return array();
         }
 
-        $codes = array_keys(rsu_vf1_codes());
+        $codes = is_array($codes) ? $codes : array_keys(rsu_vf1_codes());
+        if (empty($codes)) {
+            return array();
+        }
         $placeholders = implode(',', array_fill(0, count($codes), '?'));
         $types = 's' . str_repeat('s', count($codes));
 
@@ -131,14 +193,19 @@ if (!function_exists('rsu_vf1_get_rows_by_period')) {
 }
 
 if (!function_exists('rsu_vf1_find_source_rows')) {
-    function rsu_vf1_find_source_rows(mysqli $conexion, $excludeCronogramaId)
+    function rsu_vf1_find_source_rows(mysqli $conexion, $excludeCronogramaId, $tipo)
     {
         $excludeCronogramaId = (int)$excludeCronogramaId;
+        $tipo = (int)$tipo;
+        $codes = array_keys(rsu_vf1_codes_by_tipo($tipo));
+        if (!rsu_vf1_is_supported_tipo($tipo) || empty($codes)) {
+            return array();
+        }
 
         $sql = "SELECT c.id, p.nombre AS periodo
                 FROM sm_cronogramas c
                 INNER JOIN periodos p ON p.id = c.id_periodo
-                WHERE c.tipo = 1
+                WHERE c.tipo = ?
                   AND c.id <> ?
                 ORDER BY c.activo DESC, c.fecha_creacion DESC, c.id DESC";
         $stmt = mysqli_prepare($conexion, $sql);
@@ -146,7 +213,7 @@ if (!function_exists('rsu_vf1_find_source_rows')) {
             return array();
         }
 
-        mysqli_stmt_bind_param($stmt, 'i', $excludeCronogramaId);
+        mysqli_stmt_bind_param($stmt, 'ii', $tipo, $excludeCronogramaId);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);
         if (!$res) {
@@ -155,7 +222,7 @@ if (!function_exists('rsu_vf1_find_source_rows')) {
         }
 
         while ($cron = mysqli_fetch_assoc($res)) {
-            $rows = rsu_vf1_get_rows_by_period($conexion, $cron['periodo']);
+            $rows = rsu_vf1_get_rows_by_period($conexion, $cron['periodo'], $codes);
             if (!empty($rows)) {
                 mysqli_stmt_close($stmt);
                 return $rows;
@@ -176,21 +243,33 @@ if (!function_exists('rsu_vf1_default_description')) {
         if ($codigo === 'F1-PLAN') {
             return 'Habilita la edicion de la interfaz Plan de proyecto.';
         }
+        if ($codigo === 'F3-SEMESTRAL') {
+            return 'Habilita la edicion de la interfaz Informe semestral.';
+        }
         return 'Habilita la edicion de la interfaz Anexos.';
     }
 }
 
 if (!function_exists('rsu_vf1_ensure_rows_for_period')) {
-    function rsu_vf1_ensure_rows_for_period(mysqli $conexion, $periodo, $apertura, $cierre, $excludeCronogramaId)
+    function rsu_vf1_ensure_rows_for_period(mysqli $conexion, $periodo, $apertura, $cierre, $excludeCronogramaId, $tipo = 1)
     {
         $periodo = trim((string)$periodo);
         if ($periodo === '') {
             return;
         }
+        $tipo = (int)$tipo;
+        if (!rsu_vf1_is_supported_tipo($tipo)) {
+            return;
+        }
 
-        $codes = rsu_vf1_codes();
-        $currentRows = rsu_vf1_get_rows_by_period($conexion, $periodo);
-        $sourceRows = rsu_vf1_find_source_rows($conexion, (int)$excludeCronogramaId);
+        $codes = rsu_vf1_codes_by_tipo($tipo);
+        if (empty($codes)) {
+            return;
+        }
+
+        $codesKeys = array_keys($codes);
+        $currentRows = rsu_vf1_get_rows_by_period($conexion, $periodo, $codesKeys);
+        $sourceRows = rsu_vf1_find_source_rows($conexion, (int)$excludeCronogramaId, $tipo);
 
         $aperturaNorm = rsu_vf1_normalize_datetime($apertura, date('Y-m-d H:i:s'));
         $cierreNorm = rsu_vf1_normalize_datetime($cierre, $aperturaNorm);
@@ -232,21 +311,25 @@ if (!function_exists('rsu_vf1_get_rows_for_cronograma')) {
     function rsu_vf1_get_rows_for_cronograma(mysqli $conexion, $idCronograma)
     {
         $cron = rsu_vf1_get_cronograma_by_id($conexion, $idCronograma);
-        if (!$cron || (int)$cron['tipo'] !== 1) {
-            return array('success' => false, 'msg' => 'Cronograma invalido para visibilidad F1.');
+        if (!$cron || !rsu_vf1_is_supported_tipo((int)$cron['tipo'])) {
+            return array('success' => false, 'msg' => 'Cronograma invalido para control de visibilidad.');
         }
+
+        $tipo = (int)$cron['tipo'];
+        $codes = rsu_vf1_codes_by_tipo($tipo);
 
         rsu_vf1_ensure_rows_for_period(
             $conexion,
             $cron['periodo'],
             $cron['apertura'],
             $cron['cierre'],
-            (int)$cron['id']
+            (int)$cron['id'],
+            $tipo
         );
 
-        $rowsByCode = rsu_vf1_get_rows_by_period($conexion, $cron['periodo']);
+        $rowsByCode = rsu_vf1_get_rows_by_period($conexion, $cron['periodo'], array_keys($codes));
         $outputRows = array();
-        foreach (rsu_vf1_codes() as $codigo => $nombre) {
+        foreach ($codes as $codigo => $nombre) {
             $row = isset($rowsByCode[$codigo]) ? $rowsByCode[$codigo] : null;
             $outputRows[] = array(
                 'codigo' => $codigo,
@@ -273,24 +356,26 @@ if (!function_exists('rsu_vf1_save_rows_for_cronograma')) {
     function rsu_vf1_save_rows_for_cronograma(mysqli $conexion, $idCronograma, $rowsInput)
     {
         $cron = rsu_vf1_get_cronograma_by_id($conexion, $idCronograma);
-        if (!$cron || (int)$cron['tipo'] !== 1) {
-            return array('success' => false, 'msg' => 'Cronograma invalido para visibilidad F1.');
+        if (!$cron || !rsu_vf1_is_supported_tipo((int)$cron['tipo'])) {
+            return array('success' => false, 'msg' => 'Cronograma invalido para control de visibilidad.');
         }
 
         if (!is_array($rowsInput)) {
             return array('success' => false, 'msg' => 'No se recibieron filas para guardar.');
         }
 
+        $tipo = (int)$cron['tipo'];
         rsu_vf1_ensure_rows_for_period(
             $conexion,
             $cron['periodo'],
             $cron['apertura'],
             $cron['cierre'],
-            (int)$cron['id']
+            (int)$cron['id'],
+            $tipo
         );
 
-        $codes = rsu_vf1_codes();
-        $existing = rsu_vf1_get_rows_by_period($conexion, $cron['periodo']);
+        $codes = rsu_vf1_codes_by_tipo($tipo);
+        $existing = rsu_vf1_get_rows_by_period($conexion, $cron['periodo'], array_keys($codes));
 
         mysqli_begin_transaction($conexion);
         try {
@@ -357,12 +442,12 @@ if (!function_exists('rsu_vf1_can_access_interface')) {
     function rsu_vf1_can_access_interface(mysqli $conexion, $codigo)
     {
         $codigo = trim((string)$codigo);
-        $codes = rsu_vf1_codes();
-        if (!isset($codes[$codigo])) {
+        $tipo = rsu_vf1_codigo_to_tipo($codigo);
+        if (!rsu_vf1_is_supported_tipo($tipo)) {
             return array('permitido' => false, 'motivo' => 'codigo_no_soportado');
         }
 
-        $cron = rsu_vf1_get_active_presentacion($conexion);
+        $cron = rsu_vf1_get_active_cronograma_by_tipo($conexion, $tipo);
         if (!$cron) {
             return array('permitido' => false, 'motivo' => 'sin_cronograma_activo');
         }
@@ -406,4 +491,3 @@ if (!function_exists('rsu_vf1_can_access_interface')) {
         );
     }
 }
-

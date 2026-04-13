@@ -59,6 +59,18 @@ $rsu_api_dirsu_data = array(
         'responsable' => 'api_dirsu',
         'action' => 'project.semesters.audit',
         'soporte_live' => 1
+    ),
+    array(
+        'id' => 4,
+        'nombre' => 'Snapshot de periodos activos',
+        'modulo' => 'periodos',
+        'metodo' => 'GET',
+        'endpoint' => 'api.php?action=periods.active.snapshot.get&id_periodo={id_periodo}&include_empty={0|1}&tz={America/Lima}',
+        'estado' => 'activo',
+        'actualizado_en' => '2026-04-13 10:00:00',
+        'responsable' => 'api_dirsu',
+        'action' => 'periods.active.snapshot.get',
+        'soporte_live' => 1
     )
 );
 
@@ -186,13 +198,28 @@ if ($rsu_api_dirsu_json === false) {
                 </div>
 
                 <div class="api-dirsu-params">
-                  <div class="form-group mb-2">
+                  <div class="form-group mb-2" id="apiParamsUsuarioWrap">
                     <label for="apiUsuarioInput" class="mb-1">Usuario (codigo o DNI)</label>
                     <input type="text" id="apiUsuarioInput" class="form-control" placeholder="Ejemplo: 67676767 o 6407">
                   </div>
-                  <div class="form-group mb-2">
+                  <div class="form-group mb-2" id="apiParamsIdWrap">
                     <label for="apiIdInput" class="mb-1">ID interno</label>
                     <input type="number" id="apiIdInput" class="form-control" min="1" step="1" placeholder="Ejemplo: 37">
+                  </div>
+                  <div class="form-group mb-2" id="apiParamsPeriodoWrap" style="display:none;">
+                    <label for="apiPeriodoInput" class="mb-1">ID de periodo (opcional)</label>
+                    <input type="number" id="apiPeriodoInput" class="form-control" min="1" step="1" placeholder="Ejemplo: 12">
+                  </div>
+                  <div class="form-group mb-2" id="apiParamsIncludeEmptyWrap" style="display:none;">
+                    <label for="apiIncludeEmptyInput" class="mb-1">Incluir periodos sin cronogramas activos</label>
+                    <select id="apiIncludeEmptyInput" class="form-control">
+                      <option value="1" selected>Si (include_empty=1)</option>
+                      <option value="0">No (include_empty=0)</option>
+                    </select>
+                  </div>
+                  <div class="form-group mb-2" id="apiParamsTzWrap" style="display:none;">
+                    <label for="apiTimezoneInput" class="mb-1">Zona horaria</label>
+                    <input type="text" id="apiTimezoneInput" class="form-control" value="America/Lima">
                   </div>
                   <button type="button" class="btn btn-primary btn-sm" id="apiRunBtn">
                     <i class="fas fa-play"></i> Consultar API seleccionada
@@ -282,6 +309,14 @@ if ($rsu_api_dirsu_json === false) {
   var jsonOutput = document.getElementById('apiJsonOutput');
   var inputUsuario = document.getElementById('apiUsuarioInput');
   var inputId = document.getElementById('apiIdInput');
+  var inputPeriodo = document.getElementById('apiPeriodoInput');
+  var inputIncludeEmpty = document.getElementById('apiIncludeEmptyInput');
+  var inputTimezone = document.getElementById('apiTimezoneInput');
+  var wrapUsuario = document.getElementById('apiParamsUsuarioWrap');
+  var wrapId = document.getElementById('apiParamsIdWrap');
+  var wrapPeriodo = document.getElementById('apiParamsPeriodoWrap');
+  var wrapIncludeEmpty = document.getElementById('apiParamsIncludeEmptyWrap');
+  var wrapTimezone = document.getElementById('apiParamsTzWrap');
   var runBtn = document.getElementById('apiRunBtn');
   var actionNote = document.getElementById('apiActionNote');
 
@@ -439,6 +474,22 @@ if ($rsu_api_dirsu_json === false) {
       'usuario.id_py_actual': 'Proyecto activo en sesion',
       'proyectos': 'Listado de proyectos',
       'resumen.total_proyectos': 'Total de proyectos',
+      'resumen.total_periodos_activos': 'Total de periodos activos',
+      'resumen.total_cronogramas_activos': 'Total de cronogramas activos',
+      'resumen.total_formularios_activos_vinculados': 'Total de formularios activos vinculados',
+      'periodos': 'Listado de periodos activos',
+      'periodos.id': 'ID de periodo',
+      'periodos.nombre': 'Nombre del periodo',
+      'periodos.fecha_inicio': 'Fecha de inicio del periodo',
+      'periodos.fecha_fin': 'Fecha de fin del periodo',
+      'periodos.estado_periodo': 'Estado del periodo',
+      'cronogramas_activos': 'Cronogramas activos del periodo',
+      'tipo_id': 'ID tipo de cronograma',
+      'tipo_nombre': 'Tipo de cronograma',
+      'ventana_estado': 'Estado de ventana',
+      'formulario.estado': 'Estado de formulario',
+      'formulario.existe': 'Existe formulario',
+      'formulario.items_activos': 'Items activos del formulario',
       'meta.search_mode': 'Modo de busqueda',
       'meta.search_value': 'Valor de busqueda',
       'meta.requested_at': 'Fecha de consulta',
@@ -572,14 +623,21 @@ if ($rsu_api_dirsu_json === false) {
 
   function showCatalogPreview(item) {
     if (!item) {
-      actionNote.textContent = 'Selecciona una fila y luego consulta por usuario o id.';
+      actionNote.textContent = 'Selecciona una fila para consultar su API.';
       renderJson({});
       renderKeyValueRows(null);
+      setParamsVisibility(null);
       return;
     }
 
+    setParamsVisibility(item);
+
     if (item.soporte_live) {
-      actionNote.textContent = 'Endpoint activo. Puedes consultar por usuario o por id sin recargar la pagina.';
+      if (item.action === 'periods.active.snapshot.get') {
+        actionNote.textContent = 'Endpoint activo. Puedes filtrar por id_periodo y include_empty en tiempo real.';
+      } else {
+        actionNote.textContent = 'Endpoint activo. Puedes consultar por usuario o por id sin recargar la pagina.';
+      }
     } else {
       actionNote.textContent = 'Endpoint de muestra. Aun no tiene backend activo.';
     }
@@ -636,6 +694,86 @@ if ($rsu_api_dirsu_json === false) {
     xhr.send(null);
   }
 
+  function setParamsVisibility(item) {
+    var action = item && item.action ? item.action : '';
+    var isPeriodSnapshot = action === 'periods.active.snapshot.get';
+    var isUserBased = action === 'user.get' || action === 'user.projects.get' || action === 'project.semesters.audit';
+
+    wrapUsuario.style.display = isUserBased ? '' : 'none';
+    wrapId.style.display = isUserBased ? '' : 'none';
+    wrapPeriodo.style.display = isPeriodSnapshot ? '' : 'none';
+    wrapIncludeEmpty.style.display = isPeriodSnapshot ? '' : 'none';
+    wrapTimezone.style.display = isPeriodSnapshot ? '' : 'none';
+  }
+
+  function actionIsSupported(item) {
+    if (!item || !item.soporte_live) {
+      return false;
+    }
+
+    var action = item.action;
+    return (
+      action === 'user.get' ||
+      action === 'user.projects.get' ||
+      action === 'project.semesters.audit' ||
+      action === 'periods.active.snapshot.get'
+    );
+  }
+
+  function buildRequestUrlForUserBased(item) {
+    var usuario = trimValue(inputUsuario.value);
+    var id = trimValue(inputId.value);
+    var requestUrl = apiBaseUrl + '?action=' + encodeURIComponent(item.action);
+
+    if (id !== '' && !/^\d+$/.test(id)) {
+      actionNote.textContent = 'El id debe ser numerico.';
+      return null;
+    }
+
+    if (id === '' && usuario === '') {
+      actionNote.textContent = 'Ingresa un usuario o un id para consultar.';
+      return null;
+    }
+
+    if (id !== '') {
+      requestUrl += '&id=' + encodeURIComponent(id);
+    } else {
+      requestUrl += '&usuario=' + encodeURIComponent(usuario);
+    }
+
+    return requestUrl;
+  }
+
+  function buildRequestUrlForPeriodSnapshot(item) {
+    var idPeriodo = trimValue(inputPeriodo.value);
+    var includeEmpty = trimValue(inputIncludeEmpty.value);
+    var timezone = trimValue(inputTimezone.value);
+    var requestUrl = apiBaseUrl + '?action=' + encodeURIComponent(item.action);
+
+    if (idPeriodo !== '' && !/^\d+$/.test(idPeriodo)) {
+      actionNote.textContent = 'El id_periodo debe ser numerico.';
+      return null;
+    }
+
+    if (idPeriodo !== '') {
+      requestUrl += '&id_periodo=' + encodeURIComponent(idPeriodo);
+    }
+
+    if (includeEmpty !== '0' && includeEmpty !== '1') {
+      actionNote.textContent = 'include_empty debe ser 0 o 1.';
+      return null;
+    }
+    requestUrl += '&include_empty=' + encodeURIComponent(includeEmpty);
+
+    if (timezone === '') {
+      timezone = 'America/Lima';
+      inputTimezone.value = timezone;
+    }
+    requestUrl += '&tz=' + encodeURIComponent(timezone);
+
+    return requestUrl;
+  }
+
   function runSelectedApi() {
     var item = findRowById(selectedId);
 
@@ -644,30 +782,21 @@ if ($rsu_api_dirsu_json === false) {
       return;
     }
 
-    if (!item.soporte_live || (item.action !== 'user.get' && item.action !== 'user.projects.get' && item.action !== 'project.semesters.audit')) {
+    if (!actionIsSupported(item)) {
       actionNote.textContent = 'Esta API aun no tiene implementacion activa. Solo muestra datos de prueba.';
       showCatalogPreview(item);
       return;
     }
 
-    var usuario = trimValue(inputUsuario.value);
-    var id = trimValue(inputId.value);
-
-    if (id !== '' && !/^\d+$/.test(id)) {
-      actionNote.textContent = 'El id debe ser numerico.';
-      return;
-    }
-
-    if (id === '' && usuario === '') {
-      actionNote.textContent = 'Ingresa un usuario o un id para consultar.';
-      return;
-    }
-
-    var requestUrl = apiBaseUrl + '?action=' + encodeURIComponent(item.action);
-    if (id !== '') {
-      requestUrl += '&id=' + encodeURIComponent(id);
+    var requestUrl = null;
+    if (item.action === 'periods.active.snapshot.get') {
+      requestUrl = buildRequestUrlForPeriodSnapshot(item);
     } else {
-      requestUrl += '&usuario=' + encodeURIComponent(usuario);
+      requestUrl = buildRequestUrlForUserBased(item);
+    }
+
+    if (requestUrl === null) {
+      return;
     }
 
     actionNote.textContent = 'Consultando API...';
@@ -716,6 +845,20 @@ if ($rsu_api_dirsu_json === false) {
   });
 
   inputId.addEventListener('keypress', function (event) {
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      runSelectedApi();
+    }
+  });
+
+  inputPeriodo.addEventListener('keypress', function (event) {
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      runSelectedApi();
+    }
+  });
+
+  inputTimezone.addEventListener('keypress', function (event) {
     if (event.keyCode === 13) {
       event.preventDefault();
       runSelectedApi();

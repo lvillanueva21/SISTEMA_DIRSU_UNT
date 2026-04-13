@@ -4,6 +4,7 @@ include_once __DIR__ . '/json_response.php';
 include_once __DIR__ . '/user_service.php';
 include_once __DIR__ . '/project_service.php';
 include_once __DIR__ . '/semester_audit_service.php';
+include_once __DIR__ . '/active_periods_service.php';
 
 rsu_api_dirsu_guard_api(array(
     'allowed_roles' => array(0, 1, 2, 3, 4, 5)
@@ -160,6 +161,67 @@ if ($action === 'project.semesters.audit') {
     $meta['requested_by'] = isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null;
 
     rsu_api_json_ok($result['data'], 'Auditoria de semestres completada.', $meta);
+}
+
+if ($action === 'periods.active.snapshot.get') {
+    $role_id = isset($_SESSION['id_rol']) ? (int)$_SESSION['id_rol'] : 0;
+    if ($role_id !== 1) {
+        rsu_api_json_error(403, 'forbidden_role', 'No tienes permisos para usar este endpoint.', array());
+    }
+
+    $id_periodo = 0;
+    if (isset($_GET['id_periodo'])) {
+        $id_periodo = (int)$_GET['id_periodo'];
+    }
+    if ($id_periodo < 0) {
+        rsu_api_json_error(422, 'invalid_id_periodo', 'El parametro id_periodo es invalido.', array());
+    }
+
+    $include_empty = 1;
+    if (isset($_GET['include_empty'])) {
+        $raw_include_empty = trim((string)$_GET['include_empty']);
+        if ($raw_include_empty !== '0' && $raw_include_empty !== '1' && $raw_include_empty !== '') {
+            rsu_api_json_error(422, 'invalid_include_empty', 'El parametro include_empty debe ser 0 o 1.', array());
+        }
+        if ($raw_include_empty === '0') {
+            $include_empty = 0;
+        }
+    }
+
+    $timezone_name = 'America/Lima';
+    if (isset($_GET['tz'])) {
+        $tz_input = trim((string)$_GET['tz']);
+        if ($tz_input !== '') {
+            try {
+                new DateTimeZone($tz_input);
+                $timezone_name = $tz_input;
+            } catch (Throwable $e) {
+                rsu_api_json_error(422, 'invalid_timezone', 'El parametro tz no es una zona horaria valida.', array());
+            }
+        }
+    }
+
+    $result = rsu_api_periods_active_snapshot_get($id_periodo, $include_empty, $timezone_name);
+    if (!is_array($result) || !isset($result['ok']) || !$result['ok']) {
+        $error_code = isset($result['error_code']) ? (string)$result['error_code'] : 'internal_error';
+        $error_message = isset($result['error_message']) ? (string)$result['error_message'] : 'No se pudo completar la consulta.';
+
+        if ($error_code === 'invalid_id_periodo') {
+            rsu_api_json_error(422, $error_code, $error_message, array());
+        }
+
+        if ($error_code === 'db_connection_error' || $error_code === 'db_prepare_error' || $error_code === 'db_query_error') {
+            rsu_api_json_error(500, $error_code, $error_message, array());
+        }
+
+        rsu_api_json_error(400, $error_code, $error_message, array());
+    }
+
+    $meta = isset($result['meta']) && is_array($result['meta']) ? $result['meta'] : array();
+    $meta['requested_at'] = date('Y-m-d H:i:s');
+    $meta['requested_by'] = isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null;
+
+    rsu_api_json_ok($result['data'], 'Snapshot de periodos activos completado.', $meta);
 }
 
 rsu_api_json_error(400, 'unknown_action', 'Accion no soportada para api_dirsu.', array());
