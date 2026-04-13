@@ -94,13 +94,25 @@ function syncProyectoSemestres(mysqli $cx, int $id_py, DateTime $fi, DateTime $f
     $plan = planSemestres($fi, $ff);
 
     $exist = [];
-    $res = $cx->prepare("SELECT id, anio, periodo, tipo, numero FROM sm_proyecto_semestres WHERE id_py=? AND vigente=1");
+    $res = $cx->prepare("
+        SELECT id, anio, periodo, tipo, numero, fecha_inicio, fecha_fin, final, titulo, vigente
+        FROM sm_proyecto_semestres
+        WHERE id_py=?
+    ");
     $res->bind_param("i",$id_py);
     $res->execute();
     $rs = $res->get_result();
     while ($row = $rs->fetch_assoc()) {
-        $k = $row['anio'].'|'.$row['periodo'].'|'.$row['tipo'].'|'.($row['numero'] ?? 'NULL');
-        $exist[$k] = (int)$row['id'];
+        $k = $row['anio'].'|'.$row['periodo'].'|'.$row['tipo'];
+        $exist[$k] = [
+            'id' => (int)$row['id'],
+            'numero' => $row['numero'] === null ? null : (int)$row['numero'],
+            'fecha_inicio' => (string)$row['fecha_inicio'],
+            'fecha_fin' => (string)$row['fecha_fin'],
+            'final' => (int)$row['final'],
+            'titulo' => (string)$row['titulo'],
+            'vigente' => (int)$row['vigente']
+        ];
     }
     $res->close();
 
@@ -112,45 +124,89 @@ function syncProyectoSemestres(mysqli $cx, int $id_py, DateTime $fi, DateTime $f
             INSERT INTO sm_proyecto_semestres
               (id_py, anio, periodo, fecha_inicio, fecha_fin, tipo, numero, final, titulo, vigente)
             VALUES (?,?,?,?,?,?,?,?,?,1)
-            ON DUPLICATE KEY UPDATE
-              fecha_inicio=VALUES(fecha_inicio),
-              fecha_fin   =VALUES(fecha_fin),
-              final       =VALUES(final),
-              titulo      =VALUES(titulo),
-              vigente     =1
         ");
+        if (!$ins) throw new RuntimeException("Error prepare insert sm_proyecto_semestres: ".$cx->error);
+        $up = $cx->prepare("
+            UPDATE sm_proyecto_semestres
+            SET fecha_inicio=?, fecha_fin=?, numero=?, final=?, titulo=?, vigente=?
+            WHERE id=?
+        ");
+        if (!$up) throw new RuntimeException("Error prepare update sm_proyecto_semestres: ".$cx->error);
 
         foreach ($plan as $row) {
+            $k = $row['anio'].'|'.$row['periodo'].'|'.$row['tipo'];
+            $targetNumero = $row['numero'] === null ? null : (int)$row['numero'];
+            $targetFinal = (int)$row['final'];
+            $targetTitulo = (string)$row['titulo'];
+
+            if (isset($exist[$k])) {
+                $cur = $exist[$k];
+                $cambio =
+                    ((string)$cur['fecha_inicio'] !== (string)$row['fecha_inicio']) ||
+                    ((string)$cur['fecha_fin'] !== (string)$row['fecha_fin']) ||
+                    ($cur['numero'] !== $targetNumero) ||
+                    ((int)$cur['final'] !== $targetFinal) ||
+                    ((string)$cur['titulo'] !== $targetTitulo) ||
+                    ((int)$cur['vigente'] !== 1);
+
+                if ($cambio) {
+                    $vigente = 1;
+                    $idExist = (int)$cur['id'];
+                    $up->bind_param(
+                        "ssiisii",
+                        $row['fecha_inicio'],
+                        $row['fecha_fin'],
+                        $targetNumero,
+                        $targetFinal,
+                        $targetTitulo,
+                        $vigente,
+                        $idExist
+                    );
+                    $okUp = $up->execute();
+                    if (!$okUp) throw new RuntimeException("Error update sm_proyecto_semestres: ".$up->error);
+                    $upd++;
+                }
+
+                unset($exist[$k]);
+                continue;
+            }
+
             $ins->bind_param(
-                "iisssssis",
+                "iissssiis",
                 $id_py,
                 $row['anio'],
                 $row['periodo'],
                 $row['fecha_inicio'],
                 $row['fecha_fin'],
                 $row['tipo'],
-                $row['numero'],   // (antes: como string en el bind)
-                $row['final'],
-                $row['titulo']
+                $targetNumero,
+                $targetFinal,
+                $targetTitulo
             );
-            $ok = $ins->execute();
-            if (!$ok) throw new RuntimeException("Error upsert sm_proyecto_semestres: ".$ins->error);
-
-            $k = $row['anio'].'|'.$row['periodo'].'|'.$row['tipo'].'|'.($row['numero'] ?? 'NULL');
-            if (isset($exist[$k])) $upd++; else $cre++;
-            unset($exist[$k]);
+            $okIns = $ins->execute();
+            if (!$okIns) throw new RuntimeException("Error insert sm_proyecto_semestres: ".$ins->error);
+            $cre++;
         }
         $ins->close();
+        $up->close();
 
         if (!empty($exist)) {
-            $ids = array_values($exist);
-            $place = implode(',', array_fill(0, count($ids), '?'));
-            $types = str_repeat('i', count($ids));
-            $delStmt = $cx->prepare("UPDATE sm_proyecto_semestres SET vigente=0 WHERE id IN ($place)");
-            $delStmt->bind_param($types, ...$ids);
-            $delStmt->execute();
-            $desact += $delStmt->affected_rows;
-            $delStmt->close();
+            $idsDesactivar = [];
+            foreach ($exist as $filaRestante) {
+                if ((int)$filaRestante['vigente'] === 1) {
+                    $idsDesactivar[] = (int)$filaRestante['id'];
+                }
+            }
+
+            if (!empty($idsDesactivar)) {
+                $place = implode(',', array_fill(0, count($idsDesactivar), '?'));
+                $types = str_repeat('i', count($idsDesactivar));
+                $delStmt = $cx->prepare("UPDATE sm_proyecto_semestres SET vigente=0 WHERE id IN ($place)");
+                $delStmt->bind_param($types, ...$idsDesactivar);
+                $delStmt->execute();
+                $desact += $delStmt->affected_rows;
+                $delStmt->close();
+            }
         }
 
         $cx->commit();

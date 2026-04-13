@@ -3,6 +3,7 @@
    include "../componentes/configSesion.php";
    // Incluir la conexión a la base de datos
    include('../componentes/db.php');
+   include_once('../componentes/cronograma/visibilidad_fase1.php');
    // Incluir el archivo que carga los datos del proyecto
    include('../componentes/proyecto/cargar_proyecto.php'); 
 
@@ -110,15 +111,18 @@ if ($id_py == 0) {
     include '../integrados/mensaje_registrar_py.php';
 } else {
     // 2, 3 y 4. Consultar la tabla de cronogramas para el período 2024-II, código F1-GENERALIDADES y estado 1
-    $sql = "SELECT * FROM cronogramas 
-            WHERE periodo = '2024-II' 
-              AND codigo = 'F1-GENERALIDADES' 
-              AND estado = 1 
-            LIMIT 1";
-    $result = mysqli_query($conexion, $sql);
+    $accesoF1 = rsu_vf1_can_access_interface($conexion, 'F1-PLAN');
+    $result = false;
+    $cron = array(
+        'inicio' => '1970-01-01 00:00:00',
+        'fin' => '1970-01-01 00:00:00'
+    );
+    if (!empty($accesoF1['permitido']) && !empty($accesoF1['regla'])) {
+        $result = true;
+        $cron = $accesoF1['regla'];
+    }
 
-    if ($result && mysqli_num_rows($result) > 0) {
-        $cron = mysqli_fetch_assoc($result);
+    if ($result) {
 
         // 5. Convertir las fechas de inicio y fin a objetos DateTime
         $inicio = new DateTime($cron['inicio']);

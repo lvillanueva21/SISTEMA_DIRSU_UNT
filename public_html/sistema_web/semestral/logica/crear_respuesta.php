@@ -30,8 +30,9 @@ function fail($msgKey = 'error_general', $flashMsg = null) {
         $_SESSION['form_msg'] = $flashMsg;
         $_SESSION['form_msg_type'] = 'danger';
     }
+    $indexUrl = defined('SM_SEMESTRAL_INDEX_REL') ? SM_SEMESTRAL_INDEX_REL : '../index.php';
     ob_end_clean();
-    header("Location: ../index.php?err=" . urlencode($msgKey));
+    header("Location: " . $indexUrl . "?err=" . urlencode($msgKey));
     exit;
 }
 
@@ -140,17 +141,19 @@ try {
     }
     $st->close();
 
-    // Todo OK
-    $conexion->commit();
+    if (!$conexion->commit()) {
+        throw new Exception('commit_respuesta');
+    }
 
     // Mantén id_py en sesión
     if (empty($_SESSION['id_py'])) { $_SESSION['id_py'] = $id_py; }
 
-    $_SESSION['form_msg'] = "Se creó el {$form_nombre} y se registró/actualizó tu información de contacto.";
+    $_SESSION['form_msg'] = "Se creó el formulario {$form_nombre} y se registró/actualizó tu información de contacto.";
     $_SESSION['form_msg_type'] = 'success';
 
     ob_end_clean();
-    header("Location: ../index.php");
+    $indexUrl = defined('SM_SEMESTRAL_INDEX_REL') ? SM_SEMESTRAL_INDEX_REL : '../index.php';
+    header("Location: " . $indexUrl);
     exit;
 
 } catch (Throwable $e) {
@@ -162,6 +165,7 @@ try {
     $_SESSION['form_msg_type'] = 'danger';
 
     ob_end_clean();
-    header("Location: ../index.php?err=tx_fail");
+    $indexUrl = defined('SM_SEMESTRAL_INDEX_REL') ? SM_SEMESTRAL_INDEX_REL : '../index.php';
+    header("Location: " . $indexUrl . "?err=tx_fail");
     exit;
 }

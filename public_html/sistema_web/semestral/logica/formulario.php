@@ -162,6 +162,9 @@ if ($aprobacionTotal) {
 
 // --------- Reglas de botones ----------
 // Compleción de ítems
+if (!isset($completados)) {
+  $completados = 0;
+}
 $todoCompleto   = ($completados === $totalItems);
 $faltan         = max(0, $totalItems - $completados);
 
@@ -251,16 +254,22 @@ function pillClass($estado) {
 }
 function val($arr, $key) { return isset($arr[$key]) ? $arr[$key] : ''; }
 
-/** Normaliza rutas internas para que apunten a /sistema_web */
+/** Normaliza rutas internas a formato portable (relativas a /semestral/index.php). */
 function public_url(string $p): string {
     $p = trim($p);
     if ($p === '') return '';
     if (preg_match('~^https?://~i', $p)) return $p;
-    if ($p[0] === '/') {
-        if (strpos($p, '/sistema_web/') === 0) return $p;
-        return '/sistema_web' . $p;
-    }
-    return '/sistema_web/' . ltrim($p, '/');
+
+    $p = str_replace('\\', '/', $p);
+    if (preg_match('~^\\./|^\\.\\./~', $p)) return $p;
+
+    if ($p[0] === '/') $p = ltrim($p, '/');
+
+    // Si viene con prefijo de despliegue (p.ej. rsu/sistema_web/...), recorta hasta sistema_web/.
+    $pos = stripos($p, 'sistema_web/');
+    if ($pos !== false) $p = substr($p, $pos + strlen('sistema_web/'));
+
+    return '../' . ltrim($p, '/');
 }
 
 /** === Helper para renderizar los botones de recursos del ítem actual === */
@@ -345,6 +354,18 @@ $itemActual    = $items[$itemActualIdx - 1];
 // --------- Cálculo de progreso ----------
 $porcentaje = ($totalItems > 0) ? round(($completados / $totalItems) * 100) : 0;
 
+// --------- Ajuste de bloqueo del botón principal ----------
+// Importante: $completados se calcula recién en este bloque.
+// Recalcular aquí evita bloquear "Solicitar Revisión" por un valor no inicializado.
+$todoCompleto = ($completados === $totalItems);
+$faltan       = max(0, $totalItems - $completados);
+if ($btnAccion === 'solicitar') {
+    $btnDisabled = !$todoCompleto;
+    $btnTitle    = $todoCompleto
+        ? 'Enviar para revisión'
+        : 'Completa todos los ítems para poder solicitar la revisión.';
+}
+
 // aqui se borró el segundo
 
 // --------- Valores actuales del ítem ----------
@@ -393,7 +414,7 @@ while ($row = $resM->fetch_assoc()) {
 }
 $stM->close();
 ?>
-<div class="container-fluid d-flex flex-column p-0" style="height: calc(100vh - 150px);">
+<div id="semestralShell" class="container-fluid d-flex flex-column p-0 rsu-shell">
 <!-- Div Superior (dos columnas, compacto, degradado verde Bootstrap) -->
 <style>
   /* Estilos del header */
@@ -445,6 +466,20 @@ $stM->close();
     overflow-wrap:anywhere;
     word-break:break-word;
     line-height:1.15;
+  }
+  .rsu-shell{
+    width:100%;
+    min-height:420px;
+  }
+  .rsu-item-card{
+    margin-top:8px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    background-color:#fff;
+    padding:20px;
+    width:100%;
+    max-width:none;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
   }
 </style>
 <div class="rsu-header px-3 py-2 mb-2">
@@ -528,7 +563,7 @@ $stM->close();
 <?php endif; ?>            
 
             <!-- Bloque del Ítem Actual -->
-            <div style="margin-top: 8px; border: 1px solid #ccc; border-radius: 8px; background-color: #ffffff; padding: 20px; max-width: 800px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div class="rsu-item-card">
                 <h5 class="mb-2">Ítem <?= $itemActualIdx ?> de <?= $totalItems ?> — <?= htmlspecialchars($itemActual['nombre']) ?></h5>
 <!-- Párrafo de ejemplo (versión compacta y justificada) -->
 <?php
@@ -1067,4 +1102,32 @@ btn.addEventListener('click', async function () {
 
 });
 </script>
-<script src="/sistema_web/evaluacion/js/observaciones_ui.js"></script>
+<script src="../evaluacion/js/observaciones_ui.js"></script>
+<script>
+(function () {
+  function ajustarAltoSemestral() {
+    var shell = document.getElementById('semestralShell');
+    if (!shell) return;
+
+    var footer = document.querySelector('.main-footer');
+    var shellTop = shell.getBoundingClientRect().top;
+    var limiteInferior = footer ? footer.getBoundingClientRect().top : window.innerHeight;
+    var altoDisponible = Math.floor(limiteInferior - shellTop - 4);
+
+    if (altoDisponible < 420) altoDisponible = 420;
+    shell.style.height = altoDisponible + 'px';
+  }
+
+  window.addEventListener('load', ajustarAltoSemestral);
+  window.addEventListener('resize', function () {
+    clearTimeout(window.__rsuShellResize);
+    window.__rsuShellResize = setTimeout(ajustarAltoSemestral, 120);
+  });
+
+  if (window.jQuery) {
+    jQuery(document).on('collapsed.lte.pushmenu expanded.lte.pushmenu', function () {
+      setTimeout(ajustarAltoSemestral, 250);
+    });
+  }
+})();
+</script>

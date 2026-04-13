@@ -118,6 +118,44 @@
     </div>
   </div>
 </div>
+<!-- ===== Modal Control de Visibilidad F1 ===== -->
+<div class="modal fade" id="visibilidadF1Modal" tabindex="-1" role="dialog"
+     aria-labelledby="visibilidadF1ModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content border-secondary">
+      <div class="modal-header bg-secondary text-white">
+        <h5 class="modal-title" id="visibilidadF1ModalLabel">Control de Visibilidad de Interfaces</h5>
+        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-light border mb-2">
+          <strong>Periodo:</strong> <span id="visibilidadF1Periodo">-</span>
+        </div>
+        <form id="formVisibilidadF1">
+          <input type="hidden" id="visibilidadF1CronogramaId" name="id_cronograma" value="">
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>Interfaz</th>
+                  <th>Descripcion</th>
+                  <th>Inicio</th>
+                  <th>Fin</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="visibilidadF1Body"></tbody>
+            </table>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" id="btnGuardarVisibilidadF1">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- ============= SCRIPTS ESPECÍFICOS ============== -->
 <script>
 $(function(){
@@ -152,12 +190,16 @@ $(function(){
       }
       r.forEach((c,i)=>{
         const estado=parseInt(c.activo)===1?'✅':'⛔';
+        const btnVisibilidad = parseInt(c.tipo,10)===1
+          ? '<button class="btn btn-sm btn-secondary btnVisibilidad" title="Control de visibilidad"><i class="fas fa-sliders-h"></i></button>'
+          : '';
         $tb.append(`
-          <tr data-id="${c.id}" data-id_periodo="${c.id_periodo}" data-tipo="${c.tipo}">
+          <tr data-id="${c.id}" data-id_periodo="${c.id_periodo}" data-tipo="${c.tipo}" data-activo="${parseInt(c.activo,10)===1 ? 1 : 0}">
             <td>${i+1}</td><td>${c.periodo}</td><td>${c.tipo_nombre}</td>
             <td>${c.apertura}</td><td>${c.cierre}</td>
             <td class="text-center">${estado}</td>
             <td class="text-center">
+              ${btnVisibilidad}
               <button class="btn btn-sm btn-primary btnEditar"><i class="fas fa-edit"></i></button>
               <button class="btn btn-sm btn-danger btnBorrar"><i class="fas fa-trash"></i></button>
             </td>
@@ -232,7 +274,7 @@ $(function(){
       const tipo=parseInt($tr.data('tipo'),10)||1;
       const ap=$tr.children().eq(3).text().replace(' ','T');
       const ci=$tr.children().eq(4).text().replace(' ','T');
-      const act=$tr.children().eq(5).text()==='✅';
+      const act=parseInt($tr.data('activo'),10)===1;
 
       cargarSelectPeriodo(html=>{
         $tr.children().eq(1).html(html);
@@ -286,6 +328,83 @@ $(function(){
         else alert(r.msg||'Error al actualizar');
       },'json');
     });
+
+  function escHtml(v){
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  function renderVisibilidadRows(rows){
+    const $body = $('#visibilidadF1Body').empty();
+    if(!rows || !rows.length){
+      $body.append('<tr><td colspan="5" class="text-center text-muted">Sin configuracion disponible.</td></tr>');
+      return;
+    }
+
+    rows.forEach(function(row){
+      const codigo = String(row.codigo || '').trim();
+      const nombre = escHtml(row.nombre || codigo || 'Interfaz');
+      const descripcion = escHtml(row.descripcion || '');
+      const inicio = escHtml(row.inicio || '');
+      const fin = escHtml(row.fin || '');
+      const estado = parseInt(row.estado,10) === 1 ? 1 : 0;
+
+      $body.append(
+        '<tr>' +
+          '<td><strong>' + nombre + '</strong><div class="small text-muted">' + escHtml(codigo) + '</div></td>' +
+          '<td><input type="text" class="form-control form-control-sm" name="rows[' + codigo + '][descripcion]" value="' + descripcion + '"></td>' +
+          '<td><input type="datetime-local" class="form-control form-control-sm" name="rows[' + codigo + '][inicio]" value="' + inicio + '"></td>' +
+          '<td><input type="datetime-local" class="form-control form-control-sm" name="rows[' + codigo + '][fin]" value="' + fin + '"></td>' +
+          '<td><select class="form-control form-control-sm" name="rows[' + codigo + '][estado]">' +
+            '<option value="1"' + (estado===1 ? ' selected' : '') + '>Activo</option>' +
+            '<option value="0"' + (estado===0 ? ' selected' : '') + '>Inactivo</option>' +
+          '</select></td>' +
+        '</tr>'
+      );
+    });
+  }
+
+  $('#tablaCronogramas').on('click', '.btnVisibilidad', function(){
+    const idCronograma = parseInt($(this).closest('tr').data('id'), 10) || 0;
+    if(!idCronograma){
+      alert('No se pudo identificar el cronograma.');
+      return;
+    }
+
+    $.post('funciones/logica_cronogramas.php', { action:'get_visibilidad_f1', id_cronograma:idCronograma }, function(r){
+      if(!r || !r.success || !r.data){
+        alert((r && r.msg) ? r.msg : 'No se pudo cargar la configuracion de visibilidad.');
+        return;
+      }
+
+      $('#visibilidadF1CronogramaId').val(r.data.id_cronograma || idCronograma);
+      $('#visibilidadF1Periodo').text(r.data.periodo || '-');
+      renderVisibilidadRows(r.data.rows || []);
+      $('#visibilidadF1Modal').modal('show');
+    }, 'json');
+  });
+
+  $('#btnGuardarVisibilidadF1').on('click', function(){
+    const idCronograma = parseInt($('#visibilidadF1CronogramaId').val(), 10) || 0;
+    if(!idCronograma){
+      alert('No hay cronograma seleccionado.');
+      return;
+    }
+
+    const payload = $('#formVisibilidadF1').serialize() + '&action=save_visibilidad_f1&id_cronograma=' + idCronograma;
+    $.post('funciones/logica_cronogramas.php', payload, function(r){
+      if(r && r.success){
+        alert(r.msg || 'Visibilidad guardada correctamente.');
+        $('#visibilidadF1Modal').modal('hide');
+        return;
+      }
+      alert((r && r.msg) ? r.msg : 'No se pudo guardar la configuracion.');
+    }, 'json');
+  });
 
   /*--- Init ---*/
   cargarPeriodos(); listarCronogramas();

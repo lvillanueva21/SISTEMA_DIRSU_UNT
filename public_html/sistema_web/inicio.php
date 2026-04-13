@@ -164,6 +164,20 @@
 
 <body class="hold-transition sidebar-mini layout-fixed">
 <?php include 'componentes/multiproyectos/multi.php'; ?>
+<?php
+if (isset($_SESSION['id_rol']) && (int)$_SESSION['id_rol'] === 2) {
+    $rsu_card_auditoria_api_url = 'includes/api_dirsu/api.php';
+    $rsu_card_auditoria_mostrar_todos = true;
+
+    // Si quieres mostrar solo el proyecto activo (id_py actual), cambia a false:
+    // $rsu_card_auditoria_mostrar_todos = false;
+    if ($rsu_card_auditoria_mostrar_todos) {
+        include 'includes/cards/card_auditoria_semestres_todos.php';
+    } else {
+        include 'includes/cards/card_auditoria_semestres_actual.php';
+    }
+}
+?>
 <div class="wrapper">
   <!-- Preloader -->
   <div class="preloader flex-column justify-content-center align-items-center">

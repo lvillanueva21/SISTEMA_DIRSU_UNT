@@ -2,7 +2,8 @@
 (function () {
   const BTN_ID = 'btnObservaciones';
   const MODAL_ID = 'obsModalDirsu';
-  const API = (id_py) => `/sistema_web/evaluacion/api/observaciones_estado.php?id_py=${encodeURIComponent(id_py)}`;
+  // Ruta relativa para soportar despliegues en /sistema_web o /algo/sistema_web.
+  const API = (id_py) => `../evaluacion/api/observaciones_estado.php?id_py=${encodeURIComponent(id_py)}`;
 
   function ensureStyles() {
   if (document.getElementById('obs-ui-style')) return;

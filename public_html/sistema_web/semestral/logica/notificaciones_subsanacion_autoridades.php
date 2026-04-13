@@ -7,6 +7,19 @@
 declare(strict_types=1);
 date_default_timezone_set('America/Lima');
 
+/** Obtiene URL base de sistema_web segun host/ruta actual. */
+function sistema_web_base_url(): string {
+  $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+  $host = isset($_SERVER['HTTP_HOST']) ? trim((string)$_SERVER['HTTP_HOST']) : (isset($_SERVER['SERVER_NAME']) ? trim((string)$_SERVER['SERVER_NAME']) : '');
+  $scriptName = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\', '/', (string)$_SERVER['SCRIPT_NAME']) : (isset($_SERVER['PHP_SELF']) ? str_replace('\\', '/', (string)$_SERVER['PHP_SELF']) : '');
+  if ($host === '' || $scriptName === '') return '';
+
+  if (preg_match('~^(.*?/sistema_web)(?:/|$)~', $scriptName, $m)) {
+    return $scheme . '://' . $host . $m[1];
+  }
+  return '';
+}
+
 /** Mapea código/nombre de oficina a id_rol esperado. */
 function rolIdDesdeOficina(?string $cod, ?string $nom): ?int {
   $c = strtoupper(trim((string)$cod));
@@ -138,11 +151,6 @@ function enviarCorreoSubsanacion(array $payload, array &$diag): array {
     realpath(__DIR__ . '/../recursos/src') ?: (__DIR__ . '/../recursos/src'),
     realpath(__DIR__ . '/../../evaluacion/recursos/src') ?: (__DIR__ . '/../../evaluacion/recursos/src'),
     realpath(__DIR__ . '/../../recursos/src') ?: (__DIR__ . '/../../recursos/src'),
-    $docroot ? $docroot . '/sistema_web/semestral/recursos/src'   : null,
-    $docroot ? $docroot . '/sistema_web/evaluacion/recursos/src'  : null,
-    $docroot ? $docroot . '/sistema_web/recursos/src'             : null,
-    '/var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/evaluacion/recursos/src',
-    '/var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web/recursos/src',
   ]);
   $diag[] = 'phpmailer_candidatos=' . implode(' | ', $candidates);
 
@@ -243,9 +251,10 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
     return ['ok'=>false,'error'=>'No se encontraron correos en el directorio para los destinatarios.','diag'=>$diag];
   }
 
-  // 4) Contenido (link fijo) — sin observaciones
+  // 4) Contenido (link portable) — sin observaciones
   $asunto = "Subsanación enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU";
-  $url    = "https://rsu.unitru.edu.pe/sistema_web/login.php";
+  $baseUrl = sistema_web_base_url();
+  $url    = $baseUrl !== '' ? ($baseUrl . '/login.php') : '../login.php';
 
   $facDepFraseHTML = '';
   $facDepFraseTXT  = '';

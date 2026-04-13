@@ -27,6 +27,8 @@
                         <?php
                         if (isset($_GET['error']) && $_GET['error'] == 1) {
                             echo "<p style='color:red'> Usuario y/o contraseña incorrectos ...</p>";
+                        } elseif (isset($_GET['error']) && $_GET['error'] == 5) {
+                            echo "<p style='color:#b36b00'> Este usuario est&aacute; desactivado. Solicita activaci&oacute;n al &aacute;rea DIRSU.</p>";
                         }
                         ?>
                         <!-- INICIO DE FORMULARIO -->

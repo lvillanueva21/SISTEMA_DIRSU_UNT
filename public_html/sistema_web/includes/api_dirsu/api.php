@@ -2,6 +2,8 @@
 include_once __DIR__ . '/guard_api.php';
 include_once __DIR__ . '/json_response.php';
 include_once __DIR__ . '/user_service.php';
+include_once __DIR__ . '/project_service.php';
+include_once __DIR__ . '/semester_audit_service.php';
 
 rsu_api_dirsu_guard_api(array(
     'allowed_roles' => array(0, 1, 2, 3, 4, 5)
@@ -61,6 +63,103 @@ if ($action === 'user.get') {
     $meta['requested_by'] = isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null;
 
     rsu_api_json_ok($result['data'], 'Consulta de usuario completada.', $meta);
+}
+
+if ($action === 'user.projects.get') {
+    $id = 0;
+    if (isset($_GET['id'])) {
+        $id = (int)$_GET['id'];
+    }
+
+    $usuario = '';
+    if (isset($_GET['usuario'])) {
+        $usuario = trim((string)$_GET['usuario']);
+    }
+
+    if ($id <= 0 && $usuario === '') {
+        rsu_api_json_error(422, 'missing_filter', 'Debes enviar id o usuario.', array());
+    }
+
+    if ($usuario !== '' && strlen($usuario) > 120) {
+        rsu_api_json_error(422, 'invalid_usuario', 'El valor de usuario excede el maximo permitido.', array());
+    }
+
+    $result = rsu_api_user_projects_get($id, $usuario);
+    if (!is_array($result) || !isset($result['ok']) || !$result['ok']) {
+        $error_code = isset($result['error_code']) ? (string)$result['error_code'] : 'internal_error';
+        $error_message = isset($result['error_message']) ? (string)$result['error_message'] : 'No se pudo completar la consulta.';
+
+        if ($error_code === 'not_found') {
+            rsu_api_json_error(404, $error_code, $error_message, array());
+        }
+
+        if ($error_code === 'missing_filter' || $error_code === 'invalid_filter' || $error_code === 'invalid_usuario' || $error_code === 'not_coordinator') {
+            rsu_api_json_error(422, $error_code, $error_message, array());
+        }
+
+        if ($error_code === 'db_connection_error' || $error_code === 'db_prepare_error') {
+            rsu_api_json_error(500, $error_code, $error_message, array());
+        }
+
+        rsu_api_json_error(400, $error_code, $error_message, array());
+    }
+
+    $meta = isset($result['meta']) && is_array($result['meta']) ? $result['meta'] : array();
+    $meta['requested_at'] = date('Y-m-d H:i:s');
+    $meta['requested_by'] = isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null;
+
+    rsu_api_json_ok($result['data'], 'Consulta de proyectos del coordinador completada.', $meta);
+}
+
+if ($action === 'project.semesters.audit') {
+    $id_py = 0;
+    if (isset($_GET['id_py'])) {
+        $id_py = (int)$_GET['id_py'];
+    }
+
+    $id = 0;
+    if (isset($_GET['id'])) {
+        $id = (int)$_GET['id'];
+    }
+
+    $usuario = '';
+    if (isset($_GET['usuario'])) {
+        $usuario = trim((string)$_GET['usuario']);
+    }
+
+    if ($id_py <= 0 && $id <= 0 && $usuario === '') {
+        rsu_api_json_error(422, 'missing_filter', 'Debes enviar id_py o id/usuario.', array());
+    }
+
+    if ($usuario !== '' && strlen($usuario) > 120) {
+        rsu_api_json_error(422, 'invalid_usuario', 'El valor de usuario excede el maximo permitido.', array());
+    }
+
+    $result = rsu_api_project_semesters_audit_get($id_py, $id, $usuario);
+    if (!is_array($result) || !isset($result['ok']) || !$result['ok']) {
+        $error_code = isset($result['error_code']) ? (string)$result['error_code'] : 'internal_error';
+        $error_message = isset($result['error_message']) ? (string)$result['error_message'] : 'No se pudo completar la consulta.';
+
+        if ($error_code === 'not_found') {
+            rsu_api_json_error(404, $error_code, $error_message, array());
+        }
+
+        if ($error_code === 'missing_filter' || $error_code === 'invalid_filter' || $error_code === 'invalid_usuario') {
+            rsu_api_json_error(422, $error_code, $error_message, array());
+        }
+
+        if ($error_code === 'db_connection_error' || $error_code === 'db_prepare_error') {
+            rsu_api_json_error(500, $error_code, $error_message, array());
+        }
+
+        rsu_api_json_error(400, $error_code, $error_message, array());
+    }
+
+    $meta = isset($result['meta']) && is_array($result['meta']) ? $result['meta'] : array();
+    $meta['requested_at'] = date('Y-m-d H:i:s');
+    $meta['requested_by'] = isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null;
+
+    rsu_api_json_ok($result['data'], 'Auditoria de semestres completada.', $meta);
 }
 
 rsu_api_json_error(400, 'unknown_action', 'Accion no soportada para api_dirsu.', array());

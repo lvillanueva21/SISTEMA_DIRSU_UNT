@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('America/Lima');
 
 require_once '../../componentes/db.php';
+require_once '../../componentes/cronograma/visibilidad_fase1.php';
 $accion = $_POST['action'] ?? '';
 
 try {
@@ -88,10 +89,11 @@ case 'list':
                 throw new Exception('❌ La fecha de apertura debe ser menor que la de cierre.');
             }
 
+            mysqli_begin_transaction($conexion);
             if ($activo) {
-                $sql = "UPDATE sm_cronogramas SET activo=0 WHERE id_periodo=? AND tipo=?";
+                $sql = "UPDATE sm_cronogramas SET activo=0 WHERE tipo=?";
                 $st = mysqli_prepare($conexion, $sql);
-                mysqli_stmt_bind_param($st, 'ii', $id_periodo, $tipo);
+                mysqli_stmt_bind_param($st, 'i', $tipo);
                 mysqli_stmt_execute($st);
             }
 
@@ -108,6 +110,11 @@ case 'list':
             mysqli_stmt_execute($st2);
             $res2 = mysqli_stmt_get_result($st2);
             $rowP = mysqli_fetch_assoc($res2);
+
+            if ($tipo === 1 && $rowP && isset($rowP['periodo'])) {
+                rsu_vf1_ensure_rows_for_period($conexion, $rowP['periodo'], $apertura, $cierre, $id_new);
+            }
+            mysqli_commit($conexion);
 
             $tipo_nombre = match ($tipo) {
     1 => 'Presentación de Proyecto',
@@ -149,9 +156,9 @@ echo json_encode([
             mysqli_begin_transaction($conexion);
 
             if ($activo) {
-                $sql = "UPDATE sm_cronogramas SET activo=0 WHERE id_periodo=? AND tipo=?";
+                $sql = "UPDATE sm_cronogramas SET activo=0 WHERE tipo=? AND id<>?";
                 $st = mysqli_prepare($conexion, $sql);
-                mysqli_stmt_bind_param($st, 'ii', $id_periodo, $tipo);
+                mysqli_stmt_bind_param($st, 'ii', $tipo, $id);
                 mysqli_stmt_execute($st);
             }
 
@@ -162,8 +169,34 @@ echo json_encode([
             mysqli_stmt_bind_param($st, 'iissii', $id_periodo, $tipo, $apertura, $cierre, $activo, $id);
             mysqli_stmt_execute($st);
 
+            if ($tipo === 1) {
+                $sqlP = "SELECT nombre AS periodo FROM periodos WHERE id=?";
+                $stP = mysqli_prepare($conexion, $sqlP);
+                mysqli_stmt_bind_param($stP, 'i', $id_periodo);
+                mysqli_stmt_execute($stP);
+                $resP = mysqli_stmt_get_result($stP);
+                $rowP = $resP ? mysqli_fetch_assoc($resP) : null;
+                if ($rowP && isset($rowP['periodo'])) {
+                    rsu_vf1_ensure_rows_for_period($conexion, $rowP['periodo'], $apertura, $cierre, $id);
+                }
+            }
+
             mysqli_commit($conexion);
             echo json_encode(['success' => true]);
+            break;
+
+        /*===== CONTROL VISIBILIDAD F1 =====================================*/
+        case 'get_visibilidad_f1':
+            $idCronograma = intval($_POST['id_cronograma'] ?? 0);
+            $resultado = rsu_vf1_get_rows_for_cronograma($conexion, $idCronograma);
+            echo json_encode($resultado);
+            break;
+
+        case 'save_visibilidad_f1':
+            $idCronograma = intval($_POST['id_cronograma'] ?? 0);
+            $rows = isset($_POST['rows']) && is_array($_POST['rows']) ? $_POST['rows'] : array();
+            $resultado = rsu_vf1_save_rows_for_cronograma($conexion, $idCronograma, $rows);
+            echo json_encode($resultado);
             break;
 
         /*===== ELIMINAR ====================================================*/
@@ -183,5 +216,6 @@ echo json_encode([
     }
 
 } catch (Exception $e) {
+    @mysqli_rollback($conexion);
     echo json_encode(['success' => false, 'msg' => $e->getMessage()]);
 }

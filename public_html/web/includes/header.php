@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 // Valores por defecto (puedes sobreescribirlos desde cada página)
-$pageTitle = $pageTitle ?? 'Gardener - Gardening Website Template';
+$pageTitle = $pageTitle ?? 'DIRSU - Direccion de Responsabilidad Social y Extension Cultural Universitaria';
 $metaKeywords = $metaKeywords ?? '';
 $metaDescription = $metaDescription ?? '';
 ?>
@@ -15,7 +15,7 @@ $metaDescription = $metaDescription ?? '';
     <meta content="<?= htmlspecialchars($metaDescription, ENT_QUOTES, 'UTF-8') ?>" name="description">
 
     <!-- Favicon -->
-    <link href="img/favicon.ico" rel="icon">
+    <link href="img/rsu_icono.ico" rel="icon">
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,6 +36,7 @@ $metaDescription = $metaDescription ?? '';
 
     <!-- Template Stylesheet -->
     <link href="css/style.css" rel="stylesheet">
+    <link href="css/custom.css" rel="stylesheet">
 </head>
 
 <body>

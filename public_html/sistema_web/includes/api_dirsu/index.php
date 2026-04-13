@@ -38,27 +38,27 @@ $rsu_api_dirsu_data = array(
     ),
     array(
         'id' => 2,
-        'nombre' => 'Listado de proyectos vigentes',
+        'nombre' => 'Proyectos de coordinador',
         'modulo' => 'proyectos',
         'metodo' => 'GET',
-        'endpoint' => 'api.php?action=project.list',
-        'estado' => 'borrador',
-        'actualizado_en' => '2026-03-22 09:10:00',
+        'endpoint' => 'api.php?action=user.projects.get&usuario={usuario}|id={id}',
+        'estado' => 'activo',
+        'actualizado_en' => '2026-03-25 12:00:00',
         'responsable' => 'api_dirsu',
-        'action' => 'project.list',
-        'soporte_live' => 0
+        'action' => 'user.projects.get',
+        'soporte_live' => 1
     ),
     array(
         'id' => 3,
-        'nombre' => 'Actualizar cronograma',
-        'modulo' => 'cronograma',
-        'metodo' => 'PATCH',
-        'endpoint' => 'api.php?action=schedule.update&id={id}',
-        'estado' => 'deshabilitado',
-        'actualizado_en' => '2026-03-22 09:20:00',
+        'nombre' => 'Auditoria de semestres por proyecto',
+        'modulo' => 'semestral',
+        'metodo' => 'GET',
+        'endpoint' => 'api.php?action=project.semesters.audit&id_py={id_py}|id={id}|usuario={usuario}',
+        'estado' => 'activo',
+        'actualizado_en' => '2026-03-26 09:00:00',
         'responsable' => 'api_dirsu',
-        'action' => 'schedule.update',
-        'soporte_live' => 0
+        'action' => 'project.semesters.audit',
+        'soporte_live' => 1
     )
 );
 
@@ -430,6 +430,15 @@ if ($rsu_api_dirsu_json === false) {
       'contacto.correo_asistente': 'Correo de asistente',
       'contacto.origen': 'Origen de contacto',
       'proyecto.id': 'ID de proyecto principal',
+      'usuario.id': 'ID interno del usuario',
+      'usuario.usuario': 'Codigo de usuario',
+      'usuario.nombres': 'Nombres',
+      'usuario.apellidos': 'Apellidos',
+      'usuario.rol.id': 'ID de rol',
+      'usuario.rol.nombre': 'Rol del usuario',
+      'usuario.id_py_actual': 'Proyecto activo en sesion',
+      'proyectos': 'Listado de proyectos',
+      'resumen.total_proyectos': 'Total de proyectos',
       'meta.search_mode': 'Modo de busqueda',
       'meta.search_value': 'Valor de busqueda',
       'meta.requested_at': 'Fecha de consulta',
@@ -494,10 +503,28 @@ if ($rsu_api_dirsu_json === false) {
         var fullKey = prefix ? (prefix + '.' + key) : key;
         var value = obj[key];
 
-        if (value !== null && typeof value === 'object' && !isArray(value)) {
+        if (isArray(value)) {
+          flattenArray(value, fullKey);
+        } else if (value !== null && typeof value === 'object') {
           flattenObject(value, fullKey);
         } else {
           pushRow(fullKey, value);
+        }
+      }
+    }
+
+    function flattenArray(list, prefix) {
+      var idx;
+      for (idx = 0; idx < list.length; idx++) {
+        var item = list[idx];
+        var fullKey = prefix + '[' + idx + ']';
+
+        if (isArray(item)) {
+          flattenArray(item, fullKey);
+        } else if (item !== null && typeof item === 'object') {
+          flattenObject(item, fullKey);
+        } else {
+          pushRow(fullKey, item);
         }
       }
     }
@@ -617,7 +644,7 @@ if ($rsu_api_dirsu_json === false) {
       return;
     }
 
-    if (!item.soporte_live || item.action !== 'user.get') {
+    if (!item.soporte_live || (item.action !== 'user.get' && item.action !== 'user.projects.get' && item.action !== 'project.semesters.audit')) {
       actionNote.textContent = 'Esta API aun no tiene implementacion activa. Solo muestra datos de prueba.';
       showCatalogPreview(item);
       return;
@@ -636,7 +663,7 @@ if ($rsu_api_dirsu_json === false) {
       return;
     }
 
-    var requestUrl = apiBaseUrl + '?action=user.get';
+    var requestUrl = apiBaseUrl + '?action=' + encodeURIComponent(item.action);
     if (id !== '') {
       requestUrl += '&id=' + encodeURIComponent(id);
     } else {

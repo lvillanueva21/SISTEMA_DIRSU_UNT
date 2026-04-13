@@ -1,8 +1,9 @@
-﻿<?php 
-// Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+header('Content-Type: text/html; charset=utf-8');
+// Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
 
-// Incluir la conexiÃ³n a la base de datos
+// Incluir la conexión a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -41,11 +42,11 @@ include('../componentes/db.php');
       <ul class="navbar-nav ml-auto">
         <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
           <a href="https://rsu.unitru.edu.pe" class="nav-link" target="_blank">
-            <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
+            <p style="color: white;">Ir a página DIRSU</p>
           </a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-          <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+          <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
         </li>
       </ul>
     </nav>
@@ -53,9 +54,11 @@ include('../componentes/db.php');
             <?php include_once "../includes/sidebar.php"; ?>
     <!-- Content Wrapper -->
     <div class="content-wrapper">
-      <section class="content" style="min-height: 400px;">
-        <div class="card">
-          <h6 class="card-header bg-primary text-white">Bienvenid@ al Panel de Control de la <b><u>DIRSU</u></b></h6>
+      <section class="content pt-3" style="min-height: 400px;">
+        <div class="container-fluid">
+          <div class="alert alert-primary mb-3">
+            Bienvenid@ al Panel de Control de la <b><u>DIRSU</u></b>
+          </div>
           <div class="row">
             <!-- Primera columna: Crear Usuarios de Autoridades -->
             <div class="col-md-5">
@@ -73,14 +76,14 @@ include('../componentes/db.php');
                         $alert_type = $_GET['alert'];
                         if ($alert_type == 1) {
                           echo "<div class='alert alert-warning alert-dismissible fade show' role='alert'>
-                                  <strong>Advertencia:</strong> El usuario ingresado ya existe, inicie sesiÃ³n o registre otro.
+                                  <strong>Advertencia:</strong> El usuario ingresado ya existe, inicie sesión o registre otro.
                                   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
                                     <span aria-hidden='true'>&times;</span>
                                   </button>
                                 </div>";
                         } elseif ($alert_type == 2) {
                           echo "<div class='alert alert-success alert-dismissible fade show' role='alert'>
-                                  <strong>Ã‰xito:</strong> Registro exitoso, haz clic para <a href='/sistema_web/login.php'>Iniciar sesiÃ³n</a>.
+                                  <strong>Éxito:</strong> Registro exitoso, haz clic para <a href='/sistema_web/login.php'>Iniciar sesión</a>.
                                   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
                                     <span aria-hidden='true'>&times;</span>
                                   </button>
@@ -94,7 +97,7 @@ include('../componentes/db.php');
                                 </div>";
                         } elseif ($alert_type == 4) {
                           echo "<div class='alert alert-info alert-dismissible fade show' role='alert'>
-                                  <strong>InformaciÃ³n:</strong> Las contraseÃ±as ingresadas no coinciden.
+                                  <strong>Información:</strong> Las contraseñas ingresadas no coinciden.
                                   <button type='button' class='close' data-dismiss='alert' aria-label='Close'>
                                     <span aria-hidden='true'>&times;</span>
                                   </button>
@@ -116,7 +119,7 @@ include('../componentes/db.php');
                   </div>
                   <div class="card-footer">
                     <div class="text-right text-muted small">
-                      Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
+                      Luigi Villanueva - área Informática - DIRSU
                     </div>
                   </div>
                 </div>
@@ -148,7 +151,7 @@ include('../componentes/db.php');
                 </div>
                 <div class="card-footer">
                   <div class="text-right text-muted small">
-                    Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
+                    Luigi Villanueva - área Informática - DIRSU
                   </div>
                 </div>
               </div>
@@ -182,7 +185,7 @@ include('../componentes/db.php');
                 </div>
                 <div class="card-footer">
                   <div class="text-right text-muted small">
-                    Luigi Villanueva - Ã¡rea InformÃ¡tica - DIRSU
+                    Luigi Villanueva - área Informática - DIRSU
                   </div>
                 </div>
               </div>
@@ -194,9 +197,9 @@ include('../componentes/db.php');
     </div>
     <!-- Footer -->
     <footer class="main-footer">
-      <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+      <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
       <div class="float-right d-none d-sm-inline-block">
-        <p>Desarrollado por el <a href="#">Ãrea informÃ¡tica - DIRSU</a></p>
+        <p>Desarrollado por el <a href="#">Area informatica - DIRSU</a></p>
       </div>
     </footer>
   </div>
@@ -224,4 +227,3 @@ include('../componentes/db.php');
   <script src="../dust/js/pages/dashboard.js"></script>
 </body>
 </html>
-

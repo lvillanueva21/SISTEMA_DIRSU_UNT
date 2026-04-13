@@ -16,6 +16,7 @@ if (empty($usuario) || empty($clave)) {
 try {
     // Consulta a la base de datos para obtener los datos del usuario
     $stmt = $conexion->prepare("SELECT 
+        id,
         usuario, 
         clave, 
         id_rol, 
@@ -48,6 +49,33 @@ try {
     
     // Verifica la contraseña usando password_verify()
     if (password_verify($clave, $hash_clave)) {
+        $usuarioActivo = true;
+        $idUsuario = (int)$row['id'];
+
+        $stEstado = $conexion->prepare("SELECT descripcion
+                                          FROM historial_usuarios
+                                         WHERE id_usuario = ?
+                                           AND descripcion LIKE 'Estado de usuario:%'
+                                         ORDER BY id DESC
+                                         LIMIT 1");
+        if ($stEstado) {
+            $stEstado->bind_param("i", $idUsuario);
+            $stEstado->execute();
+            $rsEstado = $stEstado->get_result();
+            if ($rsEstado && $rsEstado->num_rows > 0) {
+                $estado = $rsEstado->fetch_assoc();
+                if (isset($estado['descripcion']) && stripos((string)$estado['descripcion'], 'desactivado') !== false) {
+                    $usuarioActivo = false;
+                }
+            }
+            $stEstado->close();
+        }
+
+        if (!$usuarioActivo) {
+            header("Location: ../../login.php?error=5");
+            exit();
+        }
+
         // Almacenar datos del usuario en la sesión
         $_SESSION['usuario'] = $usuario;
         $_SESSION['id_rol'] = $row['id_rol'];

@@ -9,14 +9,14 @@ if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
 require_once __DIR__ . '/../../componentes/db.php'; // $conexion (mysqli)
 
-// FS base para borrar (mismo que en guardar_item.php)
-$FS_BASE          = '/var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web';
-$DIR_BASE_ALLOWED = $FS_BASE . '/files_answer/'; // whitelist de seguridad
+// FS base portable para borrar archivos (raiz de sistema_web).
+$FS_BASE          = realpath(__DIR__ . '/../../') ?: dirname(__DIR__, 2);
+$DIR_BASE_ALLOWED = rtrim($FS_BASE, '/\\') . '/files_answer/'; // whitelist de seguridad
 
 // Helpers
 function back_to_index($item = null) {
-    // Redirige SIEMPRE al index correcto del módulo semestral
-    $url = '/sistema_web/semestral/index.php';
+    // Redirige al index del modulo semestral con ruta relativa (portable).
+    $url = '../index.php';
     if ($item !== null) {
         $sep = (strpos($url, '?') === false) ? '?' : '&';
         $url .= $sep . 'item=' . (int)$item;

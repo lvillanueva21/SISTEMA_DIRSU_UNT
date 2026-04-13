@@ -331,6 +331,58 @@ $(function(){
     }, 'json').fail(()=> showOkModal('Guardado correctamente'));
   }
 
+  function showFormErrorModal(msg, code){
+    showErrorModal(msg || 'No se pudo guardar el item', code || '');
+  }
+
+  function isOrderConflictMsg(msg){
+    return /orden/i.test(String(msg || ''));
+  }
+
+  function parseFormPayload(){
+    const payload = {
+      id_formulario: formActual,
+      nombre: $('#itNombre').val().trim(),
+      descripcion: $('#itDescripcion').val().trim(),
+      tipo: $('#itTipo').val(),
+      orden: +$('#itOrden').val(),
+      link:  $('#itLink').val().trim(),
+      video: $('#itVideo').val().trim()
+    };
+
+    if(!payload.id_formulario){
+      showFormErrorModal('Elige un formulario antes de continuar.', 'FORM_REQUIRED');
+      return null;
+    }
+    if(!payload.nombre){
+      showFormErrorModal('El nombre del item es obligatorio.', 'NOMBRE_REQUIRED');
+      return null;
+    }
+    if(!payload.tipo){
+      showFormErrorModal('Selecciona un tipo de dato para el item.', 'TIPO_REQUIRED');
+      return null;
+    }
+    if(!payload.orden || payload.orden < 1){
+      showFormErrorModal('El orden debe ser mayor o igual a 1.', 'ORDEN_INVALID');
+      return null;
+    }
+    return payload;
+  }
+
+  function setEditUi(){
+    if (editMode && editIdItem){
+      $('#btnSubmitItem')
+        .removeClass('btn-success').addClass('btn-info')
+        .html('<i class="fas fa-save"></i> Guardar cambios');
+      $('#btnCancelEdit').show();
+    } else {
+      $('#btnSubmitItem')
+        .removeClass('btn-info').addClass('btn-success')
+        .html('<i class="fas fa-plus-circle"></i> A&ntilde;adir &iacute;tem');
+      $('#btnCancelEdit').hide();
+    }
+  }
+
   /* ===== mini-tablas de estado IMG/PDF/FORMATO ===== */
   function renderAssetState(kind, url) {
     let $tbl, clsEmpty, clsFile, clsName;
@@ -391,6 +443,7 @@ $(function(){
       .removeClass('btn-info').addClass('btn-success')
       .html('<i class="fas fa-plus-circle"></i> Añadir ítem');
     $('#btnCancelEdit').hide();
+    setEditUi();
     renderAssetState('img', null);
     renderAssetState('pdf', null);
     renderAssetState('formato', null);
@@ -410,6 +463,7 @@ $(function(){
       .removeClass('btn-success').addClass('btn-info')
       .html('<i class="fas fa-save"></i> Guardar cambios');
     $('#btnCancelEdit').show();
+    setEditUi();
   }
 
   /* ===== listar ítems ===== */
@@ -453,39 +507,107 @@ $(function(){
     listarItems();
   });
 
-  /* ===== alta / edición ===== */
-  $('#frmNuevoItem').on('submit',function(e){
-    e.preventDefault();
-    if(!formActual){ alert('Elige un formulario'); return; }
+  function ensureSavedItemForUpload(onReady){
+    if (editMode && editIdItem){
+      onReady(editIdItem);
+      return;
+    }
 
-    const payload = {
-      id_formulario: formActual,
-      nombre: $('#itNombre').val().trim(),
-      descripcion: $('#itDescripcion').val().trim(),
-      tipo: $('#itTipo').val(),
-      orden: +$('#itOrden').val(),
-      link:  $('#itLink').val().trim(),
-      video: $('#itVideo').val().trim()
-    };
-    if(!payload.nombre||!payload.tipo||!payload.orden) return;
+    const payload = parseFormPayload();
+    if (!payload) return;
+
+    $.post(URL,{action:'crear_item',...payload},r=>{
+      if(r && r.success && r.id){
+        editMode = true;
+        editIdItem = r.id;
+        setEditUi();
+        listarItems();
+        onReady(editIdItem);
+      } else {
+        const msg = (r && r.msg) ? r.msg : 'No se pudo guardar el item antes de subir el archivo.';
+        showFormErrorModal(msg, (r && r.code) ? r.code : (isOrderConflictMsg(msg) ? 'ORDEN_DUPLICADO' : ''));
+      }
+    },'json').fail(jq=>{
+      handleAjaxFail(jq, 'Fallo al guardar el item antes de subir el archivo');
+    });
+  }
+
+  function subirArchivoConAutoguardado(tipo, file, done){
+    if (!file) {
+      if (typeof done === 'function') done();
+      return;
+    }
+
+    if (file.size > MAX_SERVER) {
+      showErrorModal(`El archivo (${fmtBytes(file.size)}) excede el límite del servidor (${LIMITS.uploadMax} / post ${LIMITS.postMax}).`, 'CLIENT_PRECHECK');
+      if (typeof done === 'function') done();
+      return;
+    }
+
+    if (tipo === 'formato' && !/\.(doc|docx|xls|xlsx)$/i.test(file.name)) {
+      showErrorModal('Solo se permite Word/Excel (.doc, .docx, .xls, .xlsx)', 'CLIENT_MIME');
+      if (typeof done === 'function') done();
+      return;
+    }
+
+    ensureSavedItemForUpload(function(idItem){
+      const fd = new FormData();
+      fd.append('action','subir_archivo');
+      fd.append('id_item', idItem);
+      fd.append('tipo', tipo);
+      fd.append('file', file);
+
+      $.ajax({url:URL,type:'POST',data:fd,processData:false,contentType:false,dataType:'json'})
+        .done(r=>{
+          if(r && r.success){
+            renderAssetState(tipo, r.url || null);
+            listarItems();
+            showOkItem(idItem);
+          } else {
+            const msg = (r && r.msg) ? r.msg : ('Error al subir ' + tipo);
+            showFormErrorModal(msg, (r && r.code) ? r.code : '');
+          }
+        })
+        .fail(jq=>{
+          const label = (tipo === 'img') ? 'imagen' : tipo;
+          handleAjaxFail(jq, 'Fallo al subir ' + label);
+        })
+        .always(function(){
+          if (typeof done === 'function') done();
+        });
+    });
+  }
+
+  /* ===== alta / edición ===== */
+    $('#frmNuevoItem').on('submit',function(e){
+    e.preventDefault();
+    const payload = parseFormPayload();
+    if(!payload) return;
 
     if(editMode){
       $.post(URL,{action:'actualizar_item',id_item:editIdItem,...payload},r=>{
-        if(r.success){ listarItems(); showOkItem(editIdItem); }
-        else showError(r.msg||'Error al actualizar');
-      },'json').fail(()=>showError('Error de conexión'));
+        if(r && r.success){
+          const savedId = editIdItem;
+          listarItems();
+          showOkItem(savedId);
+          resetForm();
+        } else {
+          const msg = (r && r.msg) ? r.msg : 'Error al actualizar';
+          showFormErrorModal(msg, isOrderConflictMsg(msg) ? 'ORDEN_DUPLICADO' : (r && r.code ? r.code : ''));
+        }
+      },'json').fail(jq=>handleAjaxFail(jq, 'Error de conexion'));
     }else{
       $.post(URL,{action:'crear_item',...payload},r=>{
-        if(r.success){
-          if (r.id) {
-            editMode = true; editIdItem = r.id; $('#btnCancelEdit').show();
-            $('#btnSubmitItem').removeClass('btn-success').addClass('btn-info')
-              .html('<i class="fas fa-save"></i> Guardar cambios');
-          } else { resetForm(); }
+        if(r && r.success){
+          const savedId = r.id || null;
           listarItems();
-          if (r && r.id) showOkItem(r.id); else showOkModal('Ítem creado correctamente');
-        } else showError(r.msg||'Error al crear');
-      },'json').fail(()=>showError('Error de conexión'));
+          if (savedId) showOkItem(savedId); else showOkModal('Item creado correctamente');
+          resetForm();
+        } else {
+          const msg = (r && r.msg) ? r.msg : 'Error al crear';
+          showFormErrorModal(msg, isOrderConflictMsg(msg) ? 'ORDEN_DUPLICADO' : (r && r.code ? r.code : ''));
+        }
+      },'json').fail(jq=>handleAjaxFail(jq, 'Error de conexion'));
     }
   });
 
@@ -512,34 +634,10 @@ $(function(){
   });
 
   /* ===== Subida / gestión de archivos ===== */
-  $('#fileImg').on('change', function(){
-    if(!editMode || !editIdItem){ alert('Guarda primero el ítem y luego sube la imagen'); this.value=''; return; }
-    const f = this.files[0]; if(!f) return;
-
-    if (f.size > MAX_SERVER) {
-      showErrorModal(`El archivo (${fmtBytes(f.size)}) excede el límite del servidor (${LIMITS.uploadMax} / post ${LIMITS.postMax}).`, 'CLIENT_PRECHECK');
-      this.value = '';
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append('action','subir_archivo');
-    fd.append('id_item',editIdItem);
-    fd.append('tipo','img');
-    fd.append('file',f);
-
-    $.ajax({url:URL,type:'POST',data:fd,processData:false,contentType:false,dataType:'json'})
-      .done(r=>{
-        if(r.success){
-          renderAssetState('img', r.url || null);
-          listarItems();
-          showOkItem(editIdItem);
-        } else {
-          showError(r.msg || 'Error al subir imagen');
-          showErrorModal(r.msg || 'Error al subir imagen', r.code || '');
-        }
-      })
-      .fail(jq=> handleAjaxFail(jq, 'Fallo al subir imagen'));
+    $('#fileImg').on('change', function(){
+    const f = this.files[0];
+    const input = this;
+    subirArchivoConAutoguardado('img', f, function(){ input.value=''; });
   });
 
   $('#tblImgState').on('click','.btnVerImg',function(){
@@ -558,34 +656,10 @@ $(function(){
     },'json').fail(()=>showError('Error de conexión'));
   });
 
-  $('#filePdf').on('change', function(){
-    if(!editMode || !editIdItem){ alert('Guarda primero el ítem y luego sube el PDF'); this.value=''; return; }
-    const f = this.files[0]; if(!f) return;
-
-    if (f.size > MAX_SERVER) {
-      showErrorModal(`El archivo (${fmtBytes(f.size)}) excede el límite del servidor (${LIMITS.uploadMax} / post ${LIMITS.postMax}).`, 'CLIENT_PRECHECK');
-      this.value = '';
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append('action','subir_archivo');
-    fd.append('id_item',editIdItem);
-    fd.append('tipo','pdf');
-    fd.append('file',f);
-
-    $.ajax({url:URL,type:'POST',data:fd,processData:false,contentType:false,dataType:'json'})
-      .done(r=>{
-        if(r.success){
-          renderAssetState('pdf', r.url || null);
-          listarItems();
-          showOkItem(editIdItem);
-        } else {
-          showError(r.msg || 'Error al subir PDF');
-          showErrorModal(r.msg || 'Error al subir PDF', r.code || '');
-        }
-      })
-      .fail(jq=> handleAjaxFail(jq, 'Fallo al subir PDF'));
+    $('#filePdf').on('change', function(){
+    const f = this.files[0];
+    const input = this;
+    subirArchivoConAutoguardado('pdf', f, function(){ input.value=''; });
   });
 
   $('#tblPdfState').on('click','.btnVerPdf',function(){
@@ -603,40 +677,10 @@ $(function(){
   });
 
   // ===== Formato (Word/Excel) =====
-  $('#fileFormato').on('change', function(){
-    if(!editMode || !editIdItem){ alert('Guarda primero el ítem y luego sube el Formato'); this.value=''; return; }
-    const f = this.files[0]; if(!f) return;
-
-    if (f.size > MAX_SERVER) {
-      showErrorModal(`El archivo (${fmtBytes(f.size)}) excede el límite del servidor (${LIMITS.uploadMax} / post ${LIMITS.postMax}).`, 'CLIENT_PRECHECK');
-      this.value = '';
-      return;
-    }
-    const okExt = /\.(doc|docx|xls|xlsx)$/i.test(f.name);
-    if (!okExt) {
-      showErrorModal('Solo se permite Word/Excel (.doc, .docx, .xls, .xlsx)', 'CLIENT_MIME');
-      this.value = '';
-      return;
-    }
-
-    const fd = new FormData();
-    fd.append('action','subir_archivo');
-    fd.append('id_item',editIdItem);
-    fd.append('tipo','formato');
-    fd.append('file',f);
-
-    $.ajax({url:URL,type:'POST',data:fd,processData:false,contentType:false,dataType:'json'})
-      .done(r=>{
-        if(r.success){
-          renderAssetState('formato', r.url || null);
-          listarItems();
-          showOkItem(editIdItem);
-        } else {
-          showError(r.msg || 'Error al subir Formato');
-          showErrorModal(r.msg || 'Error al subir Formato', r.code || '');
-        }
-      })
-      .fail(jq=> handleAjaxFail(jq, 'Fallo al subir Formato'));
+    $('#fileFormato').on('change', function(){
+    const f = this.files[0];
+    const input = this;
+    subirArchivoConAutoguardado('formato', f, function(){ input.value=''; });
   });
 
   $('#tblFormatoState').on('click','.btnVerFormato',function(){

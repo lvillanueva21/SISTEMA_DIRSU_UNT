@@ -13,6 +13,11 @@ $apellidos = $_POST['apellidos'];
 $id_py = "0";
 $id_depa = $_POST['id_depa'];
 
+if (!preg_match('/^\d{4}$/', (string)$usuario)) {
+    header("Location: ../../registrop.php?alert=5");
+    exit();
+}
+
 // Verificar existencia de usuario
 $sql = "SELECT * FROM usuarios WHERE usuario = '$usuario'";
 $validuser = mysqli_query($conexion, $sql);
@@ -20,14 +25,14 @@ $rows = mysqli_num_rows($validuser);
 
 if ($rows >= 1) {
     // Si el usuario existe, enviar alerta
-    header("Location: ../../registro.php?alert=1");
+    header("Location: ../../registrop.php?alert=1");
     exit();
 }
 
 // Verificar que las contraseñas sean idénticas
 if (strcmp($clave, $clave2) !== 0) {
     // Si las contraseñas no son iguales, enviar alerta
-    header("Location: ../../registro.php?alert=4");
+    header("Location: ../../registrop.php?alert=4");
     exit();
 } 
 
@@ -58,9 +63,9 @@ else {
             $stmt_historial->close();
         }
 
-        header("Location: ../../registro.php?alert=2");
+        header("Location: ../../registrop.php?alert=2");
     } else {
-        header("Location: ../../registro.php?alert=3");
+        header("Location: ../../registrop.php?alert=3");
         exit();
     }
 }

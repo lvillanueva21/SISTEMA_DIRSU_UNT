@@ -36,6 +36,8 @@
                                    echo "<div class='alert alert-danger' role='alert'>Error al registrar, intente nuevamente</div>";
                                } elseif ($_GET['alert'] == 4) {
                                    echo "<div class='alert alert-info' role='alert'>Las contraseñas ingresadas no coinciden</div>";
+                               } elseif ($_GET['alert'] == 5) {
+                                   echo "<div class='alert alert-warning' role='alert'>El código de coordinador debe tener exactamente 4 dígitos numéricos.</div>";
                                }
                            }
                         ?>
@@ -135,9 +137,9 @@
         name="usuario" 
         required 
         minlength="4"
-        maxlength="8"
-        pattern="\d{4,8}" 
-        title="Debe ingresar entre 4 y 8 dígitos numéricos.">
+        maxlength="4"
+        pattern="\d{4}" 
+        title="Debe ingresar exactamente 4 dígitos numéricos.">
 </div>
                               
                            </div>
@@ -186,7 +188,7 @@
       <script>
         document.getElementById('usuario').addEventListener('input', function (e) {
         var value = e.target.value;
-        if (!/^\d{0,8}$/.test(value)) {
+        if (!/^\d{0,4}$/.test(value)) {
         e.target.value = value.replace(/[^\d]/g, ''); // Elimina caracteres no numéricos
        }
        });

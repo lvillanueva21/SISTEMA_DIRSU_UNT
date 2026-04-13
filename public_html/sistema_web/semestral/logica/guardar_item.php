@@ -6,15 +6,17 @@ if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
 require_once __DIR__ . '/../../componentes/db.php'; // $conexion (mysqli)
 
-// Paths base (FS y URL) para subidas del usuario:
-$FS_BASE   = '/var/www/html/otros/rsu.unitru.edu.pe/htdocs/sistema_web';
+// Paths base (FS y URL) para subidas del usuario.
+$FS_BASE   = realpath(__DIR__ . '/../../') ?: dirname(__DIR__, 2);
 $URL_BASE  = '';
 $DIR_PDF   = '/files_answer/pdf';
 $DIR_FORM  = '/files_answer/formato';
 
 // Helpers
 function back_to_index($item = null) {
-    $url = '/sistema_web/semestral/index.php';
+    // Si existe un wrapper público (semestral/guardar_item.php), este define la ruta correcta.
+    // Fallback: cuando se ejecuta directamente desde /semestral/logica/.
+    $url = defined('SM_SEMESTRAL_INDEX_REL') ? SM_SEMESTRAL_INDEX_REL : '../index.php';
     if ($item !== null) {
         $sep = (strpos($url, '?') === false) ? '?' : '&';
         $url .= $sep . 'item=' . (int)$item;
