@@ -199,7 +199,7 @@ include('../componentes/db.php');
     <footer class="main-footer">
       <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
       <div class="float-right d-none d-sm-inline-block">
-        <p>Desarrollado por el <a href="#">Area informatica - DIRSU</a></p>
+        <p>Desarrollado por el <a href="#">Área informática - DIRSU</a></p>
       </div>
     </footer>
   </div>

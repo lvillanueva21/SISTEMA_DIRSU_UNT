@@ -1,8 +1,8 @@
-﻿<?php 
-   // Incluir configSesion.php para verificar la sesiÃ³n
+<?php 
+   // Incluir configSesion.php para verificar la sesión
    include "../componentes/configSesion.php";
    
-   // Incluir la conexiÃ³n a la base de datos
+   // Incluir la conexión a la base de datos
    include('../componentes/db.php');
    ?>
 <!DOCTYPE html>
@@ -41,11 +41,11 @@
             <ul class="navbar-nav ml-auto">
                <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                   <a href="https://rsu.unitru.edu.pe" class="nav-link" target="_blank">
-                     <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
+                     <p style="color: white;">Ir a página DIRSU</p>
                   </a>
                </li>
                <li class="nav-item d-none d-sm-inline-block">
-                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+                  <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                </li>
             </ul>
          </nav>
@@ -59,9 +59,9 @@
          </div>
          <!-- Footer -->
          <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-               <p>Desarrollado por el <a href="#">Ãrea informÃ¡tica - DIRSU</a></p>
+               <p>Desarrollado por el <a href="#">Área informática - DIRSU</a></p>
             </div>
          </footer>
       </div>

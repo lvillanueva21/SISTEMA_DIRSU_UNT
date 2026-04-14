@@ -1,8 +1,8 @@
-﻿<?php
-  // Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+  // Incluir configSesion.php para verificar la sesión
   include "../componentes/configSesion.php";
   
-  // Incluir la conexiÃ³n a la base de datos
+  // Incluir la conexión a la base de datos
   include('../componentes/db.php');
   ?>
 <!DOCTYPE html>
@@ -36,7 +36,7 @@
   </head>
   <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
-      <!-- Preloader --><!-- Icono que se muestra mientras estÃ¡ cargando el sistema -->
+      <!-- Preloader --><!-- Icono que se muestra mientras está cargando el sistema -->
       <div class="preloader flex-column justify-content-center align-items-center">
         <img class="animation__shake" src="../dust/img/dirsu_logo_128_128.png" alt="AdminLTELogo" height="60" width="60">
       </div>
@@ -58,11 +58,11 @@
           <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
             <a href="https://rsu.unitru.edu.pe/" class="nav-link" target="_blank">
               <p style="color: white;
-                size: 8px">Ir a pÃ¡gina DIRSU</p>
+                size: 8px">Ir a página DIRSU</p>
             </a>
           </li>
           <li class="nav-item d-none d-sm-inline-block">
-            <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+            <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
           </li>
         </ul>
       </nav>
@@ -81,9 +81,9 @@
       </div>
       <!-- /.content-wrapper -->
       <footer class="main-footer">
-        <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+        <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
         <div class="float-right d-none d-sm-inline-block">
-          <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
+          <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
         </div>
       </footer>
       <!-- Control Sidebar -->

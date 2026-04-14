@@ -41,11 +41,11 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a pagina DIRSU</p>
+                        <p style="color: white;">Ir a página DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesion</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                 </li>
             </ul>
         </nav>
@@ -53,7 +53,7 @@ include('../componentes/db.php');
                 <?php include_once "../includes/sidebar.php"; ?>
         <div class="content-wrapper">
 <section class="content p-3">
-<!--  Tarjeta "Gestion de periodos de trabajo"  -->
+<!--  Tarjeta "Gestión de periodos de trabajo"  -->
 <div class="col-lg-12 mb-4">
   <?php include "funciones/card_gestion_periodos.php"; ?>
 </div>
@@ -61,7 +61,7 @@ include('../componentes/db.php');
 <div class="col-lg-12 mb-4">
   <?php include "funciones/controlador_proyectos.php"; ?>
 </div>
-<!--  Tarjeta "Administracion de formularios"  -->
+<!--  Tarjeta "Administración de formularios"  -->
 <div class="col-lg-12 mb-4">
   <?php include "funciones/card_crear_formulario.php"; ?>
 </div>
@@ -74,7 +74,7 @@ include('../componentes/db.php');
         <footer class="main-footer">
             <strong>(c) 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Area informatica - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Área informática - DIRSU</a></p>
             </div>
         </footer>
     </div>

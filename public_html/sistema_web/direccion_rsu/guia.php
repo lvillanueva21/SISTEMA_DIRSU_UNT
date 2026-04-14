@@ -1,8 +1,8 @@
-﻿<?php
-// Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+// Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
 
-// Incluir la conexiÃ³n a la base de datos
+// Incluir la conexión a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -10,7 +10,7 @@ include('../componentes/db.php');
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>EvaluaciÃ³n por Cotejo</title>
+    <title>Evaluación por Cotejo</title>
     <!-- Favicon -->
     <link href="../imagenes/dirsu_128_128.ico" rel="icon">
     <!-- Google Font: Source Sans Pro -->
@@ -29,7 +29,7 @@ include('../componentes/db.php');
     <style>
         body, html {
     height: 100%;
-    overflow: hidden; /* evita scroll de toda la pÃ¡gina */
+    overflow: hidden; /* evita scroll de toda la página */
 }
 
 #header-div {
@@ -40,7 +40,7 @@ include('../componentes/db.php');
     height: 100px; /* altura del footer */
 }
 
-/* Ãrea central entre header y footer */
+/* Área central entre header y footer */
 .content-scroll {
     position: absolute;
     top: 100px; /* mismo alto del header */
@@ -70,11 +70,11 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
+                        <p style="color: white;">Ir a página DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                 </li>
             </ul>
         </nav>
@@ -88,7 +88,7 @@ include('../componentes/db.php');
     <div class="row">
         <!-- Columna izquierda (7 espacios) -->
         <div class="col-md-7 d-flex flex-column justify-content-center align-items-center text-center">
-            <h5 class="mb-2">Progreso de proyecto en perÃ­odo 2025 - I</h5>
+            <h5 class="mb-2">Progreso de proyecto en período 2025 - I</h5>
             <div class="progress w-100">
                 <div class="progress-bar bg-success" role="progressbar" style="width: 40%;" 
                     aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">
@@ -99,14 +99,14 @@ include('../componentes/db.php');
         <!-- Columna derecha (5 espacios) -->
         <div class="col-md-5 d-flex flex-column justify-content-center align-items-center text-center">
             <span class="fw-bold mb-2">40% para el objetivo</span>
-            <small class="text-muted">3 de 8 Ã­tems completados</small>
+            <small class="text-muted">3 de 8 ítems completados</small>
         </div>
     </div>
 </div>
         <!-- Contenido central (ocupa todo el espacio disponible) -->
         <div class="row g-0 flex-grow-1" style="overflow: hidden;">
             <div class="col-md-8 border-end p-3" style="height: 100%; overflow-y: auto;">
-                <h5>2.3.5. AnÃ¡lisis de impacto del proyecto ejecutado</h5>
+                <h5>2.3.5. Análisis de impacto del proyecto ejecutado</h5>
                 <p>Lorem ipsum dolor sit amet...</p>
                 <p>Contenido adicional...</p>
                 <p>
@@ -129,7 +129,7 @@ turpis ligula varius turpis, vitae tristique lorem ipsum vel augue.
 </p>
             </div>
             <div class="col-md-4 p-3" style="height: 100%; overflow-y: auto;">
-                <h5>Â¿CÃ³mo llenar este Ã­tem?</h5>
+                <h5>¿Cómo llenar este ítem?</h5>
                 <p>Lorem ipsum dolor sit amet...</p>
                 <p>
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae nunc non enim aliquam volutpat. 
@@ -151,7 +151,7 @@ turpis ligula varius turpis, vitae tristique lorem ipsum vel augue.
 </p>
                 <button class="btn btn-danger btn-sm mb-1">Descargar PDF</button>
                 <button class="btn btn-success btn-sm mb-1">Ver ejemplo</button>
-                <button class="btn btn-warning btn-sm mb-1">ExplicaciÃ³n en video</button>
+                <button class="btn btn-warning btn-sm mb-1">Explicación en video</button>
                 <button class="btn btn-info btn-sm mb-1">Importancia</button>
             </div>
         </div>
@@ -178,7 +178,7 @@ turpis ligula varius turpis, vitae tristique lorem ipsum vel augue.
                     <button class="btn btn-success">Guardar e ir al siguiente</button>
                 </div>
                 <div class="mb-2">
-                    <button class="btn btn-primary">Solicitar RevisiÃ³n de Informe Semestral</button>
+                    <button class="btn btn-primary">Solicitar Revisión de Informe Semestral</button>
                 </div>
             </div>
         </div>
@@ -186,9 +186,9 @@ turpis ligula varius turpis, vitae tristique lorem ipsum vel augue.
 </section>
         </div>
         <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
             </div>
         </footer>
     </div>

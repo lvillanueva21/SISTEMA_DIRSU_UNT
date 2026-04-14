@@ -1,12 +1,12 @@
 <?php
 /**
- * Matriz de menus por rol.
+ * Matriz de menús por rol.
  * Fases habilitadas:
- * - rol 1: Direccion RSU
+ * - rol 1: Dirección RSU
  * - rol 2: Coordinador de Proyecto
  * - rol 3: Decanato de Facultad
  * - rol 4: Director de Departamento
- * - rol 5: Comite de Facultad
+ * - rol 5: Comité de Facultad
  */
 
 include_once __DIR__ . '/config.php';
@@ -29,7 +29,7 @@ if (!function_exists('rsu_menu_get_api_dirsu_item_by_role')) {
         if (in_array($role_id, array(1, 2, 3, 4, 5), true)) {
             return array(
                 'type' => 'item',
-                'label' => 'Api Dirsu',
+                'label' => 'API DIRSU',
                 'icon' => 'fas fa-code',
                 'href_dynamic' => 'includes/api_dirsu/index.php',
                 'active_on_dynamic' => array('includes/api_dirsu/index.php'),
@@ -107,7 +107,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'header',
-                        'label' => 'Evaluacion de Proyectos'
+                        'label' => 'Evaluación de Proyectos'
                     ),
                     array(
                         'type' => 'item',
@@ -118,7 +118,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'item',
-                        'label' => 'Codigos de proyectos',
+                        'label' => 'Códigos de proyectos',
                         'icon' => 'fa fa-at',
                         'href' => 'codigos.php',
                         'active_on' => array('codigos.php')
@@ -135,7 +135,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'active_on' => array('cotejo.php')
                             ),
                             array(
-                                'label' => 'Rubrica (2024)',
+                                'label' => 'Rúbrica (2024)',
                                 'icon' => 'fa fa-table',
                                 'href' => 'rubrica.php',
                                 'active_on' => array('rubrica.php')
@@ -152,19 +152,19 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'icon' => 'fas fa-user-cog',
                         'children' => array(
                             array(
-                                'label' => 'Consulta Usuario',
+                                'label' => 'Consulta de usuario',
                                 'icon' => 'fas fa-users',
                                 'href' => 'usuarios.php',
                                 'active_on' => array('usuarios.php')
                             ),
                             array(
-                                'label' => 'Reporte Proyectos',
+                                'label' => 'Reporte de proyectos',
                                 'icon' => 'fas fa-file-alt',
                                 'href' => 'general.php',
                                 'active_on' => array('general.php')
                             ),
                             array(
-                                'label' => 'Control Proyectos',
+                                'label' => 'Control de proyectos',
                                 'icon' => 'fas fa-project-diagram',
                                 'href' => 'control_proyectos.php',
                                 'active_on' => array('control_proyectos.php')
@@ -176,13 +176,13 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'active_on' => array('panel.php')
                             ),
                             array(
-                                'label' => 'Control Eventos',
+                                'label' => 'Control de eventos',
                                 'icon' => 'fas fa-calendar-check',
                                 'href' => 'control_eventos.php',
                                 'active_on' => array('control_eventos.php')
                             ),
                             array(
-                                'label' => 'Analitics',
+                                'label' => 'Analítica',
                                 'icon' => 'fas fa-chart-line',
                                 'href' => 'estadistica.php',
                                 'active_on' => array('estadistica.php')
@@ -233,7 +233,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'item',
-                        'label' => 'Guia de trabajo',
+                        'label' => 'Guía de trabajo',
                         'icon' => 'fa fa-road',
                         'href' => 'guia.php',
                         'href_by_page' => array(
@@ -244,7 +244,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'header',
-                        'label' => 'Informacion de proyecto'
+                        'label' => 'Información de proyecto'
                     ),
                     array(
                         'type' => 'item',
@@ -285,7 +285,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'tree',
-                        'label' => 'Formulacion y presentacion',
+                        'label' => 'Formulación y presentación',
                         'icon_badge' => '1',
                         'children' => array(
                             array(
@@ -319,11 +319,11 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'tree',
-                        'label' => 'Ejecucion y monitoreo',
+                        'label' => 'Ejecución y monitoreo',
                         'icon_badge' => '2',
                         'children' => array(
                             array(
-                                'label' => '2.1. Cronograma de ejecucion',
+                                'label' => '2.1. Cronograma de ejecución',
                                 'href' => 'cronograma.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/cronograma.php',
@@ -332,7 +332,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'active_on' => array('cronograma.php')
                             ),
                             array(
-                                'label' => '2.2. Revision de cronograma',
+                                'label' => '2.2. Revisión de cronograma',
                                 'href' => 'revision_cronograma.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/revision_cronograma.php',
@@ -344,7 +344,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'tree',
-                        'label' => 'Evaluacion e informe',
+                        'label' => 'Evaluación e informe',
                         'icon_badge' => '3',
                         'children' => array(
                             array(
@@ -357,7 +357,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'active_on' => array('index.php', 'informe_final.php')
                             ),
                             array(
-                                'label' => '3.2. Revision de informe',
+                                'label' => '3.2. Revisión de informe',
                                 'href' => 'revision_informe_final.php',
                                 'href_by_page' => array(
                                     'inicio.php' => 'vistas/revision_informe_final.php',
@@ -388,7 +388,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'header',
-                        'label' => 'Evaluacion de Proyectos'
+                        'label' => 'Evaluación de Proyectos'
                     ),
                     array(
                         'type' => 'item',
@@ -431,7 +431,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'header',
-                        'label' => 'Evaluacion de Proyectos'
+                        'label' => 'Evaluación de Proyectos'
                     ),
                     array(
                         'type' => 'item',
@@ -474,7 +474,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'header',
-                        'label' => 'Evaluacion de Proyectos'
+                        'label' => 'Evaluación de Proyectos'
                     ),
                     array(
                         'type' => 'item',
@@ -495,7 +495,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'active_on' => array('cotejo.php')
                             ),
                             array(
-                                'label' => 'Rubrica (2024)',
+                                'label' => 'Rúbrica (2024)',
                                 'icon' => 'fa fa-table',
                                 'href' => 'rubrica.php',
                                 'active_on' => array('rubrica.php')
@@ -517,4 +517,3 @@ if (!function_exists('rsu_get_menu_by_role')) {
         return isset($matrix[(int)$role_id]) ? $matrix[(int)$role_id] : null;
     }
 }
-

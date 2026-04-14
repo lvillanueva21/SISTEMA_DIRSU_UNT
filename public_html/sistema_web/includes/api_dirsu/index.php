@@ -161,11 +161,11 @@ if ($rsu_api_dirsu_json === false) {
       </li>
       <li class="nav-item d-none d-sm-inline-block" style="background-image: url('<?php echo rsu_api_dirsu_escape($rsu_api_dirsu_assets_prefix); ?>web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
         <a href="https://rsu.unitru.edu.pe/" class="nav-link" target="_blank">
-          <p style="color: white; margin: 0;">Ir a pagina DIRSU</p>
+          <p style="color: white; margin: 0;">Ir a página DIRSU</p>
         </a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="<?php echo rsu_api_dirsu_escape($rsu_api_dirsu_logout_href); ?>" class="nav-link">Cerrar sesion</a>
+        <a href="<?php echo rsu_api_dirsu_escape($rsu_api_dirsu_logout_href); ?>" class="nav-link">Cerrar sesión</a>
       </li>
     </ul>
   </nav>
@@ -311,7 +311,7 @@ if ($rsu_api_dirsu_json === false) {
   <footer class="main-footer">
     <strong>(c) 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
     <div class="float-right d-none d-sm-inline-block">
-      <p style="margin: 0;">Desarrollado por el Area informatica - DIRSU</p>
+      <p style="margin: 0;">Desarrollado por el Área informática - DIRSU</p>
     </div>
   </footer>
 

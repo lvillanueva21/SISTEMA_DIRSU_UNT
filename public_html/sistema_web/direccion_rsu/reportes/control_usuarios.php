@@ -128,7 +128,7 @@ function etiquetaRol($id,$user){
         2=>(strlen($user)==4?'Coordinador Proyecto':'Descontinuado'),
         3=>'Decanato Facultad',
         4=>'Direccion Departamento',
-        5=>'Presidente Comite'
+        5=>'Presidente Comit?'
     ][$id] ?? '-';
 }
 
@@ -197,7 +197,7 @@ tbody td{vertical-align:middle;}
           $rolesSel = [
             'all'=>'Todos','0'=>'Administrador','1'=>'Direccion RSU',
             '2'=>'Coordinador Proyecto','2d'=>'Descontinuado',
-            '3'=>'Decanato Facultad','4'=>'Direccion Departamento','5'=>'Presidente Comite'
+            '3'=>'Decanato Facultad','4'=>'Direccion Departamento','5'=>'Presidente Comit?'
           ];
           foreach($rolesSel as $v=>$t){
               $sel = ($f_rol==$v)?'selected':'';
@@ -581,7 +581,7 @@ function pagLink($i,$pag,$qBase){
                 <option value="1">Director de DIRSU</option>
                 <option value="3">Decano de la Facultad</option>
                 <option value="4">Director de Departamento</option>
-                <option value="5">Presidente de Comite de RS de Facultad</option>
+                <option value="5">Presidente de Comit? de RS de Facultad</option>
               </select>
               <small class="form-text text-muted" id="cuRolHint">Selecciona el tipo de usuario para activar reglas y campos obligatorios.</small>
               <small class="form-text text-info" id="cuRolImplication"></small>
@@ -1630,7 +1630,7 @@ $(function () {
       2: (String(usuario || '').length === 4 ? 'Coordinador Proyecto' : 'Descontinuado'),
       3: 'Decanato Facultad',
       4: 'Direccion Departamento',
-      5: 'Presidente Comite'
+      5: 'Presidente Comit?'
     };
     return map[idRol] || '-';
   }

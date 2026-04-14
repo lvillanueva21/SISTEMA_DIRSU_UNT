@@ -7,7 +7,7 @@
 ?>
 <div class="card border-success">
   <div class="card-header bg-success text-white">
-    <h5 class="card-title mb-0">Gestion de periodos de trabajo</h5>
+    <h5 class="card-title mb-0">Gestión de periodos de trabajo</h5>
   </div>
   <div class="card-body">
     <div class="row">

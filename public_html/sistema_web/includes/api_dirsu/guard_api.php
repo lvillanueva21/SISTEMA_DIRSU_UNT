@@ -35,7 +35,7 @@ if (!function_exists('rsu_api_dirsu_guard_api')) {
         rsu_api_dirsu_guard_api_start_session();
 
         if (!rsu_api_dirsu_guard_api_is_logged()) {
-            rsu_api_json_error(401, 'auth_required', 'Sesion no valida o expirada.', array());
+            rsu_api_json_error(401, 'auth_required', 'Sesión no válida o expirada.', array());
         }
 
         if (isset($options['allowed_roles']) && is_array($options['allowed_roles']) && count($options['allowed_roles']) > 0) {

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include "../../componentes/configSesion.php";
 include "../../componentes/db.php";
 
@@ -94,7 +94,7 @@ if ($id_rol === 1) {
 } elseif ($id_rol === 4) {
     $descripcion = 'Creacion de autoridad tipo Director de Departamento';
 } elseif ($id_rol === 5) {
-    $descripcion = 'Creacion de autoridad tipo Presidente de Comite de RS de Facultad';
+    $descripcion = 'Creacion de autoridad tipo Presidente de Comit? de RS de Facultad';
 } elseif ($id_rol === 2) {
     $descripcion = 'Creacion de usuario tipo Coordinador de Proyecto';
 }

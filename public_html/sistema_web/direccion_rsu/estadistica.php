@@ -1,8 +1,8 @@
-﻿<?php
-// Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+// Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
 
-// Incluir la conexiÃ³n a la base de datos
+// Incluir la conexión a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -39,11 +39,11 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
+                        <p style="color: white;">Ir a página DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                 </li>
             </ul>
         </nav>
@@ -51,11 +51,11 @@ include('../componentes/db.php');
                 <?php include_once "../includes/sidebar.php"; ?>
         <div class="content-wrapper">
             <section class="content p-3">
-                <!-- =============== CARD ANALÃTICA DIRSU =============== -->
+                <!-- =============== CARD ANALÍTICA DIRSU =============== -->
 <div class="card shadow-sm">
   <div class="card-header bg-primary text-white">
     <h5 class="card-title mb-0">
-      <i class="fas fa-chart-pie"></i> AnalÃ­tica por Facultad
+      <i class="fas fa-chart-pie"></i> Analítica por Facultad
     </h5>
   </div>
 
@@ -64,7 +64,7 @@ include('../componentes/db.php');
     <ul class="nav nav-tabs" id="tabsAnalitica" role="tablist">
       <li class="nav-item">
         <a class="nav-link active" id="tab-periodo" data-toggle="tab" href="#contenido-periodo" role="tab">
-          PerÃ­odo
+          Período
         </a>
       </li>
       <li class="nav-item">
@@ -87,35 +87,35 @@ include('../componentes/db.php');
     <!-- TAB-PANES -->
     <div class="tab-content pt-3">
 
-      <!-- ðŸ”¹ TAB 1 : PERÃODO -->
+      <!-- TAB 1 : PERÍODO -->
       <div class="tab-pane fade show active" id="contenido-periodo" role="tabpanel">
         <?php include 'charts/data_periodo.php'; ?>
       </div>
 
-      <!-- ðŸ”¹ TAB 2 : ESTADO -->
+      <!-- TAB 2 : ESTADO -->
       <div class="tab-pane fade" id="contenido-estado" role="tabpanel">
         <?php include 'charts/data_estado.php'; ?>
       </div>
 
-      <!-- ðŸ”¹ TAB 3 : OFICINA -->
+      <!-- TAB 3 : OFICINA -->
       <div class="tab-pane fade" id="contenido-oficina" role="tabpanel">
         <?php include 'charts/data_oficina.php'; ?>
       </div>
 
-      <!-- ðŸ”¹ TAB 4 : AVANCE (vacÃ­o de momento) -->
+      <!-- TAB 4 : AVANCE (vacío de momento) -->
 <div class="tab-pane fade" id="contenido-avance" role="tabpanel">
   <?php include 'charts/data_avance.php'; ?>
 </div>
     </div>
   </div>
 </div>
-<!-- =========== /CARD ANALÃTICA =========== -->
+<!-- =========== /CARD ANALÍTICA =========== -->
             </section>
         </div>
         <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
             </div>
         </footer>
     </div>

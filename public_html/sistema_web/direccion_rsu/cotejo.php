@@ -1,8 +1,8 @@
-﻿<?php
-// Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+// Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
 
-// Incluir la conexiÃ³n a la base de datos
+// Incluir la conexión a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -10,7 +10,7 @@ include('../componentes/db.php');
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>EvaluaciÃ³n por Cotejo</title>
+    <title>Evaluación por Cotejo</title>
     <!-- Favicon -->
     <link href="../imagenes/dirsu_128_128.ico" rel="icon">
     <!-- Google Font: Source Sans Pro -->
@@ -27,7 +27,7 @@ include('../componentes/db.php');
     <link rel="stylesheet" href="../plogins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <style>
-/* DiÃ¡logo alto + scroll vertical interno (sin scroll horizontal forzado) */
+/* Diálogo alto + scroll vertical interno (sin scroll horizontal forzado) */
 #modalProyecto .modal-dialog,
 #modalSemestral .modal-dialog { max-width: 1140px; }
 #modalProyecto .modal-body,
@@ -88,11 +88,11 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
+                        <p style="color: white;">Ir a página DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                 </li>
             </ul>
         </nav>
@@ -108,9 +108,9 @@ include('../componentes/db.php');
             </section>
         </div>
         <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="#"> Ãrea  informÃ¡tica - DIRSU</a></p>
+                <p>Desarrollado por el <a href="#"> Área  informática - DIRSU</a></p>
             </div>
         </footer>
     </div>

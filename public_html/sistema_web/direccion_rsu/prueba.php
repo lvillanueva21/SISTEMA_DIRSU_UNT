@@ -1,8 +1,8 @@
-﻿<?php
-// Incluir configSesion.php para verificar la sesiÃ³n
+<?php
+// Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
 
-// Incluir la conexiÃ³n a la base de datos
+// Incluir la conexión a la base de datos
 include('../componentes/db.php');
 ?>
 <!DOCTYPE html>
@@ -29,7 +29,7 @@ include('../componentes/db.php');
     <link rel="stylesheet" href="../plogins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="../plogins/summernote/summernote-bs4.min.css">
-    <!-- LibrerÃ­a para imprimir info en excel -->
+    <!-- Librería para imprimir info en excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -44,11 +44,11 @@ include('../componentes/db.php');
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a pÃ¡gina DIRSU</p>
+                        <p style="color: white;">Ir a página DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesiÃ³n</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
                 </li>
             </ul>
         </nav>
@@ -113,7 +113,7 @@ include('../componentes/db.php');
     <div class="col-md-6">
       <div class="card shadow">
         <div class="card-header bg-dark text-white">
-          <h5 class="card-title mb-0">Card 8: Cambiar perÃ­odo de un proyecto</h5>
+          <h5 class="card-title mb-0">Card 8: Cambiar período de un proyecto</h5>
         </div>
         <div class="card-body">
           <?php include 'cards/card8_cambio_periodo.php'; ?>
@@ -140,9 +140,9 @@ include('../componentes/db.php');
             </section>
         </div>
         <footer class="main-footer">
-            <strong>Â© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Ãrea  informÃ¡tica - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
             </div>
         </footer>
     </div>
