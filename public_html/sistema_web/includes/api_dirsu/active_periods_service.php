@@ -101,19 +101,19 @@ if (!function_exists('rsu_api_active_periods_interface_definitions')) {
         return array(
             'F1-GENERALIDADES' => array(
                 'nombre' => 'Generalidades',
-                'ruta' => '/vistas/datos_principales.php'
+                'ruta' => 'vistas/datos_principales.php'
             ),
             'F1-PLAN' => array(
                 'nombre' => 'Plan de proyecto',
-                'ruta' => '/vistas/desarrollo_informe.php'
+                'ruta' => 'vistas/desarrollo_informe.php'
             ),
             'F1-ANEXOS' => array(
                 'nombre' => 'Anexos',
-                'ruta' => '/vistas/anexos.php'
+                'ruta' => 'vistas/anexos.php'
             ),
             'F3-SEMESTRAL' => array(
                 'nombre' => 'Informe semestral',
-                'ruta' => '/semestral/index.php'
+                'ruta' => 'semestral/index.php'
             )
         );
     }

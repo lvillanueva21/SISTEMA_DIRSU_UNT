@@ -32,6 +32,7 @@ define('DIR_LOGICA',      realpath(__DIR__ . '/logica'));
 require_once DIR_COMPONENTES . '/configSesion.php';
 require_once DIR_COMPONENTES . '/db.php';
 require_once DIR_COMPONENTES . '/cronograma/visibilidad_fase1.php';
+require_once __DIR__ . '/../includes/access/project_interface_guard.php';
 
 ?>
 <!DOCTYPE html>
@@ -118,10 +119,10 @@ endif;
 
 
 // ================== LÓGICA PRINCIPAL ==================
-$accesoFuerteSemestral = rsu_vf1_can_access_interface($conexion, 'F3-SEMESTRAL');
+$rsu_access_eval = rsu_project_interface_guard($conexion, 'F3-SEMESTRAL');
 
 // Si hubo error
-if (empty($accesoFuerteSemestral['permitido'])) {
+if (empty($rsu_access_eval['allow'])) {
     include __DIR__ . '/../integrados/mensaje_fuera_tiempo.php';
 } else {
     require_once DIR_LOGICA . '/funciones.php';

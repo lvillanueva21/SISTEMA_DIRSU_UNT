@@ -4,6 +4,7 @@
    // Incluir la conexión a la base de datos
    include('../componentes/db.php');
    include_once('../componentes/cronograma/visibilidad_fase1.php');
+   include_once('../includes/access/project_interface_guard.php');
    // Incluir el archivo que carga los datos del proyecto
    include('../componentes/proyecto/cargar_proyecto.php');
    // Establecer la zona horaria a Lima, Perú
@@ -108,16 +109,19 @@
 if ($id_py == 0) {
     include '../integrados/mensaje_registrar_py.php';
 } else {
-    // 2, 3 y 4. Consultar la tabla de cronogramas para el período 2024-II, código F1-GENERALIDADES y estado 1
-    $accesoF1 = rsu_vf1_can_access_interface($conexion, 'F1-GENERALIDADES');
+    // Control de acceso centralizado por período activo, cronograma e interfaz.
+    $rsu_access_eval = rsu_project_interface_guard($conexion, 'F1-GENERALIDADES');
     $result = false;
     $cron = array(
         'inicio' => '1970-01-01 00:00:00',
         'fin' => '1970-01-01 00:00:00'
     );
-    if (!empty($accesoF1['permitido']) && !empty($accesoF1['regla'])) {
+    if (!empty($rsu_access_eval['allow'])) {
         $result = true;
-        $cron = $accesoF1['regla'];
+        $cron = array(
+            'inicio' => isset($rsu_access_eval['interfaz_resuelta']['inicio']) ? (string)$rsu_access_eval['interfaz_resuelta']['inicio'] : '1970-01-01 00:00:00',
+            'fin' => isset($rsu_access_eval['interfaz_resuelta']['fin']) ? (string)$rsu_access_eval['interfaz_resuelta']['fin'] : '1970-01-01 00:00:00'
+        );
     }
 
     if ($result) {

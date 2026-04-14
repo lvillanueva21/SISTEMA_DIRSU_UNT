@@ -71,6 +71,18 @@ $rsu_api_dirsu_data = array(
         'responsable' => 'api_dirsu',
         'action' => 'periods.active.snapshot.get',
         'soporte_live' => 1
+    ),
+    array(
+        'id' => 5,
+        'nombre' => 'Evaluacion de acceso por interfaz',
+        'modulo' => 'accesos',
+        'metodo' => 'GET',
+        'endpoint' => 'api.php?action=project.interface.access.evaluate&interface_code={F1-GENERALIDADES|F1-PLAN|F1-ANEXOS|F3-SEMESTRAL}&id_py={id_py}&tz={America/Lima}',
+        'estado' => 'activo',
+        'actualizado_en' => '2026-04-14 18:00:00',
+        'responsable' => 'api_dirsu',
+        'action' => 'project.interface.access.evaluate',
+        'soporte_live' => 1
     )
 );
 
@@ -221,6 +233,19 @@ if ($rsu_api_dirsu_json === false) {
                     <label for="apiTimezoneInput" class="mb-1">Zona horaria</label>
                     <input type="text" id="apiTimezoneInput" class="form-control" value="America/Lima">
                   </div>
+                  <div class="form-group mb-2" id="apiParamsInterfaceCodeWrap" style="display:none;">
+                    <label for="apiInterfaceCodeInput" class="mb-1">Codigo de interfaz</label>
+                    <select id="apiInterfaceCodeInput" class="form-control">
+                      <option value="F1-GENERALIDADES">F1-GENERALIDADES</option>
+                      <option value="F1-PLAN">F1-PLAN</option>
+                      <option value="F1-ANEXOS">F1-ANEXOS</option>
+                      <option value="F3-SEMESTRAL">F3-SEMESTRAL</option>
+                    </select>
+                  </div>
+                  <div class="form-group mb-2" id="apiParamsProjectWrap" style="display:none;">
+                    <label for="apiProjectInput" class="mb-1">ID de proyecto (opcional)</label>
+                    <input type="number" id="apiProjectInput" class="form-control" min="1" step="1" placeholder="Ejemplo: 1082">
+                  </div>
                   <button type="button" class="btn btn-primary btn-sm" id="apiRunBtn">
                     <i class="fas fa-play"></i> Consultar API seleccionada
                   </button>
@@ -312,11 +337,15 @@ if ($rsu_api_dirsu_json === false) {
   var inputPeriodo = document.getElementById('apiPeriodoInput');
   var inputIncludeEmpty = document.getElementById('apiIncludeEmptyInput');
   var inputTimezone = document.getElementById('apiTimezoneInput');
+  var inputInterfaceCode = document.getElementById('apiInterfaceCodeInput');
+  var inputProject = document.getElementById('apiProjectInput');
   var wrapUsuario = document.getElementById('apiParamsUsuarioWrap');
   var wrapId = document.getElementById('apiParamsIdWrap');
   var wrapPeriodo = document.getElementById('apiParamsPeriodoWrap');
   var wrapIncludeEmpty = document.getElementById('apiParamsIncludeEmptyWrap');
   var wrapTimezone = document.getElementById('apiParamsTzWrap');
+  var wrapInterfaceCode = document.getElementById('apiParamsInterfaceCodeWrap');
+  var wrapProject = document.getElementById('apiParamsProjectWrap');
   var runBtn = document.getElementById('apiRunBtn');
   var actionNote = document.getElementById('apiActionNote');
 
@@ -490,6 +519,16 @@ if ($rsu_api_dirsu_json === false) {
       'formulario.estado': 'Estado de formulario',
       'formulario.existe': 'Existe formulario',
       'formulario.items_activos': 'Items activos del formulario',
+      'allow': 'Permiso final',
+      'reason_code': 'Codigo de motivo',
+      'reason_message': 'Motivo de acceso',
+      'interface.codigo': 'Codigo de interfaz',
+      'interface.nombre': 'Interfaz solicitada',
+      'interface.ruta': 'Ruta relativa',
+      'periodo_resuelto.nombre': 'Periodo resuelto',
+      'cronograma_resuelto.ventana_estado': 'Estado de ventana',
+      'interfaces_activas_periodo': 'Interfaces activas del periodo',
+      'semestres_proyecto': 'Semestres del proyecto',
       'meta.search_mode': 'Modo de busqueda',
       'meta.search_value': 'Valor de busqueda',
       'meta.requested_at': 'Fecha de consulta',
@@ -635,6 +674,8 @@ if ($rsu_api_dirsu_json === false) {
     if (item.soporte_live) {
       if (item.action === 'periods.active.snapshot.get') {
         actionNote.textContent = 'Endpoint activo. Puedes filtrar por id_periodo y include_empty en tiempo real.';
+      } else if (item.action === 'project.interface.access.evaluate') {
+        actionNote.textContent = 'Endpoint activo. Evalua acceso por interfaz y proyecto con detalle de motivos.';
       } else {
         actionNote.textContent = 'Endpoint activo. Puedes consultar por usuario o por id sin recargar la pagina.';
       }
@@ -697,13 +738,16 @@ if ($rsu_api_dirsu_json === false) {
   function setParamsVisibility(item) {
     var action = item && item.action ? item.action : '';
     var isPeriodSnapshot = action === 'periods.active.snapshot.get';
+    var isInterfaceAccess = action === 'project.interface.access.evaluate';
     var isUserBased = action === 'user.get' || action === 'user.projects.get' || action === 'project.semesters.audit';
 
     wrapUsuario.style.display = isUserBased ? '' : 'none';
     wrapId.style.display = isUserBased ? '' : 'none';
     wrapPeriodo.style.display = isPeriodSnapshot ? '' : 'none';
     wrapIncludeEmpty.style.display = isPeriodSnapshot ? '' : 'none';
-    wrapTimezone.style.display = isPeriodSnapshot ? '' : 'none';
+    wrapTimezone.style.display = (isPeriodSnapshot || isInterfaceAccess) ? '' : 'none';
+    wrapInterfaceCode.style.display = isInterfaceAccess ? '' : 'none';
+    wrapProject.style.display = isInterfaceAccess ? '' : 'none';
   }
 
   function actionIsSupported(item) {
@@ -716,7 +760,8 @@ if ($rsu_api_dirsu_json === false) {
       action === 'user.get' ||
       action === 'user.projects.get' ||
       action === 'project.semesters.audit' ||
-      action === 'periods.active.snapshot.get'
+      action === 'periods.active.snapshot.get' ||
+      action === 'project.interface.access.evaluate'
     );
   }
 
@@ -774,6 +819,35 @@ if ($rsu_api_dirsu_json === false) {
     return requestUrl;
   }
 
+  function buildRequestUrlForInterfaceAccess(item) {
+    var interfaceCode = trimValue(inputInterfaceCode.value);
+    var idPy = trimValue(inputProject.value);
+    var timezone = trimValue(inputTimezone.value);
+    var requestUrl = apiBaseUrl + '?action=' + encodeURIComponent(item.action);
+
+    if (interfaceCode === '') {
+      actionNote.textContent = 'Selecciona un codigo de interfaz.';
+      return null;
+    }
+    requestUrl += '&interface_code=' + encodeURIComponent(interfaceCode);
+
+    if (idPy !== '') {
+      if (!/^\d+$/.test(idPy)) {
+        actionNote.textContent = 'El id_py debe ser numerico.';
+        return null;
+      }
+      requestUrl += '&id_py=' + encodeURIComponent(idPy);
+    }
+
+    if (timezone === '') {
+      timezone = 'America/Lima';
+      inputTimezone.value = timezone;
+    }
+    requestUrl += '&tz=' + encodeURIComponent(timezone);
+
+    return requestUrl;
+  }
+
   function runSelectedApi() {
     var item = findRowById(selectedId);
 
@@ -791,6 +865,8 @@ if ($rsu_api_dirsu_json === false) {
     var requestUrl = null;
     if (item.action === 'periods.active.snapshot.get') {
       requestUrl = buildRequestUrlForPeriodSnapshot(item);
+    } else if (item.action === 'project.interface.access.evaluate') {
+      requestUrl = buildRequestUrlForInterfaceAccess(item);
     } else {
       requestUrl = buildRequestUrlForUserBased(item);
     }
@@ -859,6 +935,13 @@ if ($rsu_api_dirsu_json === false) {
   });
 
   inputTimezone.addEventListener('keypress', function (event) {
+    if (event.keyCode === 13) {
+      event.preventDefault();
+      runSelectedApi();
+    }
+  });
+
+  inputProject.addEventListener('keypress', function (event) {
     if (event.keyCode === 13) {
       event.preventDefault();
       runSelectedApi();
