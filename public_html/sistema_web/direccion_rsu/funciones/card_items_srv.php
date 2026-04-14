@@ -17,6 +17,37 @@ header('Content-Type: application/json; charset=utf-8');
    $APP_BASE = "/sistema_web" y las URLs devueltas serán
    /sistema_web/files_forms/... */
 $APP_BASE = rtrim(dirname(dirname(dirname($_SERVER['SCRIPT_NAME']))), '/');
+$SYSTEM_BASE_DIR = realpath(__DIR__ . '/../../');
+if ($SYSTEM_BASE_DIR === false) {
+    $SYSTEM_BASE_DIR = __DIR__ . '/../../';
+}
+$SYSTEM_BASE_DIR = rtrim(str_replace('\\', '/', $SYSTEM_BASE_DIR), '/');
+
+function _normalize_rel_path($path) {
+    $path = trim((string)$path);
+    if ($path === '') return '';
+    $path = str_replace('\\', '/', $path);
+    while (strpos($path, '//') !== false) $path = str_replace('//', '/', $path);
+    if (strpos($path, './') === 0) $path = substr($path, 2);
+    if (strpos($path, '/') === 0) $path = substr($path, 1);
+    return $path;
+}
+function _is_local_storage_path($path) {
+    $rel = _normalize_rel_path($path);
+    return ($rel !== '' && strpos($rel, 'files_forms/') === 0);
+}
+function _abs_from_storage_path($path) {
+    global $SYSTEM_BASE_DIR;
+    $rel = _normalize_rel_path($path);
+    if ($rel === '') return '';
+    return $SYSTEM_BASE_DIR . '/' . $rel;
+}
+function _public_url_from_storage_path($path, $appBase) {
+    $rel = _normalize_rel_path($path);
+    if ($rel === '') return null;
+    if (!_is_local_storage_path($rel)) return null;
+    return rtrim((string)$appBase, '/') . '/' . $rel;
+}
 
 /* ===== Helpers de tamaño ini ===== */
 function _bytes_ini($val){
@@ -95,12 +126,9 @@ try {
         /* Construimos URLs públicas */
         $rows = [];
         while ($r = mysqli_fetch_assoc($res)) {
-            $r['img_url'] = !empty($r['img_ruta']) ? $APP_BASE . $r['img_ruta'] : null;
-            $r['pdf_url'] = !empty($r['pdf_ruta']) ? $APP_BASE . $r['pdf_ruta'] : null;
-            // Si "formato" es una ruta local (empieza con /) exponemos su URL pública
-            if (!empty($r['formato']) && substr($r['formato'], 0, 1) === '/') {
-                $r['formato_url'] = $APP_BASE . $r['formato'];
-            }
+            $r['img_url'] = _public_url_from_storage_path($r['img_ruta'] ?? '', $APP_BASE);
+            $r['pdf_url'] = _public_url_from_storage_path($r['pdf_ruta'] ?? '', $APP_BASE);
+            $r['formato_url'] = _public_url_from_storage_path($r['formato'] ?? '', $APP_BASE);
             unset($r['img_ruta'], $r['pdf_ruta']);
             $rows[] = $r;
         }
@@ -207,11 +235,9 @@ try {
         if (!$row) throw new Exception('Ítem no encontrado');
 
         /* URLs públicas */
-        $row['img_url'] = !empty($row['img_ruta']) ? $APP_BASE . $row['img_ruta'] : null;
-        $row['pdf_url'] = !empty($row['pdf_ruta']) ? $APP_BASE . $row['pdf_ruta'] : null;
-        $row['formato_url'] = (!empty($row['formato']) && substr($row['formato'],0,1) === '/')
-            ? $APP_BASE . $row['formato']
-            : null;
+        $row['img_url'] = _public_url_from_storage_path($row['img_ruta'] ?? '', $APP_BASE);
+        $row['pdf_url'] = _public_url_from_storage_path($row['pdf_ruta'] ?? '', $APP_BASE);
+        $row['formato_url'] = _public_url_from_storage_path($row['formato'] ?? '', $APP_BASE);
 
         /* Flags booleanos (como en listar_items) */
         $row['hasEjemplo'] = ($row['descripcion'] !== '');
@@ -326,10 +352,17 @@ try {
         }
 
         /* Carpeta destino */
-        if ($tipo === 'img')      $destDir = '../../files_forms/img';
-        elseif ($tipo === 'pdf')  $destDir = '../../files_forms/pdf';
-        else                      $destDir = '../../files_forms/formato'; // formato
-        if (!is_dir($destDir)) { @mkdir($destDir, 0775, true); }
+        if ($tipo === 'img')      $destRelDir = 'files_forms/img';
+        elseif ($tipo === 'pdf')  $destRelDir = 'files_forms/pdf';
+        else                      $destRelDir = 'files_forms/formato'; // formato
+
+        $destDir = _abs_from_storage_path($destRelDir);
+        if ($destDir === '') {
+            throw new Exception('No se pudo resolver la carpeta destino.');
+        }
+        if (!is_dir($destDir) && !@mkdir($destDir, 0775, true) && !is_dir($destDir)) {
+            throw new Exception('No se pudo crear la carpeta destino.');
+        }
 
         /* Validar extensión */
         $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
@@ -345,10 +378,8 @@ try {
 
         /* Nombre seguro */
         $safe    = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', uniqid('', true) . '.' . $ext);
-        $rutaAbs = rtrim($destDir, '/').'/'.$safe;
-        if ($tipo === 'img')      $rutaRel = '/files_forms/img/' . $safe;
-        elseif ($tipo === 'pdf')  $rutaRel = '/files_forms/pdf/' . $safe;
-        else                      $rutaRel = '/files_forms/formato/' . $safe;
+        $rutaAbs = rtrim(str_replace('\\', '/', $destDir), '/').'/'.$safe;
+        $rutaRel = $destRelDir . '/' . $safe;
 
         /* Columna a actualizar */
         $col = ($tipo === 'img') ? 'img_ruta' : (($tipo === 'pdf') ? 'pdf_ruta' : 'formato');
@@ -360,8 +391,13 @@ try {
         mysqli_stmt_execute($stP);
         $resP  = mysqli_stmt_get_result($stP);
         $rowP  = mysqli_fetch_assoc($resP);
-        $prev  = $rowP[$col] ?? null;
-        if ($prev && substr($prev,0,1)==='/' && is_file('../..'.$prev)) { @unlink('../..'.$prev); }
+        $prev  = (string)($rowP[$col] ?? '');
+        if (_is_local_storage_path($prev)) {
+            $prevAbs = _abs_from_storage_path($prev);
+            if ($prevAbs !== '' && is_file($prevAbs)) {
+                @unlink($prevAbs);
+            }
+        }
 
         /* Mover subida */
         if (!move_uploaded_file($_FILES['file']['tmp_name'], $rutaAbs)) {
@@ -374,7 +410,8 @@ try {
         mysqli_stmt_bind_param($stU, 'si', $rutaRel, $idi);
         mysqli_stmt_execute($stU);
 
-        echo json_encode(['success' => true, 'ruta' => $rutaRel, 'url' => $APP_BASE . $rutaRel]);
+        $publicUrl = _public_url_from_storage_path($rutaRel, $APP_BASE);
+        echo json_encode(['success' => true, 'ruta' => $rutaRel, 'url' => $publicUrl]);
         exit;
     }
 
@@ -393,9 +430,13 @@ try {
         mysqli_stmt_execute($stS);
         $resS = mysqli_stmt_get_result($stS);
         $rowS = mysqli_fetch_assoc($resS);
-        $ruta = $rowS[$col] ?? null;
-
-        if ($ruta && substr($ruta,0,1)==='/' && is_file('../..'.$ruta)) { @unlink('../..'.$ruta); }
+        $ruta = (string)($rowS[$col] ?? '');
+        if (_is_local_storage_path($ruta)) {
+            $rutaAbs = _abs_from_storage_path($ruta);
+            if ($rutaAbs !== '' && is_file($rutaAbs)) {
+                @unlink($rutaAbs);
+            }
+        }
 
         $qU = "UPDATE sm_items SET $col = NULL WHERE id = ?";
         $stU = mysqli_prepare($conexion, $qU);

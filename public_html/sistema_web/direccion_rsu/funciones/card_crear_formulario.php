@@ -12,10 +12,13 @@ if (!isset($conexion) || !$conexion) {
     // Ajusta la ruta si fuera necesario en tu estructura real
     require_once '../../componentes/db.php';
 }
+require_once __DIR__ . '/formulario_copy_service.php';
 
 mysqli_set_charset($conexion, 'utf8mb4');
 
 date_default_timezone_set('America/Lima');
+
+$rsu_can_copy_forms = isset($_SESSION['id_rol']) && (int)$_SESSION['id_rol'] === 1;
 
 function tipo_nombre_php(int $t): string {
     return match ($t) {
@@ -273,6 +276,112 @@ if (isset($_POST['action'])) {
             exit;
         }
 
+        /* ---------- CANDIDATOS DE DESTINO PARA COPIAR ITEMS ---------- */
+        if ($action === 'copy_candidates') {
+            if (!$rsu_can_copy_forms) {
+                throw new Exception('No tienes permisos para copiar ítems entre formularios.');
+            }
+
+            $source_id = (int)($_POST['source_id'] ?? 0);
+            if ($source_id <= 0) {
+                throw new Exception('Formulario origen inválido.');
+            }
+
+            $sqlSource = "SELECT f.id,
+                                 f.nombre,
+                                 COUNT(fi.id_item) AS total_items_activos
+                          FROM sm_formularios f
+                          LEFT JOIN sm_formulario_items fi
+                                 ON fi.id_formulario = f.id
+                                AND fi.activo = 1
+                          WHERE f.id = ?
+                          GROUP BY f.id, f.nombre
+                          LIMIT 1";
+            $stSource = mysqli_prepare($conexion, $sqlSource);
+            mysqli_stmt_bind_param($stSource, 'i', $source_id);
+            mysqli_stmt_execute($stSource);
+            $resSource = mysqli_stmt_get_result($stSource);
+            $sourceRow = mysqli_fetch_assoc($resSource);
+            mysqli_stmt_close($stSource);
+
+            if (!$sourceRow) {
+                throw new Exception('No se encontró el formulario origen.');
+            }
+            if ((int)$sourceRow['total_items_activos'] <= 0) {
+                throw new Exception('El formulario origen no tiene ítems activos para copiar.');
+            }
+
+            $sql = "SELECT f.id,
+                           f.nombre,
+                           p.nombre AS periodo,
+                           c.tipo,
+                           COUNT(fi.id_item) AS total_items_activos
+                    FROM sm_formularios f
+                    LEFT JOIN sm_cronogramas c ON c.id = f.id_cronograma
+                    LEFT JOIN periodos p ON p.id = c.id_periodo
+                    LEFT JOIN sm_formulario_items fi
+                           ON fi.id_formulario = f.id
+                          AND fi.activo = 1
+                    WHERE f.activo = 1
+                      AND f.id <> ?
+                    GROUP BY f.id, f.nombre, p.nombre, c.tipo
+                    HAVING total_items_activos = 0
+                    ORDER BY f.id DESC";
+            $st = mysqli_prepare($conexion, $sql);
+            mysqli_stmt_bind_param($st, 'i', $source_id);
+            mysqli_stmt_execute($st);
+            $res = mysqli_stmt_get_result($st);
+
+            $rows = [];
+            while ($r = mysqli_fetch_assoc($res)) {
+                $r['tipo_nombre'] = isset($r['tipo']) && $r['tipo'] !== null ? tipo_nombre_php((int)$r['tipo']) : null;
+                $rows[] = $r;
+            }
+            mysqli_stmt_close($st);
+
+            echo json_encode([
+                'success' => true,
+                'source' => [
+                    'id' => (int)$sourceRow['id'],
+                    'nombre' => (string)$sourceRow['nombre'],
+                    'total_items_activos' => (int)$sourceRow['total_items_activos']
+                ],
+                'data' => $rows
+            ]);
+            exit;
+        }
+
+        /* ---------- COPIAR ITEMS (ORIGEN -> DESTINO) ---------- */
+        if ($action === 'copy_items_between_forms') {
+            if (!$rsu_can_copy_forms) {
+                throw new Exception('No tienes permisos para copiar ítems entre formularios.');
+            }
+
+            $source_id = (int)($_POST['source_id'] ?? 0);
+            $target_id = (int)($_POST['target_id'] ?? 0);
+            if ($source_id <= 0 || $target_id <= 0) {
+                throw new Exception('Formulario origen o destino inválido.');
+            }
+
+            $copyResult = rsu_fc_copy_items_between_forms($conexion, $source_id, $target_id);
+            if (!$copyResult || empty($copyResult['success'])) {
+                $msg = isset($copyResult['msg']) ? (string)$copyResult['msg'] : 'No se pudo completar la copia de ítems.';
+                $details = isset($copyResult['details']) && is_array($copyResult['details']) ? $copyResult['details'] : [];
+                echo json_encode([
+                    'success' => false,
+                    'msg' => $msg,
+                    'details' => $details
+                ]);
+                exit;
+            }
+
+            echo json_encode([
+                'success' => true,
+                'data' => $copyResult
+            ]);
+            exit;
+        }
+
         echo json_encode(['success'=>false,'msg'=>'Acción no reconocida']);
         exit;
 
@@ -334,7 +443,7 @@ if (isset($_POST['action'])) {
                 <th>Periodo</th>
                 <th>Apertura</th>
                 <th>Cierre</th>
-                <th style="width:120px;">Acciones</th>
+                <th style="width:170px;">Acciones</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -347,6 +456,54 @@ if (isset($_POST['action'])) {
     </div><!-- /row -->
   </div><!-- /card-body -->
 </div><!-- /card -->
+
+<!-- ====== MODAL: Copiar ítems entre formularios ====== -->
+<div class="modal fade" id="modalCopiarItems" tabindex="-1" role="dialog" aria-labelledby="modalCopiarItemsLbl" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content border-info">
+      <div class="modal-header bg-info text-white py-2">
+        <h5 class="modal-title m-0" id="modalCopiarItemsLbl">Copiar ítems de formulario</h5>
+        <button class="close text-white" data-dismiss="modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="copySourceId" value="">
+
+        <div class="alert alert-light border mb-3">
+          <div><strong>Formulario origen:</strong> <span id="copySourceName">-</span></div>
+          <div><strong>Ítems activos a copiar:</strong> <span id="copySourceItems">0</span></div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="copyTargetSelect" class="mb-1"><strong>Formulario destino</strong></label>
+          <select id="copyTargetSelect" class="form-control">
+            <option value="">Cargando candidatos...</option>
+          </select>
+          <small class="form-text text-muted">
+            Solo se muestran formularios activos sin ítems activos.
+          </small>
+        </div>
+
+        <div class="alert alert-warning mb-0">
+          Se realizará una copia fiel e independiente de los ítems y sus archivos asociados.
+          El formulario origen no se modificará.
+        </div>
+
+        <div id="copyDetailsWrap" class="mt-3" style="display:none;">
+          <div class="alert alert-danger mb-0">
+            <strong>No se pudo preparar la copia:</strong>
+            <ul class="mb-0 mt-2" id="copyDetailsList"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button class="btn btn-info" id="btnConfirmCopyItems">
+          <i class="fas fa-copy"></i> Copiar ítems
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ====== MODAL: Confirmar reemplazo por cronograma duplicado ====== -->
 <div class="modal fade" id="modalReemplazo" tabindex="-1" role="dialog" aria-labelledby="modalReemplazoLbl" aria-hidden="true">
@@ -408,6 +565,7 @@ $(function () {
     t == 1 ? "Presentación de Proyecto" :
     t == 2 ? "Informe Semestral"       :
              "Otros";
+  const CAN_COPY = <?php echo $rsu_can_copy_forms ? 'true' : 'false'; ?>;
 
   const esc = s => String(s ?? "")
     .replace(/[&<>"']/g, m => (
@@ -422,7 +580,10 @@ $(function () {
       r => {
         if (r?.success)             { ok  && ok(r); }
         else if (r?.conflict)       { ok  && ok(r); }   // flujo especial
-        else                        { (err || alert)(r?.msg || "Error"); }
+        else                        {
+          if (typeof err === "function") err(r?.msg || "Error", r);
+          else alert(r?.msg || "Error");
+        }
       },
       "json"
     ).fail(() => (err || alert)("Sin conexión con el servidor"));
@@ -432,6 +593,17 @@ $(function () {
   let cacheActivos   = [];   // cronogramas activos (selects)
   let pendingReplace = null; // datos en espera de confirmación
   let pagina         = 1;    // página actual (tabla)
+
+  function showCopyDetails(details){
+    const $wrap = $("#copyDetailsWrap");
+    const $list = $("#copyDetailsList").empty();
+    if (!Array.isArray(details) || !details.length){
+      $wrap.hide();
+      return;
+    }
+    details.forEach(d => $list.append(`<li>${esc(d)}</li>`));
+    $wrap.show();
+  }
 
   /* ═════════════ Select Cronogramas ═════════════ */
   function cargarActivosSelects () {
@@ -506,6 +678,7 @@ $(function () {
               <td>${crono ? esc(crono.apertura)   : "—"}</td>
               <td>${crono ? esc(crono.cierre)     : "—"}</td>
               <td class="text-center">
+                ${CAN_COPY ? '<button class="btn btn-sm btn-info btnCopiar" title="Copiar ítems"><i class="fas fa-copy"></i></button> ' : ''}
                 <button class="btn btn-sm btn-primary btnEditar"  title="Editar"><i class="fas fa-edit"></i></button>
                 <button class="btn btn-sm btn-danger  btnEliminar" title="Eliminar"><i class="fas fa-trash"></i></button>
               </td>
@@ -641,6 +814,85 @@ $(function () {
       idEliminar = null;
       cargarTabla(1);
       cargarActivosSelects();
+    });
+  });
+
+  /* ═════════════ Copiar ítems entre formularios ═════════════ */
+  $("#tablaFormularios").on("click", ".btnCopiar", function () {
+    const $tr = $(this).closest("tr");
+    const sourceId = +$tr.data("id");
+    const sourceName = $tr.children().eq(1).text().trim();
+
+    if (!sourceId) return;
+
+    $("#copySourceId").val(sourceId);
+    $("#copySourceName").text(sourceName || "-");
+    $("#copySourceItems").text("0");
+    $("#copyTargetSelect").html('<option value="">Cargando candidatos...</option>');
+    $("#btnConfirmCopyItems").prop("disabled", true);
+    showCopyDetails([]);
+
+    ajax("copy_candidates", { source_id: sourceId }, r => {
+      const src = r.source || {};
+      const list = Array.isArray(r.data) ? r.data : [];
+      $("#copySourceItems").text(src.total_items_activos ?? 0);
+
+      const $sel = $("#copyTargetSelect").empty();
+      $sel.append('<option value="">Selecciona un formulario destino</option>');
+
+      if (!list.length) {
+        $sel.append('<option value="">(sin candidatos disponibles)</option>');
+        $("#btnConfirmCopyItems").prop("disabled", true);
+      } else {
+        list.forEach(f => {
+          const tipo = f.tipo_nombre ? ` — ${f.tipo_nombre}` : '';
+          const periodo = f.periodo ? ` (${f.periodo})` : '';
+          $sel.append(`<option value="${f.id}">${esc(f.nombre)}${esc(tipo)}${esc(periodo)}</option>`);
+        });
+        $("#btnConfirmCopyItems").prop("disabled", false);
+      }
+
+      $("#modalCopiarItems").modal("show");
+    }, msg => {
+      alert(msg || "No se pudo cargar candidatos de copia.");
+    });
+  });
+
+  $("#btnConfirmCopyItems").on("click", function () {
+    const sourceId = +$("#copySourceId").val() || 0;
+    const targetId = +$("#copyTargetSelect").val() || 0;
+
+    if (!sourceId || !targetId) {
+      return alert("Selecciona un formulario destino válido.");
+    }
+    if (sourceId === targetId) {
+      return alert("El formulario destino debe ser diferente al origen.");
+    }
+
+    $(this).prop("disabled", true);
+    showCopyDetails([]);
+
+    ajax("copy_items_between_forms", { source_id: sourceId, target_id: targetId }, r => {
+      $(this).prop("disabled", false);
+      $("#modalCopiarItems").modal("hide");
+
+      const d = r.data || {};
+      const sourceName = d.source_form?.nombre || "origen";
+      const targetName = d.target_form?.nombre || "destino";
+      const nItems = d.copied_items ?? 0;
+      const nFiles = d.copied_files ?? 0;
+
+      $("#modalOkBody").html(
+        `Se copiaron <b>${nItems}</b> ítems de <b>${esc(sourceName)}</b> a <b>${esc(targetName)}</b>.<br>` +
+        `Archivos clonados: <b>${nFiles}</b>.`
+      );
+      $("#modalOk").modal("show");
+      cargarTabla(pagina);
+    }, (msg, resp) => {
+      $(this).prop("disabled", false);
+      const details = Array.isArray(resp?.details) ? resp.details : [];
+      showCopyDetails(details);
+      alert(msg || "No se pudo copiar los ítems.");
     });
   });
 
