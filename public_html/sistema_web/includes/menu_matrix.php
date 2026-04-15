@@ -84,6 +84,68 @@ if (!function_exists('rsu_menu_append_development_items')) {
     }
 }
 
+if (!function_exists('rsu_menu_reorder_coordinator_sections')) {
+    function rsu_menu_reorder_coordinator_sections($matrix)
+    {
+        if (!is_array($matrix) || !isset($matrix[2]['items']) || !is_array($matrix[2]['items'])) {
+            return $matrix;
+        }
+
+        $items = $matrix[2]['items'];
+        $info_start = -1;
+        $fases_start = -1;
+
+        $i = 0;
+        for ($i = 0; $i < count($items); $i++) {
+            $item = is_array($items[$i]) ? $items[$i] : array();
+            if (!isset($item['type']) || (string)$item['type'] !== 'header') {
+                continue;
+            }
+
+            $next = isset($items[$i + 1]) && is_array($items[$i + 1]) ? $items[$i + 1] : array();
+
+            if (
+                $info_start < 0
+                && isset($next['label'])
+                && trim((string)$next['label']) === 'Mi proyecto'
+            ) {
+                $info_start = $i;
+            }
+
+            if (
+                $fases_start < 0
+                && isset($next['type'])
+                && (string)$next['type'] === 'tree'
+                && isset($next['icon_badge'])
+                && (string)$next['icon_badge'] === '1'
+            ) {
+                $fases_start = $i;
+            }
+        }
+
+        if ($info_start < 0 || $fases_start < 0 || $info_start > $fases_start) {
+            return $matrix;
+        }
+
+        $info_len = 4;
+        $fases_len = 4;
+
+        $before = array_slice($items, 0, $info_start);
+        $info_block = array_slice($items, $info_start, $info_len);
+        $between = array_slice($items, $info_start + $info_len, $fases_start - ($info_start + $info_len));
+        $fases_block = array_slice($items, $fases_start, $fases_len);
+        $after = array_slice($items, $fases_start + $fases_len);
+
+        if (count($info_block) !== $info_len || count($fases_block) !== $fases_len) {
+            return $matrix;
+        }
+
+        $matrix[2]['items'] = array_merge($before, $fases_block, $between, $info_block, $after);
+
+        return $matrix;
+    }
+}
+
 if (!function_exists('rsu_get_menu_matrix')) {
     function rsu_get_menu_matrix()
     {
@@ -506,6 +568,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
             )
         );
 
+        $matrix = rsu_menu_reorder_coordinator_sections($matrix);
         return rsu_menu_append_development_items($matrix);
     }
 }

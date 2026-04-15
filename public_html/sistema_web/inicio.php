@@ -164,20 +164,6 @@
 
 <body class="hold-transition sidebar-mini layout-fixed">
 <?php include 'componentes/multiproyectos/multi.php'; ?>
-<?php
-if (isset($_SESSION['id_rol']) && (int)$_SESSION['id_rol'] === 2) {
-    $rsu_card_auditoria_api_url = 'includes/api_dirsu/api.php';
-    $rsu_card_auditoria_mostrar_todos = true;
-
-    // Si quieres mostrar solo el proyecto activo (id_py actual), cambia a false:
-    // $rsu_card_auditoria_mostrar_todos = false;
-    if ($rsu_card_auditoria_mostrar_todos) {
-        include 'includes/cards/card_auditoria_semestres_todos.php';
-    } else {
-        include 'includes/cards/card_auditoria_semestres_actual.php';
-    }
-}
-?>
 <div class="wrapper">
   <!-- Preloader -->
   <div class="preloader flex-column justify-content-center align-items-center">
@@ -197,6 +183,11 @@ if (isset($_SESSION['id_rol']) && (int)$_SESSION['id_rol'] === 2) {
           <i class="fas fa-expand-arrows-alt"></i>
         </a>
       </li>
+      <?php if (isset($_SESSION['id_rol']) && (int)$_SESSION['id_rol'] === 2): ?>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="#" class="nav-link" data-open-project-selector="1">Seleccionar Proyecto</a>
+      </li>
+      <?php endif; ?>
       <li class="nav-item d-none d-sm-inline-block" style="background-image: url('web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0,0,0,.6);">
         <a href="https://rsu.unitru.edu.pe" class="nav-link" target="_blank">
           <p style="color:white;size:8px">Ir a página DIRSU</p>

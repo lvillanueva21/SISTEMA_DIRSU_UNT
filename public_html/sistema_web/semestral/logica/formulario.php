@@ -83,6 +83,202 @@ if ($rowER = $rsER->fetch_assoc()) {
 
 $stER->close();
 
+if ($idProyecto <= 0 && isset($_SESSION['id_py'])) {
+  $idProyecto = (int)$_SESSION['id_py'];
+}
+
+// --------- Resumen de semestres para modal ----------
+$semestreObjetivoId = isset($sm_info['semestre_objetivo_id']) ? (int)$sm_info['semestre_objetivo_id'] : 0;
+$periodoActivoNombre = isset($sm_info['periodo_activo']['nombre']) ? trim((string)$sm_info['periodo_activo']['nombre']) : '';
+$periodoActivoAnio = isset($sm_info['periodo_activo']['anio']) ? (int)$sm_info['periodo_activo']['anio'] : 0;
+$periodoActivoCodigo = isset($sm_info['periodo_activo']['periodo']) ? strtoupper(trim((string)$sm_info['periodo_activo']['periodo'])) : '';
+$formularioActivoNombre = isset($sm_info['form_activo']['nombre']) ? trim((string)$sm_info['form_activo']['nombre']) : '';
+$ventanaAperturaActual = isset($sm_info['apertura']) ? trim((string)$sm_info['apertura']) : '';
+$ventanaCierreActual = isset($sm_info['cierre']) ? trim((string)$sm_info['cierre']) : '';
+$cronogramaTipoActual = isset($sm_info['cronograma_tipo']) ? (int)$sm_info['cronograma_tipo'] : 0;
+$tipoSemestreEsperadoActual = ($cronogramaTipoActual === 1) ? 'presentacion' : 'semestral';
+
+$correspondeActualTexto = 'Informe semestral';
+if ($cronogramaTipoActual === 1) {
+  $correspondeActualTexto = 'Presentación de proyecto';
+} elseif ($cronogramaTipoActual === 2) {
+  $correspondeActualTexto = 'Informe semestral';
+}
+
+if (
+  $semestreObjetivoId <= 0
+  && $idProyecto > 0
+  && $periodoActivoAnio > 0
+  && ($periodoActivoCodigo === 'I' || $periodoActivoCodigo === 'II')
+) {
+  $stSemObj = $conexion->prepare("
+    SELECT id
+    FROM sm_proyecto_semestres
+    WHERE id_py = ? AND anio = ? AND periodo = ? AND tipo = ? AND vigente = 1
+    LIMIT 1
+  ");
+  if ($stSemObj) {
+    $stSemObj->bind_param("iiss", $idProyecto, $periodoActivoAnio, $periodoActivoCodigo, $tipoSemestreEsperadoActual);
+    $stSemObj->execute();
+    $stSemObj->bind_result($semIdFound);
+    if ($stSemObj->fetch()) {
+      $semestreObjetivoId = (int)$semIdFound;
+    }
+    $stSemObj->close();
+  }
+}
+
+$semestresResumenModal = [];
+$haySemestreActualModal = false;
+$esInformeFinalActualFormulario = false;
+if ($idProyecto > 0) {
+  $stSem = $conexion->prepare("
+    SELECT id, anio, periodo, tipo, final, numero, fecha_inicio, fecha_fin, titulo
+    FROM sm_proyecto_semestres
+    WHERE id_py = ? AND vigente = 1
+    ORDER BY
+      anio ASC,
+      FIELD(periodo, 'I', 'II') ASC,
+      CASE tipo WHEN 'presentacion' THEN 0 ELSE 1 END ASC
+  ");
+
+  if ($stSem) {
+    $stSem->bind_param("i", $idProyecto);
+    $stSem->execute();
+    $rsSem = $stSem->get_result();
+
+    $mapSem = [];
+    while ($rowSem = $rsSem->fetch_assoc()) {
+      $idSem = isset($rowSem['id']) ? (int)$rowSem['id'] : 0;
+      $anio = isset($rowSem['anio']) ? (int)$rowSem['anio'] : 0;
+      $periodo = isset($rowSem['periodo']) ? strtoupper(trim((string)$rowSem['periodo'])) : '';
+      if ($anio <= 0 || ($periodo !== 'I' && $periodo !== 'II')) {
+        continue;
+      }
+
+      $clave = $anio . '-' . $periodo;
+      if (!isset($mapSem[$clave])) {
+        $mapSem[$clave] = [
+          'semestre' => $clave,
+          'entregas' => [],
+          'es_actual' => false,
+          'periodo_actual' => '',
+          'corresponde' => '',
+          'formulario' => '',
+          'ventana_apertura' => '',
+          'ventana_cierre' => ''
+        ];
+      }
+
+      $tipo = isset($rowSem['tipo']) ? trim((string)$rowSem['tipo']) : '';
+      $esFinal = isset($rowSem['final']) ? (int)$rowSem['final'] : 0;
+      $entrega = 'Entrega de semestre';
+
+      if ($tipo === 'presentacion') {
+        $entrega = 'Presentación de proyecto';
+      } elseif ($tipo === 'semestral' && $esFinal === 1) {
+        $entrega = 'Informe final';
+      } elseif ($tipo === 'semestral') {
+        $entrega = 'Informe semestral';
+      }
+
+      if (!in_array($entrega, $mapSem[$clave]['entregas'], true)) {
+        $mapSem[$clave]['entregas'][] = $entrega;
+      }
+
+      $esSemestreActual = false;
+      if ($semestreObjetivoId > 0 && $idSem === $semestreObjetivoId) {
+        $esSemestreActual = true;
+      } elseif ($semestreObjetivoId <= 0 && $periodoActivoAnio > 0 && $periodoActivoCodigo !== '') {
+        if (
+          $anio === $periodoActivoAnio
+          && $periodo === $periodoActivoCodigo
+          && $tipo === $tipoSemestreEsperadoActual
+        ) {
+          $esSemestreActual = true;
+        }
+      }
+
+      if ($esSemestreActual) {
+        $correspondeActualSemestre = 'Informe semestral';
+        if ($tipo === 'presentacion') {
+          $correspondeActualSemestre = 'Presentación de proyecto';
+        } elseif ($tipo === 'semestral' && $esFinal === 1) {
+          $correspondeActualSemestre = 'Informe final';
+          $esInformeFinalActualFormulario = true;
+        } elseif ($tipo === 'semestral') {
+          $correspondeActualSemestre = 'Informe semestral';
+        }
+
+        $mapSem[$clave]['es_actual'] = true;
+        $mapSem[$clave]['periodo_actual'] = ($periodoActivoNombre !== '') ? $periodoActivoNombre : $clave;
+        $mapSem[$clave]['corresponde'] = $correspondeActualSemestre;
+        $mapSem[$clave]['formulario'] = $formularioActivoNombre;
+        $mapSem[$clave]['ventana_apertura'] = $ventanaAperturaActual;
+        $mapSem[$clave]['ventana_cierre'] = $ventanaCierreActual;
+        $haySemestreActualModal = true;
+      }
+    }
+
+    foreach ($mapSem as $semData) {
+      $semestresResumenModal[] = $semData;
+    }
+
+    if (!$haySemestreActualModal && $periodoActivoAnio > 0 && $periodoActivoCodigo !== '') {
+      $claveActualFallback = $periodoActivoAnio . '-' . $periodoActivoCodigo;
+      $idxSem = 0;
+      for ($idxSem = 0; $idxSem < count($semestresResumenModal); $idxSem++) {
+        $semItem = isset($semestresResumenModal[$idxSem]) ? $semestresResumenModal[$idxSem] : [];
+        if (!is_array($semItem)) {
+          continue;
+        }
+        $entregasSem = (isset($semItem['entregas']) && is_array($semItem['entregas'])) ? $semItem['entregas'] : [];
+        $coincideTipoFallback = false;
+        if ($tipoSemestreEsperadoActual === 'presentacion') {
+          $coincideTipoFallback = in_array('PresentaciÃ³n de proyecto', $entregasSem, true);
+        } else {
+          $coincideTipoFallback = in_array('Informe semestral', $entregasSem, true) || in_array('Informe final', $entregasSem, true);
+        }
+
+        if (
+          isset($semItem['semestre'])
+          && (string)$semItem['semestre'] === $claveActualFallback
+          && $coincideTipoFallback
+        ) {
+          $semestresResumenModal[$idxSem]['es_actual'] = true;
+          $semestresResumenModal[$idxSem]['periodo_actual'] = ($periodoActivoNombre !== '') ? $periodoActivoNombre : $claveActualFallback;
+          $semestresResumenModal[$idxSem]['corresponde'] = $correspondeActualTexto;
+          $semestresResumenModal[$idxSem]['formulario'] = $formularioActivoNombre;
+          $semestresResumenModal[$idxSem]['ventana_apertura'] = $ventanaAperturaActual;
+          $semestresResumenModal[$idxSem]['ventana_cierre'] = $ventanaCierreActual;
+          $haySemestreActualModal = true;
+          break;
+        }
+      }
+    }
+
+    $stSem->close();
+  }
+}
+
+if (!empty($semestresResumenModal)) {
+  $idxSemAct = 0;
+  for ($idxSemAct = 0; $idxSemAct < count($semestresResumenModal); $idxSemAct++) {
+    $semAct = isset($semestresResumenModal[$idxSemAct]) ? $semestresResumenModal[$idxSemAct] : [];
+    if (!is_array($semAct) || empty($semAct['es_actual'])) {
+      continue;
+    }
+
+    $entregasAct = (isset($semAct['entregas']) && is_array($semAct['entregas'])) ? $semAct['entregas'] : [];
+    if (in_array('Informe final', $entregasAct, true)) {
+      $esInformeFinalActualFormulario = true;
+      if (!isset($semestresResumenModal[$idxSemAct]['corresponde']) || trim((string)$semestresResumenModal[$idxSemAct]['corresponde']) === '' || trim((string)$semestresResumenModal[$idxSemAct]['corresponde']) === 'Informe semestral') {
+        $semestresResumenModal[$idxSemAct]['corresponde'] = 'Informe final';
+      }
+    }
+  }
+}
+
 // --------- Estado de la RUTA eva_* (si existe) ----------
 $ruta = [
   'situacion'         => null,  // 'en_oficina' | 'aprobado'
@@ -413,6 +609,11 @@ while ($row = $resM->fetch_assoc()) {
     $progOdsMap[(int)$row['programa_id']] = $row['ods'];
 }
 $stM->close();
+
+$fechaInicioModal = trim((string)$proyIniTxt);
+$fechaFinModal = trim((string)$proyFinTxt);
+$fechaInicioFaltante = ($fechaInicioModal === '' || $fechaInicioModal === '-' || stripos($fechaInicioModal, 'No se') === 0);
+$fechaFinFaltante = ($fechaFinModal === '' || $fechaFinModal === '-' || stripos($fechaFinModal, 'No se') === 0);
 ?>
 <div id="semestralShell" class="container-fluid d-flex flex-column p-0 rsu-shell">
 <!-- Div Superior (dos columnas, compacto, degradado verde Bootstrap) -->
@@ -424,6 +625,9 @@ $stM->close();
     border:0;
     border-radius:.5rem;
     box-shadow: inset 0 1px 2px rgba(0,0,0,.05), 0 2px 6px rgba(0,0,0,.08);
+  }
+  .rsu-header--final{
+    background: linear-gradient(100deg, #1f2937 0%, #111827 62%, #000000 100%);
   }
   .rsu-header .text-muted { color: rgba(255,255,255,.92) !important; }
   /* Chips (Apertura / Cierre) compactos */
@@ -481,8 +685,124 @@ $stM->close();
     max-width:none;
     box-shadow:0 2px 8px rgba(0,0,0,.1);
   }
+  .rsu-sem-modal-header {
+    background:#111111;
+    color:#ffffff;
+    border-bottom:0;
+  }
+  .rsu-sem-modal-header .close {
+    color:#ffffff;
+    opacity:.9;
+    text-shadow:none;
+  }
+  .rsu-sem-help {
+    border:1px solid #e9ecef;
+    background:#f8f9fa;
+    border-radius:.5rem;
+    padding:.75rem;
+    font-size:.9rem;
+    color:#374151;
+  }
+  .rsu-sem-timeline {
+    position:relative;
+    padding-left:1.35rem;
+    margin-top:.8rem;
+  }
+  .rsu-sem-timeline::before {
+    content:'';
+    position:absolute;
+    left:.36rem;
+    top:.25rem;
+    bottom:.25rem;
+    width:2px;
+    background:linear-gradient(180deg,#111111 0%, #198754 52%, #111111 100%);
+    opacity:.35;
+  }
+  .rsu-sem-node {
+    position:relative;
+    margin-bottom:.85rem;
+    padding-left:.35rem;
+  }
+  .rsu-sem-node:last-child {
+    margin-bottom:0;
+  }
+  .rsu-sem-dot {
+    position:absolute;
+    left:-1.03rem;
+    top:.55rem;
+    width:.72rem;
+    height:.72rem;
+    border-radius:50%;
+    border:2px solid #ffffff;
+    box-shadow:0 0 0 2px rgba(17,17,17,.14);
+    background:#198754;
+  }
+  .rsu-sem-dot--limit {
+    background:#111111;
+  }
+  .rsu-sem-card {
+    border:1px solid #e5e7eb;
+    border-radius:.55rem;
+    background:#ffffff;
+    padding:.62rem .7rem;
+  }
+  .rsu-sem-card-title {
+    font-weight:700;
+    color:#111827;
+    margin-bottom:.2rem;
+    font-size:.92rem;
+  }
+  .rsu-sem-card-text {
+    margin:0;
+    color:#374151;
+    font-size:.86rem;
+  }
+  .rsu-sem-missing {
+    color:#b91c1c;
+    font-weight:700;
+  }
+  .rsu-sem-empty {
+    color:#6b7280;
+    font-style:italic;
+    font-size:.88rem;
+  }
+  .rsu-sem-node--actual .rsu-sem-dot {
+    background:#16a34a;
+    box-shadow:0 0 0 2px rgba(22,163,74,.35);
+  }
+  .rsu-sem-card--actual {
+    border:1px solid #16a34a;
+    background:linear-gradient(180deg, #f2fff6 0%, #eafbf1 100%);
+  }
+  .rsu-sem-actual-badge {
+    display:inline-flex;
+    align-items:center;
+    font-size:.72rem;
+    font-weight:700;
+    color:#0f5132;
+    background:#d1fae5;
+    border:1px solid #86efac;
+    border-radius:999px;
+    padding:.13rem .5rem;
+    margin-bottom:.35rem;
+  }
+  .rsu-sem-current-box {
+    border:1px dashed #9ae6b4;
+    border-radius:.45rem;
+    background:#f0fdf4;
+    padding:.45rem .55rem;
+    margin-top:.45rem;
+  }
+  .rsu-sem-current-box .line {
+    font-size:.82rem;
+    color:#14532d;
+    margin:0 0 .15rem 0;
+  }
+  .rsu-sem-current-box .line:last-child {
+    margin-bottom:0;
+  }
 </style>
-<div class="rsu-header px-3 py-2 mb-2">
+<div class="rsu-header <?php echo $esInformeFinalActualFormulario ? 'rsu-header--final' : ''; ?> px-3 py-2 mb-2">
   <div class="row align-items-start">
     <!-- Izquierda: período + chips -->
     <div class="col-12 col-lg-3 mb-2 mb-lg-0">
@@ -529,7 +849,7 @@ $stM->close();
    data-id-py="<?= (int)$idProyecto ?>">
   <i class="fas fa-exclamation-triangle"></i> Observaciones
 </a>
-        <a href="#" class="btn btn-dark btn-sm text-white d-inline-flex align-items-center">
+        <a href="#" id="btnSemestresResumen" class="btn btn-dark btn-sm text-white d-inline-flex align-items-center">
           <i class="fas fa-layer-group"></i> Semestres
         </a>
       </div>
@@ -845,6 +1165,123 @@ $stM->close();
 </div>
 
 <!-- Modales -->
+<div class="modal fade" id="modalSemestresResumen" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header rsu-sem-modal-header">
+        <h5 class="modal-title mb-0">
+          <i class="fas fa-layer-group mr-2"></i>Semestres del proyecto
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="rsu-sem-help">
+          Aqu&iacute; podr&aacute;s ver los semestres que comprende tu proyecto basado en la fecha de inicio y fin que definiste en Presentaci&oacute;n de proyecto - generalidades.
+          Recuerda que cada semestre se presenta un informe semestral.
+          Y el &uacute;ltimo informe semestral es tambi&eacute;n tu informe final.
+        </div>
+        <?php if (!$haySemestreActualModal): ?>
+          <div class="alert alert-warning mt-2 mb-0 py-2">
+            No se pudo identificar con precisi&oacute;n el semestre actual del formulario en esta vista.
+          </div>
+        <?php endif; ?>
+
+        <div class="rsu-sem-timeline">
+          <div class="rsu-sem-node">
+            <span class="rsu-sem-dot rsu-sem-dot--limit"></span>
+            <div class="rsu-sem-card">
+              <div class="rsu-sem-card-title">Inicio del proyecto</div>
+              <p class="rsu-sem-card-text">
+                <?php if ($fechaInicioFaltante): ?>
+                  <span class="rsu-sem-missing">No registrado</span>
+                <?php else: ?>
+                  <?php echo htmlspecialchars($fechaInicioModal, ENT_QUOTES, 'UTF-8'); ?>
+                <?php endif; ?>
+              </p>
+            </div>
+          </div>
+
+          <?php if (!empty($semestresResumenModal)): ?>
+            <?php foreach ($semestresResumenModal as $semItem): ?>
+              <?php
+                $esActual = !empty($semItem['es_actual']);
+                $nodeClass = $esActual ? 'rsu-sem-node rsu-sem-node--actual' : 'rsu-sem-node';
+                $cardClass = $esActual ? 'rsu-sem-card rsu-sem-card--actual' : 'rsu-sem-card';
+                $entregasTexto = '';
+                if (isset($semItem['entregas']) && is_array($semItem['entregas']) && !empty($semItem['entregas'])) {
+                  $entregasTexto = implode(' | ', $semItem['entregas']);
+                }
+              ?>
+              <div class="<?php echo htmlspecialchars($nodeClass, ENT_QUOTES, 'UTF-8'); ?>">
+                <span class="rsu-sem-dot"></span>
+                <div class="<?php echo htmlspecialchars($cardClass, ENT_QUOTES, 'UTF-8'); ?>">
+                  <?php if ($esActual): ?>
+                    <span class="rsu-sem-actual-badge">Semestre actual del formulario</span>
+                  <?php endif; ?>
+                  <div class="rsu-sem-card-title"><?php echo htmlspecialchars((string)$semItem['semestre'], ENT_QUOTES, 'UTF-8'); ?></div>
+                  <p class="rsu-sem-card-text">
+                    <?php if ($entregasTexto !== ''): ?>
+                      <?php echo htmlspecialchars($entregasTexto, ENT_QUOTES, 'UTF-8'); ?>
+                    <?php else: ?>
+                      Entrega pendiente de definir.
+                    <?php endif; ?>
+                  </p>
+                  <?php if ($esActual): ?>
+                    <div class="rsu-sem-current-box">
+                      <p class="line"><strong>Per&iacute;odo activo:</strong> <?php echo htmlspecialchars((string)($semItem['periodo_actual'] ?? '-'), ENT_QUOTES, 'UTF-8'); ?></p>
+                      <p class="line"><strong>Corresponde:</strong> <?php echo htmlspecialchars((string)($semItem['corresponde'] ?? 'Informe semestral'), ENT_QUOTES, 'UTF-8'); ?></p>
+                      <p class="line"><strong>Debes completar:</strong> <?php echo htmlspecialchars((string)($semItem['formulario'] ?? 'Formulario del cronograma activo'), ENT_QUOTES, 'UTF-8'); ?></p>
+                      <p class="line">
+                        <strong>Ventana para completar:</strong>
+                        <?php
+                          $ap = isset($semItem['ventana_apertura']) ? trim((string)$semItem['ventana_apertura']) : '';
+                          $ci = isset($semItem['ventana_cierre']) ? trim((string)$semItem['ventana_cierre']) : '';
+                          if ($ap === '' && $ci === '') {
+                            echo 'No registrada';
+                          } else {
+                            echo htmlspecialchars(($ap !== '' ? $ap : '-') . ' | ' . ($ci !== '' ? $ci : '-'), ENT_QUOTES, 'UTF-8');
+                          }
+                        ?>
+                      </p>
+                    </div>
+                  <?php endif; ?>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <div class="rsu-sem-node">
+              <span class="rsu-sem-dot"></span>
+              <div class="rsu-sem-card">
+                <div class="rsu-sem-card-title">Semestres del proyecto</div>
+                <p class="rsu-sem-empty mb-0">No se encontr&oacute; un resumen de semestres para este proyecto.</p>
+              </div>
+            </div>
+          <?php endif; ?>
+
+          <div class="rsu-sem-node">
+            <span class="rsu-sem-dot rsu-sem-dot--limit"></span>
+            <div class="rsu-sem-card">
+              <div class="rsu-sem-card-title">Fin del proyecto</div>
+              <p class="rsu-sem-card-text">
+                <?php if ($fechaFinFaltante): ?>
+                  <span class="rsu-sem-missing">No registrado</span>
+                <?php else: ?>
+                  <?php echo htmlspecialchars($fechaFinModal, ENT_QUOTES, 'UTF-8'); ?>
+                <?php endif; ?>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="imgModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -935,6 +1372,17 @@ function showBsModal(element) {
 }
 
 // ========= Modal de VIDEO dinámico (crea y destruye) =========
+document.addEventListener('DOMContentLoaded', function () {
+  var btnSemestres = document.getElementById('btnSemestresResumen');
+  var modalSemestres = document.getElementById('modalSemestresResumen');
+  if (!btnSemestres || !modalSemestres) return;
+
+  btnSemestres.addEventListener('click', function (event) {
+    event.preventDefault();
+    showBsModal(modalSemestres);
+  });
+});
+
 function openVideoModal(videoUrl) {
   const old = document.getElementById('ytModalDyn');
   if (old && old.parentNode) old.parentNode.removeChild(old);

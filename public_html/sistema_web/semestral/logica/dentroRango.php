@@ -1,9 +1,85 @@
 <?php
 // Requiere que index.php haya cargado $sm_info y $conexion
 $form          = $sm_info['form_activo'] ?? null;
-$semId         = $sm_info['semestre_objetivo_id'] ?? null;
+$semId         = isset($sm_info['semestre_objetivo_id']) ? (int)$sm_info['semestre_objetivo_id'] : 0;
 $periodoNombre = $sm_info['periodo_activo']['nombre'] ?? '-';
+$periodoActivoAnio = isset($sm_info['periodo_activo']['anio']) ? (int)$sm_info['periodo_activo']['anio'] : 0;
+$periodoActivoCodigo = isset($sm_info['periodo_activo']['periodo']) ? strtoupper(trim((string)$sm_info['periodo_activo']['periodo'])) : '';
 $usuario       = $_SESSION['usuario'] ?? '';
+$aperturaTxt   = (string)($sm_info['apertura'] ?? '-');
+$cierreTxt     = (string)($sm_info['cierre'] ?? '-');
+$cronogramaTipo = isset($sm_info['cronograma_tipo']) ? (int)$sm_info['cronograma_tipo'] : 0;
+$tipoSemestreEsperado = ($cronogramaTipo === 1) ? 'presentacion' : 'semestral';
+
+$semestreActualLabel = (string)$periodoNombre;
+$correspondeTexto = 'Informe semestral';
+$esInformeFinalActual = false;
+
+if ($cronogramaTipo === 1) {
+    $correspondeTexto = 'Presentación de proyecto';
+} elseif ($cronogramaTipo === 2) {
+    $correspondeTexto = 'Informe semestral';
+}
+
+if (
+    $semId <= 0
+    && $periodoActivoAnio > 0
+    && ($periodoActivoCodigo === 'I' || $periodoActivoCodigo === 'II')
+) {
+    $idProyectoSesion = isset($_SESSION['id_py']) ? (int)$_SESSION['id_py'] : 0;
+    if ($idProyectoSesion > 0) {
+        $stSemObj = $conexion->prepare("
+          SELECT id
+          FROM sm_proyecto_semestres
+          WHERE id_py = ? AND anio = ? AND periodo = ? AND tipo = ? AND vigente = 1
+          LIMIT 1
+        ");
+        if ($stSemObj) {
+            $stSemObj->bind_param("iiss", $idProyectoSesion, $periodoActivoAnio, $periodoActivoCodigo, $tipoSemestreEsperado);
+            $stSemObj->execute();
+            $stSemObj->bind_result($semIdFound);
+            if ($stSemObj->fetch()) {
+                $semId = (int)$semIdFound;
+            }
+            $stSemObj->close();
+        }
+    }
+}
+
+if ($semId > 0) {
+    $stSemInfo = $conexion->prepare("
+      SELECT anio, periodo, tipo, final
+      FROM sm_proyecto_semestres
+      WHERE id = ?
+      LIMIT 1
+    ");
+    if ($stSemInfo) {
+        $semIdInt = (int)$semId;
+        $stSemInfo->bind_param("i", $semIdInt);
+        $stSemInfo->execute();
+        $semInfo = $stSemInfo->get_result()->fetch_assoc();
+        $stSemInfo->close();
+
+        if ($semInfo) {
+            $anio = isset($semInfo['anio']) ? (int)$semInfo['anio'] : 0;
+            $periodo = isset($semInfo['periodo']) ? strtoupper(trim((string)$semInfo['periodo'])) : '';
+            if ($anio > 0 && ($periodo === 'I' || $periodo === 'II')) {
+                $semestreActualLabel = $anio . '-' . $periodo;
+            }
+
+            $tipo = isset($semInfo['tipo']) ? trim((string)$semInfo['tipo']) : '';
+            $esFinalSem = isset($semInfo['final']) ? (int)$semInfo['final'] : 0;
+            if ($tipo === 'semestral' && $esFinalSem === 1) {
+                $correspondeTexto = 'Informe semestral final';
+                $esInformeFinalActual = true;
+            } elseif ($tipo === 'semestral') {
+                $correspondeTexto = 'Informe semestral';
+            } elseif ($tipo === 'presentacion') {
+                $correspondeTexto = 'Presentación de proyecto';
+            }
+        }
+    }
+}
 
 // Prefill de contacto (si existe tabla y registro)
 $prefillEmail = '';
@@ -36,6 +112,44 @@ if ($usuario !== '') {
       radial-gradient(1200px 400px at 10% -20%, rgba(255,255,255,.25), transparent 60%),
       linear-gradient(135deg,#28a745,#1e7e34 55%,#155724);
     color:#fff;padding:1rem 1.25rem;
+  }
+  .sm-impact__hero--final{
+    background:
+      radial-gradient(1200px 400px at 10% -20%, rgba(255,255,255,.17), transparent 60%),
+      linear-gradient(135deg,#1f2937,#111827 55%,#000000);
+  }
+  .sm-resumen{
+    border:1px solid #d1d5db;
+    background:#f9fafb;
+    border-radius:.75rem;
+    padding:.65rem .75rem;
+    margin-bottom:.85rem;
+    text-align:left;
+  }
+  .sm-resumen__title{
+    font-size:.9rem;
+    font-weight:700;
+    color:#111827;
+    margin-bottom:.35rem;
+  }
+  .sm-resumen__line{
+    margin:0 0 .2rem 0;
+    color:#374151;
+    font-size:.88rem;
+    line-height:1.3;
+  }
+  .sm-resumen__line:last-child{ margin-bottom:0; }
+  .sm-chip-final{
+    display:inline-flex;
+    align-items:center;
+    font-size:.74rem;
+    font-weight:700;
+    color:#ffffff;
+    background:#111827;
+    border:1px solid #111827;
+    border-radius:999px;
+    padding:.14rem .5rem;
+    margin-top:.45rem;
   }
   .sm-body{flex:1 1 auto;}
   .sm-body.row{align-items:stretch;}
@@ -76,9 +190,15 @@ if ($usuario !== '') {
 
 <div class="card sm-impact" role="region" aria-labelledby="sm-hero-title">
   <!-- Hero -->
-  <div class="sm-impact__hero">
+  <div class="sm-impact__hero <?php echo $esInformeFinalActual ? 'sm-impact__hero--final' : ''; ?>">
     <h5 id="sm-hero-title" class="mb-0">Período de informes: <span class="sm-subtle"><?= htmlspecialchars($periodoNombre) ?></span></h5>
-    <div class="sm-muted">Ventana activa para presentación de informes semestrales</div>
+    <div class="sm-muted">
+      <?php if ($esInformeFinalActual): ?>
+        Ventana activa para presentaci&oacute;n de informe semestral final
+      <?php else: ?>
+        Ventana activa para presentaci&oacute;n de informes semestrales
+      <?php endif; ?>
+    </div>
   </div>
 
   <!-- Cuerpo -->
@@ -93,12 +213,23 @@ if ($usuario !== '') {
     <!-- Derecha: todo el contenido -->
     <div class="col-md-6 sm-right">
       <div class="sm-stack">
+        <div class="sm-resumen">
+          <div class="sm-resumen__title">Resumen del semestre actual</div>
+          <p class="sm-resumen__line"><strong>Semestre actual del proyecto:</strong> <?= htmlspecialchars($semestreActualLabel) ?></p>
+          <p class="sm-resumen__line"><strong>Te corresponde subir:</strong> <?= htmlspecialchars($correspondeTexto) ?></p>
+          <p class="sm-resumen__line"><strong>Debes completar:</strong> <?= htmlspecialchars($form['nombre'] ?? 'Formulario del cronograma activo') ?></p>
+          <p class="sm-resumen__line"><strong>Ventana para completar:</strong> <?= htmlspecialchars($aperturaTxt) ?> | <?= htmlspecialchars($cierreTxt) ?></p>
+          <?php if ($esInformeFinalActual): ?>
+            <span class="sm-chip-final">Tramo final del proyecto</span>
+          <?php endif; ?>
+        </div>
+
         <div class="sm-title">Información del período</div>
         <div class="sm-sub">Revisa las fechas antes de continuar.</div>
 
         <div class="sm-dates">
-          <span class="sm-badge sm-badge-open">Apertura: <?= htmlspecialchars($sm_info['apertura'] ?? '-') ?></span>
-          <span class="sm-badge sm-badge-close">Cierre: <?= htmlspecialchars($sm_info['cierre'] ?? '-') ?></span>
+          <span class="sm-badge sm-badge-open">Apertura: <?= htmlspecialchars($aperturaTxt) ?></span>
+          <span class="sm-badge sm-badge-close">Cierre: <?= htmlspecialchars($cierreTxt) ?></span>
         </div>
 
         <div class="sm-divider"></div>

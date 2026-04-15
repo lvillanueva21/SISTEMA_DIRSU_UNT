@@ -126,7 +126,7 @@ if (empty($rsu_access_eval['allow'])) {
     include __DIR__ . '/../integrados/mensaje_fuera_tiempo.php';
 } else {
     require_once DIR_LOGICA . '/funciones.php';
-    $sm_info = obtenerInfoSemestral($conexion, $id_py);
+    $sm_info = obtenerInfoSemestral($conexion, $id_py, is_array($rsu_access_eval) ? $rsu_access_eval : null);
     if (isset($sm_info['error'])) {
         echo "<p style='color:#b00;font-weight:bold'>" . htmlspecialchars($sm_info['error']) . "</p>";
     } else {

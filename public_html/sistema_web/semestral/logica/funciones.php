@@ -222,9 +222,12 @@ function syncProyectoSemestres(mysqli $cx, int $id_py, DateTime $fi, DateTime $f
 
 function parsePeriodoNombre(string $nombre): array {
     $nombre = trim($nombre);
-    [$anio, $per] = explode('-', $nombre, 2);
-    $anio = (int)trim($anio);
-    $per  = strtoupper(trim($per));
+    if (!preg_match('/^(\d{4})\s*-\s*(I|II)$/i', $nombre, $m)) {
+        throw new InvalidArgumentException("Periodo inválido: $nombre");
+    }
+
+    $anio = (int)$m[1];
+    $per  = strtoupper((string)$m[2]);
     if (!in_array($per, ['I','II'], true) || $anio < 1900) {
         throw new InvalidArgumentException("Periodo inválido: $nombre");
     }
@@ -232,7 +235,7 @@ function parsePeriodoNombre(string $nombre): array {
 }
 
 function obtenerCronogramaActivoTipo2(mysqli $cx): ?array {
-    $sql = "SELECT c.id, c.id_periodo, p.nombre AS periodo_nombre, c.apertura, c.cierre
+    $sql = "SELECT c.id, c.id_periodo, c.tipo, p.nombre AS periodo_nombre, c.apertura, c.cierre
             FROM sm_cronogramas c
             JOIN periodos p ON p.id = c.id_periodo
             WHERE c.activo = 1 AND c.tipo = 2
@@ -244,6 +247,63 @@ function obtenerCronogramaActivoTipo2(mysqli $cx): ?array {
     $row = $rs->fetch_assoc();
     $st->close();
     return $row ?: null;
+}
+
+function obtenerCronogramaTipo2ParaProyecto(mysqli $cx, ?array $accessEval = null): ?array {
+    // Fuente preferente: evaluacion ya resuelta por el guard de acceso.
+    if (is_array($accessEval)) {
+        $cronEval = (isset($accessEval['cronograma_resuelto']) && is_array($accessEval['cronograma_resuelto']))
+            ? $accessEval['cronograma_resuelto']
+            : null;
+        $periodoEval = (isset($accessEval['periodo_resuelto']) && is_array($accessEval['periodo_resuelto']))
+            ? $accessEval['periodo_resuelto']
+            : null;
+
+        $cronId = $cronEval ? (int)($cronEval['id'] ?? 0) : 0;
+        $cronTipo = $cronEval ? (int)($cronEval['tipo'] ?? 0) : 0;
+
+        if ($cronId > 0 && $cronTipo === 2) {
+            $st = $cx->prepare("
+                SELECT c.id, c.id_periodo, c.tipo, p.nombre AS periodo_nombre, c.apertura, c.cierre
+                FROM sm_cronogramas c
+                JOIN periodos p ON p.id = c.id_periodo
+                WHERE c.id = ? AND c.activo = 1
+                LIMIT 1
+            ");
+            if ($st) {
+                $st->bind_param("i", $cronId);
+                $st->execute();
+                $rs = $st->get_result();
+                $row = $rs ? $rs->fetch_assoc() : null;
+                $st->close();
+
+                if (is_array($row) && (int)($row['tipo'] ?? 0) === 2) {
+                    return $row;
+                }
+            }
+        }
+
+        if ($cronTipo === 2) {
+            $periodoNombre = $periodoEval ? trim((string)($periodoEval['nombre'] ?? '')) : '';
+            $cronApertura = $cronEval ? (string)($cronEval['apertura'] ?? '') : '';
+            $cronCierre = $cronEval ? (string)($cronEval['cierre'] ?? '') : '';
+            $periodoId = $periodoEval ? (int)($periodoEval['id'] ?? 0) : 0;
+
+            if ($periodoNombre !== '') {
+                return [
+                    'id' => $cronId,
+                    'id_periodo' => $periodoId,
+                    'tipo' => 2,
+                    'periodo_nombre' => $periodoNombre,
+                    'apertura' => $cronApertura,
+                    'cierre' => $cronCierre
+                ];
+            }
+        }
+    }
+
+    // Fallback legacy para compatibilidad.
+    return obtenerCronogramaActivoTipo2($cx);
 }
 
 function obtenerFormularioDeCronograma(mysqli $cx, int $id_cronograma): ?array {
@@ -258,6 +318,13 @@ function obtenerFormularioDeCronograma(mysqli $cx, int $id_cronograma): ?array {
 
 function tipoSemestreParaFormulario(string $nombreFormulario): string {
     return (stripos($nombreFormulario, 'presentación') !== false) ? 'presentacion' : 'semestral';
+}
+
+function tipoSemestreDesdeCronograma($tipoCronograma, string $nombreFormulario = ''): string {
+    $tipoCronograma = (int)$tipoCronograma;
+    if ($tipoCronograma === 1) return 'presentacion';
+    if ($tipoCronograma === 2) return 'semestral';
+    return 'semestral';
 }
 
 function encontrarSemestreObjetivo(mysqli $cx, int $id_py, int $anio, string $periodo, string $tipo): ?int {
@@ -289,7 +356,7 @@ function encontrarRespuestaExistente(mysqli $cx, int $id_py, int $id_formulario,
 }
 
 /* ===================== FUNCIÓN PRINCIPAL ===================== */
-function obtenerInfoSemestral(mysqli $conexion, int $id_py): array
+function obtenerInfoSemestral(mysqli $conexion, int $id_py, ?array $accessEval = null): array
 {
     // 1) Fechas del proyecto
     $sqlProj = "SELECT p2, fecha_inicio, fecha_fin FROM proyectos WHERE id = ?";
@@ -360,7 +427,7 @@ function obtenerInfoSemestral(mysqli $conexion, int $id_py): array
     $tz = new DateTimeZone('America/Lima');
     $ahora = new DateTime('now', $tz);
 
-    $cron = obtenerCronogramaActivoTipo2($conexion);
+    $cron = obtenerCronogramaTipo2ParaProyecto($conexion, $accessEval);
     if (!$cron) {
         return [
             'titulo'     => (string)$titulo_p2,
@@ -392,15 +459,40 @@ function obtenerInfoSemestral(mysqli $conexion, int $id_py): array
     // 8) Periodo → semestre objetivo
     $semestreObjetivoId = null;
     $periodoPayload = null;
-    try {
-        [$pAnio, $pPer] = parsePeriodoNombre($cron['periodo_nombre']);
-        $periodoPayload = ['nombre'=>$cron['periodo_nombre'], 'anio'=>$pAnio, 'periodo'=>$pPer];
-        if ($formPayload) {
-            $tipoSem = tipoSemestreParaFormulario($formPayload['nombre']);
-            $semestreObjetivoId = encontrarSemestreObjetivo($conexion, $id_py, $pAnio, $pPer, $tipoSem);
+    $periodoNombreCandidato = [];
+    $periodoNombreCron = trim((string)($cron['periodo_nombre'] ?? ''));
+    if ($periodoNombreCron !== '') {
+        $periodoNombreCandidato[] = $periodoNombreCron;
+    }
+    if (is_array($accessEval) && isset($accessEval['periodo_resuelto']) && is_array($accessEval['periodo_resuelto'])) {
+        $periodoNombreEval = trim((string)($accessEval['periodo_resuelto']['nombre'] ?? ''));
+        if ($periodoNombreEval !== '' && !in_array($periodoNombreEval, $periodoNombreCandidato, true)) {
+            $periodoNombreCandidato[] = $periodoNombreEval;
         }
-    } catch (Throwable $e) {
-        $periodoPayload = ['nombre'=>$cron['periodo_nombre'], 'anio'=>null, 'periodo'=>null];
+    }
+
+    $pAnio = null;
+    $pPer = null;
+    $periodoNombreElegido = $periodoNombreCron;
+    foreach ($periodoNombreCandidato as $nombrePeriodoTmp) {
+        try {
+            [$pAnio, $pPer] = parsePeriodoNombre($nombrePeriodoTmp);
+            $periodoNombreElegido = $nombrePeriodoTmp;
+            break;
+        } catch (Throwable $e) {
+            $pAnio = null;
+            $pPer = null;
+        }
+    }
+
+    if ($pAnio !== null && $pPer !== null) {
+        $periodoPayload = ['nombre' => $periodoNombreElegido, 'anio' => $pAnio, 'periodo' => $pPer];
+        if ($formPayload) {
+            $tipoSem = tipoSemestreDesdeCronograma((int)($cron['tipo'] ?? 0), (string)$formPayload['nombre']);
+            $semestreObjetivoId = encontrarSemestreObjetivo($conexion, $id_py, (int)$pAnio, (string)$pPer, $tipoSem);
+        }
+    } else {
+        $periodoPayload = ['nombre' => $periodoNombreElegido, 'anio' => null, 'periodo' => null];
     }
 
     // 9) Respuesta existente
@@ -426,6 +518,7 @@ function obtenerInfoSemestral(mysqli $conexion, int $id_py): array
     'semestre_objetivo_id' => $semestreObjetivoId,
     'respuesta_id'         => $respuestaId,
     'cronograma_id'        => (int)$cron['id'],
+    'cronograma_tipo'      => (int)($cron['tipo'] ?? 0),
 ];
 
 }
