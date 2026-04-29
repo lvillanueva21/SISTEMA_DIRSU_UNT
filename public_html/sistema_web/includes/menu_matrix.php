@@ -146,6 +146,58 @@ if (!function_exists('rsu_menu_reorder_coordinator_sections')) {
     }
 }
 
+if (!function_exists('rsu_menu_ensure_dirsu_informes_item')) {
+    function rsu_menu_ensure_dirsu_informes_item($matrix)
+    {
+        if (!is_array($matrix) || !isset($matrix[1]) || !is_array($matrix[1])) {
+            return $matrix;
+        }
+        if (!isset($matrix[1]['items']) || !is_array($matrix[1]['items'])) {
+            return $matrix;
+        }
+
+        $items = $matrix[1]['items'];
+        $target = array(
+            'type' => 'item',
+            'label' => 'Informes',
+            'icon' => 'fa fa-folder-open',
+            'href' => 'informe_semestral.php',
+            'active_on' => array('informe_semestral.php')
+        );
+
+        $existing_index = -1;
+        $anchor_index = -1;
+
+        $i = 0;
+        for ($i = 0; $i < count($items); $i++) {
+            $item = isset($items[$i]) && is_array($items[$i]) ? $items[$i] : array();
+
+            $href = isset($item['href']) ? (string)$item['href'] : '';
+            if ($href === 'informe_semestral.php') {
+                $existing_index = $i;
+            }
+
+            $label = isset($item['label']) ? trim((string)$item['label']) : '';
+            if ($label === 'Informe Semestral 2025-I' || $href === 'evaluacion.php') {
+                $anchor_index = $i;
+            }
+        }
+
+        if ($existing_index >= 0) {
+            $items[$existing_index] = $target;
+        } else {
+            if ($anchor_index >= 0) {
+                array_splice($items, $anchor_index, 0, array($target));
+            } else {
+                $items[] = $target;
+            }
+        }
+
+        $matrix[1]['items'] = $items;
+        return $matrix;
+    }
+}
+
 if (!function_exists('rsu_get_menu_matrix')) {
     function rsu_get_menu_matrix()
     {
@@ -576,6 +628,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
         );
 
         $matrix = rsu_menu_reorder_coordinator_sections($matrix);
+        $matrix = rsu_menu_ensure_dirsu_informes_item($matrix);
         return rsu_menu_append_development_items($matrix);
     }
 }
