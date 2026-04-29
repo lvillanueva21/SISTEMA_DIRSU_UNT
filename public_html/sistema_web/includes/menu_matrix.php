@@ -173,6 +173,13 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'item',
+                        'label' => 'Informes',
+                        'icon' => 'fa fa-folder-open',
+                        'href' => 'informe_semestral.php',
+                        'active_on' => array('informe_semestral.php')
+                    ),
+                    array(
+                        'type' => 'item',
                         'label' => 'Informe Semestral 2025-I',
                         'icon' => 'fa fa-calendar',
                         'href' => 'evaluacion.php',
