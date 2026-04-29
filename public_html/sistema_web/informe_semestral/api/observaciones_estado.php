@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // /sistema_web/informe_semestral/api/observaciones_estado.php
 declare(strict_types=1);
 header('Content-Type: application/json; charset=UTF-8');
@@ -13,13 +13,13 @@ function fail($msg, $code = 400){
 }
 
 $id_py = isset($_GET['id_py']) ? (int)$_GET['id_py'] : 0;
-if ($id_py <= 0) fail('ParÃ¡metro id_py invÃ¡lido');
+if ($id_py <= 0) fail('Parámetro id_py inválido');
 
 try {
-  // Defaults si no hay dÃ­as guardados (>0)
+  // Defaults si no hay días guardados (>0)
   $DEFAULT_DIAS = ['cotejo'=>2, 'rubrica'=>1];
 
-  // ---------- helper: Ãºltima calificaciÃ³n OBSERVADA por tipo ----------
+  // ---------- helper: última calificación OBSERVADA por tipo ----------
   $fetchObs = function(string $tipo) use ($conexion, $id_py, $DEFAULT_DIAS){
     if (!in_array($tipo, ['cotejo','rubrica'], true)) return null;
 
@@ -51,7 +51,7 @@ try {
     $dias   = isset($row['dias_subsanacion']) ? (int)$row['dias_subsanacion'] : 0;
     if ($dias <= 0) $dias = (int)($DEFAULT_DIAS[$tipo] ?? 0);
 
-    // ---- utilidades de dÃ­as hÃ¡biles (sÃ¡bado/domingo no cuentan)
+    // ---- utilidades de días hábiles (sábado/domingo no cuentan)
     $addBusinessDays = function(int $tsBase, int $n): int {
       if ($n <= 0) return $tsBase;
       $y = (int)date('Y', $tsBase);
@@ -61,12 +61,12 @@ try {
       $i = (int)date('i', $tsBase);
 
       $daysInMonth = function(int $yy,int $mm){ return (int)date('t', strtotime(sprintf('%04d-%02d-01',$yy,$mm))); };
-      $dow = function(int $yy,int $mm,int $dd){ return (int)date('w', strtotime(sprintf('%04d-%02d-%02d',$yy,$mm,$dd))); }; // 0=Dom .. 6=SÃ¡b
+      $dow = function(int $yy,int $mm,int $dd){ return (int)date('w', strtotime(sprintf('%04d-%02d-%02d',$yy,$mm,$dd))); }; // 0=Dom .. 6=Sáb
       $isWeekend = function(int $yy,int $mm,int $dd) use ($dow){ $w=$dow($yy,$mm,$dd); return ($w===0 || $w===6); };
 
       $rest = (int)$n;
       while ($rest > 0) {
-        // avanza 1 dÃ­a calendario
+        // avanza 1 día calendario
         $dim = $daysInMonth($y,$m);
         if ($d < $dim) $d++; else { $d=1; $m++; if($m>12){$m=1;$y++;} }
         if (!$isWeekend($y,$m,$d)) $rest--;
@@ -101,8 +101,8 @@ try {
       $mapNames = [
         'estructura'       => 'Estructura',
         'contenido'        => 'Contenido',
-        'redaccion'        => 'RedacciÃ³n',
-        'calidad_info'     => 'Calidad de informaciÃ³n',
+        'redaccion'        => 'Redacción',
+        'calidad_info'     => 'Calidad de información',
         'propuesta_mejora' => 'Propuesta de Mejora',
       ];
       $notaLabel = [0=>'En espera',1=>'Insuficiente',2=>'Mejorable',3=>'Satisfactorio',4=>'Excelente'];
@@ -125,7 +125,7 @@ try {
               'aspecto' => $mapNames[$a['aspecto']] ?? (string)$a['aspecto'],
               'nota'    => $nota,
               'notaTx'  => $notaLabel[$nota] ?? (string)$nota,
-              'obs'     => trim((string)($a['observacion'] ?? '')) ?: 'Sin ObservaciÃ³n',
+              'obs'     => trim((string)($a['observacion'] ?? '')) ?: 'Sin Observación',
             ];
           }
         }

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // /sistema_web/informe_semestral/modales/evaluacion_msg.php
 header('Content-Type: text/html; charset=utf-8');
 
@@ -13,10 +13,10 @@ $id_py  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 $labels = [
   'cotejo'  => 'Calificar Cotejo',
-  'rubrica' => 'Calificar RÃºbrica',
+  'rubrica' => 'Calificar Rúbrica',
   'vb'      => 'Visto Bueno',
 ];
-$label = $labels[$accion] ?? 'AcciÃ³n';
+$label = $labels[$accion] ?? 'Acción';
 
 $coordinador = '';
 $titulo      = '';
@@ -79,7 +79,7 @@ $rb_obss           = [1=>'',
                       5=>''];
 
 if ($id_py > 0) {
-    // Ubicar Ãºltima evaluaciÃ³n y oficina actual (si hay)
+    // Ubicar última evaluación y oficina actual (si hay)
     $eval = null;
     $sqlEval = "SELECT e.id AS eval_id, e.id_oficina_actual
                 FROM eva_evaluaciones e
@@ -193,7 +193,7 @@ $ui_vb     = $pre_vb_estado     ? ($pre_vb_estado==='en_espera'     ? 'espera' :
 $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' : $pre_rb_estado)     : '';
 ?>
 <style>
-  /* Solo separaciÃ³n segura entre botones (BS4/BS5) */
+  /* Solo separación segura entre botones (BS4/BS5) */
   #modalEval .ev-actions .btn + .btn{ margin-left:12px; }
 
   /* Aseguramos que el contenedor del modal sea el punto de referencia del overlay */
@@ -225,7 +225,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
   <div class="alert alert-danger mb-0">No se pudo obtener el proyecto (ID: <?= (int)$id_py ?>) o no tienes acceso.</div>
 <?php else: ?>
 
-  <!-- â€”â€”â€” Encabezado compacto: Proyecto / RevisiÃ³n / Coordinador â€”â€”â€” -->
+  <!-- ——— Encabezado compacto: Proyecto / Revisión / Coordinador ——— -->
   <div class="border rounded-3 p-3 mb-3 bg-white">
     <div class="mb-2">
       <strong>Proyecto:</strong>
@@ -233,7 +233,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
     </div>
     <div class="d-flex flex-column flex-md-row gap-3">
       <div>
-        <strong>RevisiÃ³n de:</strong>
+        <strong>Revisión de:</strong>
         <span class="ms-1"><?= htmlspecialchars($formulario ?: 'Formulario no identificado') ?></span>
       </div>
       <div class="ms-md-auto">
@@ -246,53 +246,53 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
   <?php if ($accion === 'cotejo'): ?>
     <!-- ========== COTEJO ========== -->
     <div class="row g-3" id="cjRow">
-      <!-- COLUMNA IZQUIERDA (se hace full-width cuando NO es â€œobservadoâ€) -->
+      <!-- COLUMNA IZQUIERDA (se hace full-width cuando NO es “observado”) -->
       <div id="cjColLeft" class="col-12 col-md-6">
-        <!-- CalificaciÃ³n -->
+        <!-- Calificación -->
         <div class="card mb-3">
           <div class="card-body">
-            <label for="evCalificacion" class="form-label fw-semibold">CalificaciÃ³n</label>
+            <label for="evCalificacion" class="form-label fw-semibold">Calificación</label>
             <select id="evCalificacion" class="form-select form-control">
               <option value=""<?= sel('', $ui_cotejo) ?>>Seleccionar</option>
-              <option value="aprobado"<?= sel('aprobado', $ui_cotejo) ?>>âœ… Aprobado</option>
-              <option value="observado"<?= sel('observado', $ui_cotejo) ?>>âš ï¸ Observado</option>
-              <option value="espera"<?= sel('espera', $ui_cotejo) ?>>â³ En espera</option>
+              <option value="aprobado"<?= sel('aprobado', $ui_cotejo) ?>>✅ Aprobado</option>
+              <option value="observado"<?= sel('observado', $ui_cotejo) ?>>⚠️ Observado</option>
+              <option value="espera"<?= sel('espera', $ui_cotejo) ?>>⏳ En espera</option>
             </select>
           </div>
         </div>
 
-        <!-- DÃ­as + Fecha (se oculta cuando NO es â€œobservadoâ€) -->
+        <!-- Días + Fecha (se oculta cuando NO es “observado”) -->
         <div class="card" id="cjDiasCard">
           <div class="card-body">
             <div class="row g-3 align-items-start">
               <div class="col-sm-6">
-                <label for="evDias" class="form-label fw-semibold">DÃ­as para subsanar</label>
+                <label for="evDias" class="form-label fw-semibold">Días para subsanar</label>
                 <select id="evDias" class="form-select form-control">
                   <option value="">Seleccionar</option>
-                  <option value="1">1 dÃ­a</option>
-                  <option value="2">2 dÃ­as</option>
-                  <!--<option value="3">3 dÃ­as</option>
-                  <option value="4">4 dÃ­as</option>
-                  <option value="5">5 dÃ­as</option> -->
+                  <option value="1">1 día</option>
+                  <option value="2">2 días</option>
+                  <!--<option value="3">3 días</option>
+                  <option value="4">4 días</option>
+                  <option value="5">5 días</option> -->
                 </select>
-                <div class="form-text">Se calcula con fecha y hora actuales (Lima, PerÃº). Sin sÃ¡bados ni domingos.</div>
+                <div class="form-text">Se calcula con fecha y hora actuales (Lima, Perú). Sin sábados ni domingos.</div>
               </div>
               <div class="col-sm-6">
-                <label class="form-label fw-semibold">Fecha lÃ­mite</label>
-                <div id="evFecha" class="alert alert-primary text-center fw-semibold py-2 mb-0" aria-live="polite">â€”</div>
+                <label class="form-label fw-semibold">Fecha límite</label>
+                <div id="evFecha" class="alert alert-primary text-center fw-semibold py-2 mb-0" aria-live="polite">—</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- COLUMNA DERECHA: ObservaciÃ³n (se oculta cuando NO es â€œobservadoâ€) -->
+      <!-- COLUMNA DERECHA: Observación (se oculta cuando NO es “observado”) -->
       <div id="cjColObs" class="col-12 col-md-6">
         <div class="card h-100">
           <div class="card-body">
-            <label for="evObs" class="form-label fw-semibold">ObservaciÃ³n</label>
+            <label for="evObs" class="form-label fw-semibold">Observación</label>
             <textarea id="evObs" class="form-control" maxlength="3000" rows="6"
-              placeholder="Escribe tus observaciones (mÃ¡x. 3000 caracteres)"><?= htmlspecialchars((string)($pre_cotejo_obs ?? 'No necesita observaciÃ³n')) ?></textarea>
+              placeholder="Escribe tus observaciones (máx. 3000 caracteres)"><?= htmlspecialchars((string)($pre_cotejo_obs ?? 'No necesita observación')) ?></textarea>
             <div class="form-text"><span id="evCont">0</span> de 3000 caracteres.</div>
           </div>
         </div>
@@ -303,17 +303,17 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
     <!-- ========== VISTO BUENO ========== -->
     <div class="card">
       <div class="card-body">
-        <label for="vbCalificacion" class="form-label fw-semibold">CalificaciÃ³n</label>
+        <label for="vbCalificacion" class="form-label fw-semibold">Calificación</label>
         <select id="vbCalificacion" class="form-select form-control">
           <option value=""<?= sel('', $ui_vb) ?>>Seleccionar</option>
-          <option value="aprobado"<?= sel('aprobado', $ui_vb) ?>>âœ… Aprobado</option>
-          <option value="espera"<?= sel('espera', $ui_vb) ?>>â³ En espera</option>
+          <option value="aprobado"<?= sel('aprobado', $ui_vb) ?>>✅ Aprobado</option>
+          <option value="espera"<?= sel('espera', $ui_vb) ?>>⏳ En espera</option>
         </select>
       </div>
     </div>
 
   <?php elseif ($accion === 'rubrica'): ?>
-    <!-- ========== RÃšBRICA ========== -->
+    <!-- ========== RÚBRICA ========== -->
     <div class="card mb-3">
       <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
         <div class="fw-semibold">Puntaje Total: <span id="rbTotal">0</span> / 20</div>
@@ -334,14 +334,14 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
             <option value="4"<?= sel('4', (string)$rb_scores[1]) ?>>4 - Excelente</option>
           </select>
           <div class="mt-2 rb-obs d-none" id="rbObsBox1">
-            <label class="form-label fw-semibold" id="rbObsLabel1">ObservaciÃ³n</label>
+            <label class="form-label fw-semibold" id="rbObsLabel1">Observación</label>
             <textarea class="form-control rb-obs-ta" id="rbObs1" maxlength="3000" rows="4"><?= htmlspecialchars($rb_obss[1]) ?></textarea>
             <div class="form-text"><span id="rbCount1">0</span> de 3000 caracteres.</div>
           </div>
         </div>
         <!-- A3 -->
         <div class="mb-3">
-          <div class="fw-semibold mb-1">Aspecto 3: RedacciÃ³n</div>
+          <div class="fw-semibold mb-1">Aspecto 3: Redacción</div>
           <select class="form-select form-control rb-sel" id="rbSel3" data-asp="3">
             <option value="0"<?= sel('0', (string)$rb_scores[3]) ?>>0 - En espera</option>
             <option value="1"<?= sel('1', (string)$rb_scores[3]) ?>>1 - Insuficiente</option>
@@ -350,7 +350,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
             <option value="4"<?= sel('4', (string)$rb_scores[3]) ?>>4 - Excelente</option>
           </select>
           <div class="mt-2 rb-obs d-none" id="rbObsBox3">
-            <label class="form-label fw-semibold" id="rbObsLabel3">ObservaciÃ³n</label>
+            <label class="form-label fw-semibold" id="rbObsLabel3">Observación</label>
             <textarea class="form-control rb-obs-ta" id="rbObs3" maxlength="3000" rows="4"><?= htmlspecialchars($rb_obss[3]) ?></textarea>
             <div class="form-text"><span id="rbCount3">0</span> de 3000 caracteres.</div>
           </div>
@@ -366,7 +366,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
             <option value="4"<?= sel('4', (string)$rb_scores[5]) ?>>4 - Excelente</option>
           </select>
           <div class="mt-2 rb-obs d-none" id="rbObsBox5">
-            <label class="form-label fw-semibold" id="rbObsLabel5">ObservaciÃ³n</label>
+            <label class="form-label fw-semibold" id="rbObsLabel5">Observación</label>
             <textarea class="form-control rb-obs-ta" id="rbObs5" maxlength="3000" rows="4"><?= htmlspecialchars($rb_obss[5]) ?></textarea>
             <div class="form-text"><span id="rbCount5">0</span> de 3000 caracteres.</div>
           </div>
@@ -385,14 +385,14 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
             <option value="4"<?= sel('4', (string)$rb_scores[2]) ?>>4 - Excelente</option>
           </select>
           <div class="mt-2 rb-obs d-none" id="rbObsBox2">
-            <label class="form-label fw-semibold" id="rbObsLabel2">ObservaciÃ³n</label>
+            <label class="form-label fw-semibold" id="rbObsLabel2">Observación</label>
             <textarea class="form-control rb-obs-ta" id="rbObs2" maxlength="3000" rows="4"><?= htmlspecialchars($rb_obss[2]) ?></textarea>
             <div class="form-text"><span id="rbCount2">0</span> de 3000 caracteres.</div>
           </div>
         </div>
         <!-- A4 -->
         <div class="mb-3">
-          <div class="fw-semibold mb-1">Aspecto 4: Calidad de informaciÃ³n</div>
+          <div class="fw-semibold mb-1">Aspecto 4: Calidad de información</div>
           <select class="form-select form-control rb-sel" id="rbSel4" data-asp="4">
             <option value="0"<?= sel('0', (string)$rb_scores[4]) ?>>0 - En espera</option>
             <option value="1"<?= sel('1', (string)$rb_scores[4]) ?>>1 - Insuficiente</option>
@@ -401,7 +401,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
             <option value="4"<?= sel('4', (string)$rb_scores[4]) ?>>4 - Excelente</option>
           </select>
           <div class="mt-2 rb-obs d-none" id="rbObsBox4">
-            <label class="form-label fw-semibold" id="rbObsLabel4">ObservaciÃ³n</label>
+            <label class="form-label fw-semibold" id="rbObsLabel4">Observación</label>
             <textarea class="form-control rb-obs-ta" id="rbObs4" maxlength="3000" rows="4"><?= htmlspecialchars($rb_obss[4]) ?></textarea>
             <div class="form-text"><span id="rbCount4">0</span> de 3000 caracteres.</div>
           </div>
@@ -409,32 +409,32 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
       </div>
     </div>
 
-    <!-- DÃ­as / Fecha (solo si Observado) -->
+    <!-- Días / Fecha (solo si Observado) -->
     <div id="rbCorrBox" class="card d-none">
       <div class="card-body">
         <div class="row g-3 align-items-start">
           <div class="col-sm-6">
-            <label for="rbDias" class="form-label fw-semibold">DÃ­as para subsanar</label>
+            <label for="rbDias" class="form-label fw-semibold">Días para subsanar</label>
             <select id="rbDias" class="form-select form-control">
               <option value="">Seleccionar</option>
-              <option value="1">1 dÃ­a</option>
-              <option value="2">2 dÃ­as</option>
-              <!-- <option value="3">3 dÃ­as</option>
-              <option value="4">4 dÃ­as</option>
-              <option value="5">5 dÃ­as</option> -->
+              <option value="1">1 día</option>
+              <option value="2">2 días</option>
+              <!-- <option value="3">3 días</option>
+              <option value="4">4 días</option>
+              <option value="5">5 días</option> -->
             </select>
-            <div class="form-text">Se calcula con fecha y hora actuales (Lima, PerÃº). Sin sÃ¡bados ni domingos.</div>
+            <div class="form-text">Se calcula con fecha y hora actuales (Lima, Perú). Sin sábados ni domingos.</div>
           </div>
           <div class="col-sm-6">
-            <label class="form-label fw-semibold">Fecha lÃ­mite</label>
-            <div id="rbFecha" class="alert alert-primary text-center fw-semibold py-2 mb-0" aria-live="polite">â€”</div>
+            <label class="form-label fw-semibold">Fecha límite</label>
+            <div id="rbFecha" class="alert alert-primary text-center fw-semibold py-2 mb-0" aria-live="polite">—</div>
           </div>
         </div>
       </div>
     </div>
 
   <?php else: ?>
-    <div class="alert alert-secondary">AcciÃ³n no reconocida.</div>
+    <div class="alert alert-secondary">Acción no reconocida.</div>
   <?php endif; ?>
 
 <!-- Footer -->
@@ -451,14 +451,14 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
 <div id="evSavingMask" class="saving-mask" aria-hidden="true">
   <div class="mask-inner">
     <div class="spinner-border spinner-border-sm" role="status" aria-label="Cargando"></div>
-    <div class="mt-2">Guardandoâ€¦</div>
+    <div class="mt-2">Guardando…</div>
   </div>
 </div>
 
   <?php if ($accion === 'cotejo'): ?>
   <script>
   (function(){
-    const ZT='America/Lima', DEFAULT_OBS='No necesita observaciÃ³n';
+    const ZT='America/Lima', DEFAULT_OBS='No necesita observación';
     function nowLimaParts(){
       const fmt=new Intl.DateTimeFormat('en-CA',{timeZone:ZT,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
       const p=fmt.formatToParts(new Date()); const g=t=>p.find(x=>x.type===t)?.value||'';
@@ -494,24 +494,24 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
 
       if (on) {
         if (!colLeft.classList.contains('col-md-6')) colLeft.classList.add('col-md-6');
-        if ($obs && $obs.value.trim()==='No necesita observaciÃ³n') $obs.value='';
+        if ($obs && $obs.value.trim()==='No necesita observación') $obs.value='';
       } else {
         colLeft.classList.remove('col-md-6');
-        if ($obs && !$obs.value.trim()) $obs.value='No necesita observaciÃ³n';
-        $dias.value=''; $fecha.textContent='â€”';
+        if ($obs && !$obs.value.trim()) $obs.value='No necesita observación';
+        $dias.value=''; $fecha.textContent='—';
       }
       $cont && ($cont.textContent = $obs ? String(($obs.value||'').length) : '0');
     }
 
     function onCal(){ setObservedMode(($cal.value||'').toLowerCase()==='observado'); }
     function onDias(){
-      const v=parseInt($dias.value||'0',10); if(!v){$fecha.textContent='â€”';return;}
+      const v=parseInt($dias.value||'0',10); if(!v){$fecha.textContent='—';return;}
       const dest=addBusinessDays(nowLimaParts(), v);
       $fecha.textContent=fmt(dest);
     }
     function updateCounter(){ if(!$cont)return; $cont.textContent= String(($obs && !$obs.disabled) ? ($obs.value||'').length : 0); }
 
-    // Estado inicial segÃºn precarga (el <select> ya llegÃ³ con selected)
+    // Estado inicial según precarga (el <select> ya llegó con selected)
     onCal();
     updateCounter();
 
@@ -584,14 +584,14 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
       setEstadoBadge(estado);
 
       if(estado==='observado'){ boxCorreccion.classList.remove('d-none'); }
-      else { boxCorreccion.classList.add('d-none'); if(diasSel){ diasSel.value=''; } fechaLbl.textContent='â€”'; }
+      else { boxCorreccion.classList.add('d-none'); if(diasSel){ diasSel.value=''; } fechaLbl.textContent='—'; }
 
-      const labelText=(estado==='aprobado')?'RecomendaciÃ³n':'ObservaciÃ³n';
+      const labelText=(estado==='aprobado')?'Recomendación':'Observación';
       const labelClass=(estado==='aprobado')?'text-success':'text-danger';
       sels.forEach((s,idx)=>updateAspectObs(idx,s.value,labelText,labelClass));
     }
 
-    // Estado inicial (selects ya llegan â€œselectedâ€ segÃºn DB)
+    // Estado inicial (selects ya llegan “selected” según DB)
     recalc();
     // contadores de texto
     obsAreas.forEach((ta,idx)=>{ counts[idx].textContent=String((ta.value||'').length); });
@@ -600,7 +600,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
     sels.forEach(s=> s.addEventListener('change', recalc));
     diasSel && diasSel.addEventListener('change', function(){
       const v=parseInt(this.value||'0',10);
-      if(!v){ fechaLbl.textContent='â€”'; return; }
+      if(!v){ fechaLbl.textContent='—'; return; }
       const dest=addBusinessDays(nowLimaParts(), v);
       fechaLbl.textContent = fmt(dest);
     });
@@ -610,7 +610,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
 
 <?php endif; ?>
 <?php
-  // CÃ³digo/Oficina segÃºn rol del usuario autenticado
+  // Código/Oficina según rol del usuario autenticado
   $ofCode = function_exists('oficinaCodigoPorRol') ? oficinaCodigoPorRol((int)$id_rol) : '';
 ?>
 <script>
@@ -644,11 +644,11 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
       // Overlay
       if ($mask) $mask.classList.toggle('show', !!isBusy);
 
-      // BotÃ³n Guardar: deshabilitar y cambiar texto
+      // Botón Guardar: deshabilitar y cambiar texto
       if ($btnGuardar){
         if (isBusy){
           if (!$btnGuardar.dataset._label) $btnGuardar.dataset._label = $btnGuardar.innerHTML;
-          $btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm mr-2 me-2" role="status" aria-hidden="true"></span>Guardandoâ€¦';
+          $btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm mr-2 me-2" role="status" aria-hidden="true"></span>Guardando…';
           $btnGuardar.disabled = true;
           $btnGuardar.setAttribute('aria-busy','true');
         }else{
@@ -658,7 +658,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
         }
       }
 
-      // BotÃ³n Cancelar
+      // Botón Cancelar
       if ($btnCancelar) $btnCancelar.disabled = !!isBusy;
 
       // Deshabilitar inputs dentro del contenido (sin romper estados previos)
@@ -691,7 +691,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
   function alertOK(msg){
     const c = $contenedor;
     if (c) c.innerHTML = '<div class="alert alert-success">'+ (msg||'Guardado') +'</div>';
-    // Quitamos modo busy antes de cerrar/recargar (por si tarda la redirecciÃ³n)
+    // Quitamos modo busy antes de cerrar/recargar (por si tarda la redirección)
     setBusy(false);
     setTimeout(()=>{
       if (window.jQuery && window.jQuery('#modalEval').modal) {
@@ -722,7 +722,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
           : 'en_espera';
         if (payload.estado === 'observado') {
           const ds = (dias && parseInt(dias.value||'0',10)) || 0;
-          if (!ds) { setBusy(false); return alertERR('Debes indicar dÃ­as para subsanar'); }
+          if (!ds) { setBusy(false); return alertERR('Debes indicar días para subsanar'); }
           payload.dias_subsanacion = ds;
           payload.obs = obs ? String(obs.value||'').slice(0,3000) : '';
         } else {
@@ -753,15 +753,15 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
 
         const ds = document.getElementById('rbDias');
         payload.dias_subsanacion = (estado==='observado') ? ((ds && parseInt(ds.value||'0',10)) || 0) : 0;
-        if (estado==='observado' && !payload.dias_subsanacion) { setBusy(false); return alertERR('Debes indicar dÃ­as para subsanar'); }
+        if (estado==='observado' && !payload.dias_subsanacion) { setBusy(false); return alertERR('Debes indicar días para subsanar'); }
       }
 
       const r = await post(payload);
-      if (r && r.ok) return alertOK('âœ… EvaluaciÃ³n guardada correctamente');
+      if (r && r.ok) return alertOK('✅ Evaluación guardada correctamente');
       return alertERR(r && r.error ? r.error : 'No se pudo guardar');
 
     }catch(err){
-      return alertERR('ExcepciÃ³n: '+ (err && err.message ? err.message : err));
+      return alertERR('Excepción: '+ (err && err.message ? err.message : err));
     }
   });
 })();

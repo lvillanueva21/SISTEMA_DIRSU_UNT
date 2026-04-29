@@ -35,8 +35,13 @@ if (!function_exists('rsu_db_connect')) {
     }
 }
 
-if (!isset($conexion) || !($conexion instanceof mysqli)) {
-    $conexion = rsu_db_connect();
+// Reestablece siempre la conexion compartida de este include.
+// Evita depender de handles previos que pudieron cerrarse en otros includes.
+$rsu_connection = rsu_db_connect();
+if ($rsu_connection instanceof mysqli) {
+    $conexion = $rsu_connection;
+} elseif (!isset($conexion) || !($conexion instanceof mysqli)) {
+    $conexion = false;
 }
 
 if (!$conexion) {

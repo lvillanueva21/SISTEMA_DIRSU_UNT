@@ -1,4 +1,4 @@
-﻿<?php 
+<?php 
 // /sistema_web/informe_semestral/ver_informe.php
 include_once __DIR__ . '/../componentes/configSesion.php';
 include_once __DIR__ . '/../includes/db_connection.php';
@@ -16,7 +16,7 @@ if ($id_respuesta > 0) {
   }
 }
 
-if ($id_py <= 0) { echo "<div class='alert alert-danger m-3'>ID de proyecto invÃ¡lido.</div>"; exit; }
+if ($id_py <= 0) { echo "<div class='alert alert-danger m-3'>ID de proyecto inválido.</div>"; exit; }
 
 // === Encabezado del proyecto ===
 $proy = ['titulo' => '', 'coordinador' => '', 'cod_docente' => ''];
@@ -30,7 +30,7 @@ $sqlProy = "
 ";
 if ($rs = mysqli_query($conexion, $sqlProy)) { if ($r = mysqli_fetch_assoc($rs)) { $proy['titulo']=(string)$r['titulo']; $proy['coordinador']=trim(($r['nombres']??'').' '.($r['apellidos']??'')); $proy['cod_docente']=(string)($r['cod_docente']??''); } mysqli_free_result($rs); }
 
-// === CatÃ¡logos para ODS y Programa-ODS ===
+// === Catálogos para ODS y Programa-ODS ===
 $ODS = []; $PROGS = []; $PROG_ODS = [];
 if ($q1 = mysqli_query($conexion, "SELECT id, nombre FROM ods ORDER BY id")) { while ($r = mysqli_fetch_assoc($q1)) { $ODS[(int)$r['id']] = $r['nombre']; } mysqli_free_result($q1); }
 if ($q2 = mysqli_query($conexion, "SELECT id, nombre FROM programas WHERE activo=1 ORDER BY nombre")) { while ($r = mysqli_fetch_assoc($q2)) { $PROGS[(int)$r['id']] = $r['nombre']; } mysqli_free_result($q2); }
@@ -42,7 +42,7 @@ if ($q3 = mysqli_query($conexion, "SELECT po.programa_id, o.id AS ods_id, o.nomb
 // === Colores oficiales por ODS (ONU) ===  [bg, fg]
 $ODS_STYLES = [ 1=>['#E5243B','#ffffff'], 2=>['#DDA63A','#111111'], 3=>['#4C9F38','#ffffff'], 4=>['#C5192D','#ffffff'], 5=>['#FF3A21','#ffffff'], 6=>['#26BDE2','#ffffff'], 7=>['#FCC30B','#111111'], 8=>['#A21942','#ffffff'], 9=>['#FD6925','#ffffff'], 10=>['#DD1367','#ffffff'], 11=>['#FD9D24','#111111'], 12=>['#BF8B2E','#111111'], 13=>['#3F7E44','#ffffff'], 14=>['#0A97D9','#ffffff'], 15=>['#56C02B','#ffffff'], 16=>['#00689D','#ffffff'], 17=>['#19486A','#ffffff'] ];
 
-// === Ruta web base para servir archivos subidos (soporta raÃ­z o subcarpeta, p.ej. /rsu) ===
+// === Ruta web base para servir archivos subidos (soporta raíz o subcarpeta, p.ej. /rsu) ===
 $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $appBasePath = rtrim(dirname(dirname($scriptName)), '/');
 if ($appBasePath === '' || $appBasePath === '.') {
@@ -62,9 +62,9 @@ $sqlCab = "
 ";
 if ($rs = mysqli_query($conexion, $sqlCab)) { while ($r = mysqli_fetch_assoc($rs)) $cabs[] = $r; mysqli_free_result($rs); }
 
-// === Helpers de presentaciÃ³n ===
+// === Helpers de presentación ===
 
-// Convierte ruta cruda a URL pÃºblica
+// Convierte ruta cruda a URL pública
 function rsu_public_url(string $raw): ?string {
   global $WEB_FILES_BASE;
   $raw = trim($raw); if ($raw==='') return null;
@@ -77,7 +77,7 @@ function rsu_public_url(string $raw): ?string {
 }
 function rsu_file_name(string $raw): string { $p = preg_split('/[?#]/',$raw,2); $name = basename($p[0]??$raw); return $name!=='' ? $name : $raw; }
 
-// Ãcono + estilo por extensiÃ³n (th color + botÃ³n sÃ³lido)
+// Ícono + estilo por extensión (th color + botón sólido)
 function rsu_file_style_by_ext(string $ext): array {
   $ext = strtolower($ext);
   // [th_bg, th_fg, btn_class, btn_icon_html, btn_label, force_target_blank]
@@ -87,7 +87,7 @@ function rsu_file_style_by_ext(string $ext): array {
   return ['#6c757d','#ffffff','btn-file-generic','<i class="fas fa-file"></i>','Descargar', false];
 }
 
-// Tabla de archivos (ancho de acciÃ³n mÃ¡s cÃ³modo)
+// Tabla de archivos (ancho de acción más cómodo)
 function rsu_render_archivos_table(string $rawList): string {
   $rawList = trim($rawList); if ($rawList==='') return '<em class="text-muted">No hay archivo</em>';
   $parts = preg_split('/[\r\n,;]+/', $rawList, -1, PREG_SPLIT_NO_EMPTY); if (!$parts) return '<em class="text-muted">No hay archivo</em>';
@@ -104,7 +104,7 @@ function rsu_render_archivos_table(string $rawList): string {
     $rows[] = '<tr><td style="word-break:break-all;">'.htmlspecialchars($name,ENT_QUOTES,'UTF-8').'</td><td style="text-align:right;white-space:nowrap;min-width:200px;">'.$btn.'</td></tr>';
   }
   if (empty($rows)) return '<em class="text-muted">No hay archivo</em>';
-  return '<div class="table-responsive"><table class="table table-sm table-bordered mb-2" style="width:auto;min-width:380px;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);"><thead><tr><th style="'.$headerStyle.'">Archivo</th><th style="'.$headerStyle.';min-width:200px;white-space:nowrap;text-align:right;">AcciÃ³n</th></tr></thead><tbody>'.implode('', $rows).'</tbody></table></div>';
+  return '<div class="table-responsive"><table class="table table-sm table-bordered mb-2" style="width:auto;min-width:380px;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);"><thead><tr><th style="'.$headerStyle.'">Archivo</th><th style="'.$headerStyle.';min-width:200px;white-space:nowrap;text-align:right;">Acción</th></tr></thead><tbody>'.implode('', $rows).'</tbody></table></div>';
 }
 
 // Tabla para enlaces de Google Drive (solo tabla; no duplicar en cuerpo)
@@ -113,7 +113,7 @@ function rsu_render_drive_table(array $urls): string {
   $rows = [];
   foreach ($urls as $u) { $u = trim($u); if ($u==='') continue; $safe = htmlspecialchars($u,ENT_QUOTES,'UTF-8'); $btn = '<a href="'.$safe.'" target="_blank" rel="noopener" class="btn btn-drive"><i class="fab fa-google-drive"></i> Abrir drive</a>'; $rows[] = '<tr><td style="word-break:break-all;"><a href="'.$safe.'" target="_blank" rel="noopener">'.$safe.'</a></td><td style="text-align:right;white-space:nowrap;min-width:200px;">'.$btn.'</td></tr>'; }
   if (!$rows) return '';
-  return '<div class="table-responsive"><table class="table table-sm table-bordered mb-2 drive-table"><thead><tr><th>Enlace</th><th style="min-width:200px;white-space:nowrap;text-align:right;">AcciÃ³n</th></tr></thead><tbody>'.implode('', $rows).'</tbody></table></div>';
+  return '<div class="table-responsive"><table class="table table-sm table-bordered mb-2 drive-table"><thead><tr><th>Enlace</th><th style="min-width:200px;white-space:nowrap;text-align:right;">Acción</th></tr></thead><tbody>'.implode('', $rows).'</tbody></table></div>';
 }
 
 // Extrae y elimina enlaces de Drive del cuerpo
@@ -136,27 +136,27 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
       return $txt;
 
     case 'tinyint':
-      return ($row['val_tinyint'] !== null) ? htmlspecialchars((string)$row['val_tinyint']) : '<em class="text-muted">â€”</em>';
+      return ($row['val_tinyint'] !== null) ? htmlspecialchars((string)$row['val_tinyint']) : '<em class="text-muted">—</em>';
 
     case 'int':
-      return ($row['val_int'] !== null) ? htmlspecialchars((string)$row['val_int']) : '<em class="text-muted">â€”</em>';
+      return ($row['val_int'] !== null) ? htmlspecialchars((string)$row['val_int']) : '<em class="text-muted">—</em>';
 
     case 'boolean':
-      if ($row['val_boolean'] === null) return '<em class="text-muted">â€”</em>'; return ((int)$row['val_boolean'] === 1) ? 'SÃ­' : 'No';
+      if ($row['val_boolean'] === null) return '<em class="text-muted">—</em>'; return ((int)$row['val_boolean'] === 1) ? 'Sí' : 'No';
 
     case 'datetime':
-      return !empty($row['val_datetime']) ? htmlspecialchars($row['val_datetime']) : '<em class="text-muted">â€”</em>';
+      return !empty($row['val_datetime']) ? htmlspecialchars($row['val_datetime']) : '<em class="text-muted">—</em>';
 
     case 'date':
-      return !empty($row['val_date']) ? htmlspecialchars($row['val_date']) : '<em class="text-muted">â€”</em>';
+      return !empty($row['val_date']) ? htmlspecialchars($row['val_date']) : '<em class="text-muted">—</em>';
 
     case 'decimal':
-      return ($row['val_decimal'] !== null) ? htmlspecialchars((string)$row['val_decimal']) : '<em class="text-muted">â€”</em>';
+      return ($row['val_decimal'] !== null) ? htmlspecialchars((string)$row['val_decimal']) : '<em class="text-muted">—</em>';
 
     case 'ubicacion':
       if (!empty($row['val_longtext'])) return nl2br(htmlspecialchars($row['val_longtext'], ENT_QUOTES, 'UTF-8'));
       if (!empty($row['val_varchar']))  return htmlspecialchars($row['val_varchar'], ENT_QUOTES, 'UTF-8');
-      return '<em class="text-muted">â€”</em>';
+      return '<em class="text-muted">—</em>';
 
     case 'pdf':
     case 'excel':
@@ -164,15 +164,15 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
       $u = (string)($row['archivo_url'] ?? ''); return rsu_render_archivos_table($u);
 
     case 'ods':
-      $csv = trim((string)($row['val_varchar'] ?? '')); if ($csv==='') return '<em class="text-muted">â€”</em>';
-      $ids = array_filter(array_map('intval', explode(',', $csv))); if (!$ids) return '<em class="text-muted">â€”</em>';
-      $out = ''; foreach ($ids as $id) { $nom = $ODS[$id] ?? 'ODS '.$id; [$bg,$fg] = $ODS_STYLES[$id] ?? [null,null]; $out .= chip("ODS $id â€” $nom",$bg,$fg); } return $out ?: '<em class="text-muted">â€”</em>';
+      $csv = trim((string)($row['val_varchar'] ?? '')); if ($csv==='') return '<em class="text-muted">—</em>';
+      $ids = array_filter(array_map('intval', explode(',', $csv))); if (!$ids) return '<em class="text-muted">—</em>';
+      $out = ''; foreach ($ids as $id) { $nom = $ODS[$id] ?? 'ODS '.$id; [$bg,$fg] = $ODS_STYLES[$id] ?? [null,null]; $out .= chip("ODS $id — $nom",$bg,$fg); } return $out ?: '<em class="text-muted">—</em>';
 
     case 'programa_ods':
-      $pid = (int)trim((string)($row['val_varchar'] ?? '0')); if ($pid<=0) return '<em class="text-muted">â€”</em>';
+      $pid = (int)trim((string)($row['val_varchar'] ?? '0')); if ($pid<=0) return '<em class="text-muted">—</em>';
       $pnom = $PROGS[$pid] ?? ('Programa #'.$pid); $odsArr = $PROG_ODS[$pid] ?? [];
       if (!$odsArr) return '<div class="text-muted"><em>Sin ODS asociados</em></div>';
-      $rows = ''; foreach ($odsArr as $o) { $id = (int)$o['id']; $odsNom = $o['nombre']; [$bg,$fg] = $ODS_STYLES[$id] ?? [null,null]; $badge = chip('ODS '.$id.' â€” '.$odsNom, $bg, $fg); $rows .= '<tr><td>'.$badge.'</td><td>'.htmlspecialchars($pnom,ENT_QUOTES,'UTF-8').'</td></tr>'; }
+      $rows = ''; foreach ($odsArr as $o) { $id = (int)$o['id']; $odsNom = $o['nombre']; [$bg,$fg] = $ODS_STYLES[$id] ?? [null,null]; $badge = chip('ODS '.$id.' — '.$odsNom, $bg, $fg); $rows .= '<tr><td>'.$badge.'</td><td>'.htmlspecialchars($pnom,ENT_QUOTES,'UTF-8').'</td></tr>'; }
       return '<div class="table-responsive"><table class="table table-sm mb-2 apple-table"><thead><tr><th>OBJETIVO DE DESARROLLO SOSTENIBLE</th><th>PROGRAMA PRIORIZADO</th></tr></thead><tbody>'.$rows.'</tbody></table></div>';
 
     default:
@@ -185,12 +185,12 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
 /* Encabezado y tarjetas */ .rsu-info-head{background:#f8f9fa;border:1px solid #e5e5e5;border-radius:.5rem;padding:.6rem .8rem;margin:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;} .form-card{border:1px solid #e5e5e5;border-radius:.5rem;margin:.6rem;overflow:hidden;} .form-card .form-head{background:#e9f4ff;border-bottom:1px solid #d6eaff;padding:.5rem .8rem;font-weight:600;}
 /* Layout */ .form-body{padding:.6rem .4rem;height:72vh;overflow:hidden;} .rsu-split-row{display:flex;height:100%;overflow:hidden;} .rsu-left{height:100%;overflow-y:auto;overflow-x:hidden;border-right:1px solid #eee;padding-right:.5rem;} .rsu-right{height:100%;overflow:auto;padding-left:.5rem;}
 /* Sidebar (azul primary) */ .item-link{display:block;padding:.35rem .5rem;border-radius:.35rem;margin-bottom:.25rem;text-decoration:none;background:#fff;border:1px solid #e9ecef;color:#0d6efd;} .item-link:hover{background:#f8f9fa;color:#0a58ca;}
-/* TÃ­tulos (azul primary) */ .item-section{padding:.5rem .75rem .9rem .75rem;border-bottom:1px dashed #e9ecef;} .item-section:last-child{border-bottom:0;} .item-title{font-weight:700;margin-bottom:.35rem;color:#0d6efd;} .badge-type{font-size:.65rem;}
+/* Títulos (azul primary) */ .item-section{padding:.5rem .75rem .9rem .75rem;border-bottom:1px dashed #e9ecef;} .item-section:last-child{border-bottom:0;} .item-title{font-weight:700;margin-bottom:.35rem;color:#0d6efd;} .badge-type{font-size:.65rem;}
 /* Tablas "apple-like" */ .apple-table{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);} .apple-table thead th{background:#111;color:#fff;border-color:#111;} .apple-table tbody tr:nth-child(odd){background:#fafafa;} .apple-table tbody tr:nth-child(even){background:#ffffff;} .apple-table th,.apple-table td{vertical-align:middle;border-color:#ececec;}
 /* Tabla Drive */ .drive-table{width:auto;min-width:380px;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);} .drive-table thead th{background:#FFEB3B;color:#111;border-color:#F1D334;}
-/* Botones sÃ³lidos por tipo */ .btn-file-pdf{background:#E53935;color:#fff;border:1px solid #C62828;} .btn-file-pdf:hover{background:#D32F2F;color:#fff;border-color:#B71C1C;} .btn-file-excel{background:#1E7E34;color:#fff;border:1px solid #19692c;} .btn-file-excel:hover{background:#1a6f2f;color:#fff;border-color:#155d25;} .btn-file-word{background:#185ABD;color:#fff;border:1px solid #0f4bb0;} .btn-file-word:hover{background:#134fa7;color:#fff;border-color:#0c3e86;} .btn-file-generic{background:#6c757d;color:#fff;border:1px solid #5a6268;} .btn-file-generic:hover{background:#616971;color:#fff;border-color:#545b62;}
-/* BotÃ³n Drive (amarillo/negro) */ .btn-drive{background:#FFEB3B;color:#111;border:1px solid #F1D334;} .btn-drive:hover{background:#F7E369;color:#111;border-color:#E8C92A;}
-/* BotÃ³n PDF reporte */ .btn-report{background:#E53935;color:#fff;border:1px solid #C62828;} .btn-report:hover{background:#D32F2F;color:#fff;border-color:#B71C1C;}
+/* Botones sólidos por tipo */ .btn-file-pdf{background:#E53935;color:#fff;border:1px solid #C62828;} .btn-file-pdf:hover{background:#D32F2F;color:#fff;border-color:#B71C1C;} .btn-file-excel{background:#1E7E34;color:#fff;border:1px solid #19692c;} .btn-file-excel:hover{background:#1a6f2f;color:#fff;border-color:#155d25;} .btn-file-word{background:#185ABD;color:#fff;border:1px solid #0f4bb0;} .btn-file-word:hover{background:#134fa7;color:#fff;border-color:#0c3e86;} .btn-file-generic{background:#6c757d;color:#fff;border:1px solid #5a6268;} .btn-file-generic:hover{background:#616971;color:#fff;border-color:#545b62;}
+/* Botón Drive (amarillo/negro) */ .btn-drive{background:#FFEB3B;color:#111;border:1px solid #F1D334;} .btn-drive:hover{background:#F7E369;color:#111;border-color:#E8C92A;}
+/* Botón PDF reporte */ .btn-report{background:#E53935;color:#fff;border:1px solid #C62828;} .btn-report:hover{background:#D32F2F;color:#fff;border-color:#B71C1C;}
 /* Responsive */ @media (max-width:991.98px){ .rsu-split-row{display:block;} .rsu-left{max-height:180px;margin-bottom:.5rem;} .rsu-right{height:calc(72vh - 200px);} }
 </style>
 
@@ -198,8 +198,8 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
 <div id="rsu-informe-root">
   <div class="rsu-info-head">
     <div>
-      <div><strong>Proyecto:</strong> <?= htmlspecialchars($proy['titulo'] ?: 'â€”') ?></div>
-      <div><strong>Coordinador:</strong> <?= htmlspecialchars($proy['coordinador'] ?: 'â€”') ?> <?php if ($proy['cod_docente']!==''): ?><span class="text-muted"> (<?= htmlspecialchars($proy['cod_docente']) ?>)</span><?php endif; ?></div>
+      <div><strong>Proyecto:</strong> <?= htmlspecialchars($proy['titulo'] ?: '—') ?></div>
+      <div><strong>Coordinador:</strong> <?= htmlspecialchars($proy['coordinador'] ?: '—') ?> <?php if ($proy['cod_docente']!==''): ?><span class="text-muted"> (<?= htmlspecialchars($proy['cod_docente']) ?>)</span><?php endif; ?></div>
     </div>
     <div>
       <button type="button" class="btn btn-report" onclick="rsu_imprimir_informe()"><i class="fas fa-file-pdf"></i> Generar reporte en PDF</button>
@@ -207,7 +207,7 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
   </div>
 
   <?php if (empty($cabs)): ?>
-    <div class="alert alert-warning m-2">Este proyecto aÃºn no tiene respuestas registradas.</div>
+    <div class="alert alert-warning m-2">Este proyecto aún no tiene respuestas registradas.</div>
   <?php else: ?>
     <?php foreach ($cabs as $cab): ?>
       <?php
@@ -232,7 +232,7 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
       <div class="form-card">
         <div class="form-head">Formulario: <?= htmlspecialchars($cab['formulario']) ?> <span class="text-muted" style="font-weight:400;">&nbsp;(Resp. #<?= (int)$cab['id'] ?>)</span></div>
         <?php if (empty($items)): ?>
-          <div class="p-3"><em class="text-muted">Este formulario no tiene Ã­tems activos.</em></div>
+          <div class="p-3"><em class="text-muted">Este formulario no tiene ítems activos.</em></div>
         <?php else: ?>
           <div class="form-body">
             <div class="rsu-split-row">
@@ -241,7 +241,7 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
                 <div class="sticky-side">
                   <?php foreach ($items as $it): $anchor = '#F'.$rid.'I'.$it['orden']; ?>
                     <a class="item-link" href="<?= $anchor ?>">
-                      <div class="small text-muted mb-1">Ãtem <?= (int)$it['orden'] ?></div>
+                      <div class="small text-muted mb-1">Ítem <?= (int)$it['orden'] ?></div>
                       <div style="font-weight:700; line-height:1.1;"><?= htmlspecialchars($it['item_nombre']) ?></div>
                     </a>
                   <?php endforeach; ?>
@@ -269,7 +269,7 @@ function rsu_imprimir_informe(){
     var root = document.getElementById('rsu-informe-root');
     if(!root){ window.print(); return; }
 
-    // ðŸ‘‰ Todo lo imprimimos en un iframe oculto (sin ventanas nuevas ni about:blank)
+    // 👉 Todo lo imprimimos en un iframe oculto (sin ventanas nuevas ni about:blank)
     var iframe = document.getElementById('rsu-print-iframe');
     if (!iframe) {
       iframe = document.createElement('iframe');

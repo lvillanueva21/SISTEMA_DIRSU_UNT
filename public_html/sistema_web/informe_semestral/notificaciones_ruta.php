@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 declare(strict_types=1);
 
 // /sistema_web/informe_semestral/notificaciones_ruta.php
@@ -38,7 +38,7 @@ function _notif_destinatarios(\mysqli $db, int $id_py): array {
 }
 
 /**
- * Info bÃ¡sica del proyecto: tÃ­tulo y perÃ­odo (si existe).
+ * Info básica del proyecto: título y período (si existe).
  */
 function _notif_info_proyecto(\mysqli $db, int $id_py): array {
     $titulo='Proyecto'; $periodo='';
@@ -61,7 +61,7 @@ function _notif_info_proyecto(\mysqli $db, int $id_py): array {
 }
 
 /**
- * Nombre/cÃ³digo de oficina por ID.
+ * Nombre/código de oficina por ID.
  */
 function _notif_oficina(\mysqli $db, int $oficina_id): array {
     $cod=''; $nom='';
@@ -94,7 +94,7 @@ function _notif_ts_instancia(\mysqli $db, int $instancia_id): ?int {
 }
 
 /**
- * EnvÃ­o (PHPMailer) â€” igual a tus otros envÃ­os.
+ * Envío (PHPMailer) — igual a tus otros envíos.
  */
 function _notif_mail_send(array $to, string $subject, string $html, string $text): bool {
     if (empty($to)) return false;
@@ -135,7 +135,7 @@ function _notif_mail_send(array $to, string $subject, string $html, string $text
 }
 
 /**
- * Notifica DERIVACIÃ“N: aprobado en origen y derivado a destino.
+ * Notifica DERIVACIÓN: aprobado en origen y derivado a destino.
  * ctx: ['id_py', 'eval_id', 'of_origen_id', 'of_destino_id', 'instancia_id']
  */
 function notif_derivacion(\mysqli $db, array $ctx): bool {
@@ -160,22 +160,22 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
     $html = "
       <p><strong>Tu proyecto fue aprobado en la Oficina {$nomOri}</strong> y ha sido <strong>derivado</strong> a la Oficina {$nomDes}.</p>
       <p>".($when ? "<strong>Fecha y hora:</strong> {$when}<br>" : "")."</p>
-      <p><strong>Proyecto:</strong> ".htmlspecialchars($titulo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8')." (ID {$id_py}) ".($periodo? "â€” ".htmlspecialchars($periodo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'):'')."</p>
+      <p><strong>Proyecto:</strong> ".htmlspecialchars($titulo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8')." (ID {$id_py}) ".($periodo? "— ".htmlspecialchars($periodo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'):'')."</p>
       <p><a href=\"{$url}\" target=\"_blank\">Ingresar al Sistema DIRSU</a></p>
       <hr>
-      <p style=\"font-size:12px;color:#666\">Este es un correo automÃ¡tico de notificaciÃ³n de derivaciÃ³n.</p>
+      <p style=\"font-size:12px;color:#666\">Este es un correo automático de notificación de derivación.</p>
     ";
 
     $text  = "Tu proyecto fue aprobado en la Oficina {$nomOri} y ha sido derivado a la Oficina {$nomDes}.\n";
     if ($when) $text .= "Fecha y hora: {$when}\n";
-    $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo? " â€” {$periodo}":"")."\n";
+    $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo? " — {$periodo}":"")."\n";
     $text .= "Ingresar: {$url}\n";
 
     return _notif_mail_send($to, $subject, $html, $text);
 }
 
 /**
- * Notifica APROBACIÃ“N TOTAL: proceso culminado exitosamente.
+ * Notifica APROBACIÓN TOTAL: proceso culminado exitosamente.
  * ctx: ['id_py', 'eval_id', 'of_ultima_id', 'instancia_id']
  */
 function notif_aprobacion_total(\mysqli $db, array $ctx): bool {
@@ -192,23 +192,23 @@ function notif_aprobacion_total(\mysqli $db, array $ctx): bool {
     $ts = _notif_ts_instancia($db, $inst_id);
     $when = $ts ? date('d/m/Y H:i', $ts) : '';
 
-    $subject = 'AprobaciÃ³n Total â€” Sistema DIRSU';
+    $subject = 'Aprobación Total — Sistema DIRSU';
     $url     = "https://rsu.unitru.edu.pe/sistema_web/login.php?id_py={$id_py}";
 
     $html = "
-      <p><strong>Â¡AprobaciÃ³n Total!</strong></p>
-      <p>Tu proyecto fue <strong>aprobado</strong> en la Oficina {$nomUlt} el ".($when ?: 'â€”').".</p>
-      <p>Con esta aprobaciÃ³n, el proceso de revisiÃ³n ha culminado exitosamente. <strong>No quedan tareas pendientes por realizar.</strong></p>
-      <p><strong>Proyecto:</strong> ".htmlspecialchars($titulo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8')." (ID {$id_py}) ".($periodo? "â€” ".htmlspecialchars($periodo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'):'')."</p>
+      <p><strong>¡Aprobación Total!</strong></p>
+      <p>Tu proyecto fue <strong>aprobado</strong> en la Oficina {$nomUlt} el ".($when ?: '—').".</p>
+      <p>Con esta aprobación, el proceso de revisión ha culminado exitosamente. <strong>No quedan tareas pendientes por realizar.</strong></p>
+      <p><strong>Proyecto:</strong> ".htmlspecialchars($titulo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8')." (ID {$id_py}) ".($periodo? "— ".htmlspecialchars($periodo, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'):'')."</p>
       <p><a href=\"{$url}\" target=\"_blank\">Ingresar al Sistema DIRSU</a></p>
       <hr>
-      <p style=\"font-size:12px;color:#666\">Este es un correo automÃ¡tico de notificaciÃ³n de AprobaciÃ³n Total.</p>
+      <p style=\"font-size:12px;color:#666\">Este es un correo automático de notificación de Aprobación Total.</p>
     ";
 
-    $text  = "Â¡AprobaciÃ³n Total!\n";
+    $text  = "¡Aprobación Total!\n";
     $text .= "Tu proyecto fue aprobado en la Oficina {$nomUlt}".($when? " el {$when}":"").".\n";
-    $text .= "El proceso de revisiÃ³n ha culminado exitosamente; no quedan tareas pendientes.\n";
-    $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo? " â€” {$periodo}":"")."\n";
+    $text .= "El proceso de revisión ha culminado exitosamente; no quedan tareas pendientes.\n";
+    $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo? " — {$periodo}":"")."\n";
     $text .= "Ingresar: {$url}\n";
 
     return _notif_mail_send($to, $subject, $html, $text);

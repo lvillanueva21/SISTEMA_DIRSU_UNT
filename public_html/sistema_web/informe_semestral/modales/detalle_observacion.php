@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // /sistema_web/informe_semestral/modales/detalle_observacion.php
 header('Content-Type: text/html; charset=utf-8');
 
@@ -9,35 +9,35 @@ $tipo  = isset($_GET['tipo']) ? trim((string)$_GET['tipo']) : '';
 $tipo  = in_array($tipo, ['cotejo','rubrica'], true) ? $tipo : '';
 
 if ($id_py <= 0 || $tipo === '') {
-  echo '<div class="alert alert-danger mb-0">ParÃ¡metros invÃ¡lidos.</div>';
+  echo '<div class="alert alert-danger mb-0">Parámetros inválidos.</div>';
   exit;
 }
 
 /*
   Reglas de fecha:
-  - Fecha de observaciÃ³n: preferimos eva_calificaciones (calificaciÃ³n > instancia).
-  - Fecha lÃ­mite: DÃAS HÃBILES (sin sÃ¡bados ni domingos), sumando N dÃ­as a la fecha de observaciÃ³n.
+  - Fecha de observación: preferimos eva_calificaciones (calificación > instancia).
+  - Fecha límite: DÍAS HÁBILES (sin sábados ni domingos), sumando N días a la fecha de observación.
 */
 
-// Plazos por defecto si no se registrÃ³ dias_subsanacion en la calificaciÃ³n
+// Plazos por defecto si no se registró dias_subsanacion en la calificación
 $DEFAULT_DIAS = [
-  'cotejo'  => 2, // dÃ­as hÃ¡biles
-  'rubrica' => 1, // dÃ­as hÃ¡biles
+  'cotejo'  => 2, // días hábiles
+  'rubrica' => 1, // días hábiles
 ];
 
 $det = [
   'oficina_nom' => null,
   'oficina_cod' => null,
-  'obs_at'      => null,  // fecha/hora de la observaciÃ³n (preferencia: calificaciÃ³n)
+  'obs_at'      => null,  // fecha/hora de la observación (preferencia: calificación)
   'dias'        => null,  // dias_subsanacion si existe; si no, fallback de $DEFAULT_DIAS
-  'limite'      => null,  // obs_at + dias (hÃ¡biles)
+  'limite'      => null,  // obs_at + dias (hábiles)
   'obs_text'    => null,  // solo cotejo
   'total'       => null,  // solo rubrica
   'aspectos'    => [],    // solo rubrica (SIEMPRE listar todos)
 ];
 
 try {
-  // 1) CalificaciÃ³n observada mÃ¡s reciente (de este proyecto y tipo)
+  // 1) Calificación observada más reciente (de este proyecto y tipo)
   $sql = "SELECT
             c.id, c.id_evaluacion, c.id_oficina,
             o.nombre AS oficina_nom, o.codigo AS oficina_cod,
@@ -69,7 +69,7 @@ try {
         } else {
           $det['total'] = isset($row['total']) ? (int)$row['total'] : null;
 
-          // 2) Aspectos de rÃºbrica â€” SIEMPRE traer todos los aspectos, en orden fijo
+          // 2) Aspectos de rúbrica — SIEMPRE traer todos los aspectos, en orden fijo
           $sqlA = "SELECT aspecto, nota, observacion
                    FROM eva_rubrica_aspectos
                    WHERE id_calificacion = ?
@@ -101,7 +101,7 @@ try {
     $st->close();
   }
 
-  // 1.b) Si no obtuvimos fecha de observaciÃ³n por calificaciÃ³n, intentamos la instancia (fallback)
+  // 1.b) Si no obtuvimos fecha de observación por calificación, intentamos la instancia (fallback)
   if (empty($det['obs_at'])) {
     $sqlI = "SELECT oi.ultima_observacion_at, oi.salida, oi.llegada
              FROM sm_respuestas r
@@ -124,7 +124,7 @@ try {
     }
   }
 
-  // 3) Calcular fecha lÃ­mite (dÃ­as hÃ¡biles)
+  // 3) Calcular fecha límite (días hábiles)
   if (!empty($det['obs_at'])) {
     $dias = (!empty($det['dias']) && (int)$det['dias'] > 0)
               ? (int)$det['dias']
@@ -133,7 +133,7 @@ try {
     if ($dias > 0) {
       $tsObs = strtotime($det['obs_at']);
       if ($tsObs) {
-        // utilidades de dÃ­as hÃ¡biles
+        // utilidades de días hábiles
         $addBusinessDays = function(int $tsBase, int $n): int {
           if ($n <= 0) return $tsBase;
           $y = (int)date('Y', $tsBase);
@@ -143,7 +143,7 @@ try {
           $i = (int)date('i', $tsBase);
 
           $daysInMonth = function(int $yy,int $mm){ return (int)date('t', strtotime(sprintf('%04d-%02d-01',$yy,$mm))); };
-          $dow = function(int $yy,int $mm,int $dd){ return (int)date('w', strtotime(sprintf('%04d-%02d-%02d',$yy,$mm,$dd))); }; // 0=Dom..6=SÃ¡b
+          $dow = function(int $yy,int $mm,int $dd){ return (int)date('w', strtotime(sprintf('%04d-%02d-%02d',$yy,$mm,$dd))); }; // 0=Dom..6=Sáb
           $isWeekend = function(int $yy,int $mm,int $dd) use ($dow){ $w=$dow($yy,$mm,$dd); return ($w===0 || $w===6); };
 
           $rest = (int)$n;
@@ -162,24 +162,24 @@ try {
   }
 
 } catch (\Throwable $e) {
-  echo '<div class="alert alert-danger">ExcepciÃ³n: '.htmlspecialchars($e->getMessage()).'</div>';
+  echo '<div class="alert alert-danger">Excepción: '.htmlspecialchars($e->getMessage()).'</div>';
   exit;
 }
 
 if (empty($det['oficina_nom'])) {
-  echo '<div class="alert alert-warning mb-0">No se encontrÃ³ una observaciÃ³n activa para este proyecto en â€œ'.htmlspecialchars($tipo).'â€.</div>';
+  echo '<div class="alert alert-warning mb-0">No se encontró una observación activa para este proyecto en “'.htmlspecialchars($tipo).'”.</div>';
   exit;
 }
 
 // Utilidades de render
-function fmtDT($s){ if(!$s) return 'â€”'; $ts=strtotime($s); return $ts? date('d/m/Y H:i', $ts): htmlspecialchars($s); }
+function fmtDT($s){ if(!$s) return '—'; $ts=strtotime($s); return $ts? date('d/m/Y H:i', $ts): htmlspecialchars($s); }
 
 // Mapeo de nombres amigables para aspectos
 $names = [
   'estructura'       => 'Estructura',
   'contenido'        => 'Contenido',
-  'redaccion'        => 'RedacciÃ³n',
-  'calidad_info'     => 'Calidad de informaciÃ³n',
+  'redaccion'        => 'Redacción',
+  'calidad_info'     => 'Calidad de información',
   'propuesta_mejora' => 'Propuesta de Mejora',
 ];
 ?>
@@ -187,22 +187,22 @@ $names = [
   <div class="row g-3">
     <div class="col-12 col-md-6">
       <div class="mb-2"><strong>Oficina:</strong> <?= htmlspecialchars($det['oficina_nom']) ?></div>
-      <div class="mb-2"><strong>Tipo:</strong> <?= ($tipo==='cotejo'?'Lista de Cotejo':'RÃºbrica') ?></div>
-      <div class="mb-2"><strong>Fecha/Hora de observaciÃ³n:</strong> <?= fmtDT($det['obs_at']) ?></div>
-      <div class="mb-2"><strong>Fecha mÃ¡xima de subsanaciÃ³n:</strong> <?= fmtDT($det['limite']) ?></div>
+      <div class="mb-2"><strong>Tipo:</strong> <?= ($tipo==='cotejo'?'Lista de Cotejo':'Rúbrica') ?></div>
+      <div class="mb-2"><strong>Fecha/Hora de observación:</strong> <?= fmtDT($det['obs_at']) ?></div>
+      <div class="mb-2"><strong>Fecha máxima de subsanación:</strong> <?= fmtDT($det['limite']) ?></div>
     </div>
 
     <?php if ($tipo === 'cotejo'): ?>
       <div class="col-12">
         <hr>
-        <div class="mb-2 fw-semibold">ObservaciÃ³n</div>
+        <div class="mb-2 fw-semibold">Observación</div>
         <div class="border rounded p-2 bg-light"><?= nl2br(htmlspecialchars((string)$det['obs_text'])) ?></div>
       </div>
     <?php else: ?>
       <div class="col-12">
         <hr>
         <div class="d-flex justify-content-between align-items-center">
-          <div class="fw-semibold">CalificaciÃ³n total</div>
+          <div class="fw-semibold">Calificación total</div>
           <div class="badge badge-secondary bg-secondary"><?= (int)($det['total'] ?? 0) ?> / 20</div>
         </div>
 
@@ -212,7 +212,7 @@ $names = [
               <tr>
                 <th>Aspecto</th>
                 <th style="width:90px;" class="text-center">Nota</th>
-                <th>ObservaciÃ³n</th>
+                <th>Observación</th>
               </tr>
             </thead>
             <tbody>
@@ -222,7 +222,7 @@ $names = [
                 $nom    = $names[$ax['aspecto']] ?? $ax['aspecto'];
                 $nota   = (int)$ax['nota'];
                 $obsRaw = trim((string)($ax['obs'] ?? ''));
-                $obsTxt = ($obsRaw === '') ? 'Sin observaciÃ³n' : $obsRaw;
+                $obsTxt = ($obsRaw === '') ? 'Sin observación' : $obsRaw;
               ?>
                 <tr>
                   <td><?= htmlspecialchars($nom) ?></td>

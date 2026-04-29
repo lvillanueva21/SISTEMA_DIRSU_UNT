@@ -1,15 +1,15 @@
-﻿<?php
+<?php
 declare(strict_types=1);
 
 // /sistema_web/informe_semestral/notificaciones_observacion.php
-// Define la funciÃ³n en el namespace GLOBAL para evitar conflictos con includes desde archivos con namespace.
+// Define la función en el namespace GLOBAL para evitar conflictos con includes desde archivos con namespace.
 namespace {
 
 date_default_timezone_set('America/Lima');
 
 /**
- * EnvÃ­a correo de observaciÃ³n a coordinadores activos (id_rol=2) del proyecto,
- * con fecha/hora lÃ­mite (DÃAS HÃBILES) y, si es RÃšBRICA, una tabla de aspectos con (n) + significado.
+ * Envía correo de observación a coordinadores activos (id_rol=2) del proyecto,
+ * con fecha/hora límite (DÍAS HÁBILES) y, si es RÚBRICA, una tabla de aspectos con (n) + significado.
  *
  * @param \mysqli $conexion
  * @param array   $ctx [
@@ -29,7 +29,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     $obs_text   = isset($ctx['obs_text']) ? (string)$ctx['obs_text'] : null;
 
     if ($id_py <= 0 || $eval_id <= 0 || $oficina_id <= 0 || !in_array($tipo, ['cotejo','rubrica'], true)) {
-        error_log('notif_obs: parÃ¡metros invÃ¡lidos');
+        error_log('notif_obs: parámetros inválidos');
         return false;
     }
 
@@ -46,9 +46,9 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
                  AND u.id_rol = 2
                  AND uc.email <> ''";
     $stmt = $conexion->prepare($sqlTo);
-    if (!$stmt) { error_log('notif_obs: prepare destinatarios fallÃ³: '.$conexion->error); return false; }
+    if (!$stmt) { error_log('notif_obs: prepare destinatarios falló: '.$conexion->error); return false; }
     $stmt->bind_param("i", $id_py);
-    if (!$stmt->execute()) { error_log('notif_obs: execute destinatarios fallÃ³: '.$conexion->error); $stmt->close(); return false; }
+    if (!$stmt->execute()) { error_log('notif_obs: execute destinatarios falló: '.$conexion->error); $stmt->close(); return false; }
     $rs   = $stmt->get_result();
     $dest = [];
     while ($r = $rs->fetch_assoc()) {
@@ -58,7 +58,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     $stmt->close();
     if (empty($dest)) { error_log('notif_obs: sin destinatarios'); return false; }
 
-    /* ===== 2) Proyecto & perÃ­odo ===== */
+    /* ===== 2) Proyecto & período ===== */
     $titulo  = 'Proyecto';
     $periodo = '';
     $stmt = $conexion->prepare("
@@ -91,7 +91,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         $stmt->close();
     }
 
-    /* ===== 4) CalificaciÃ³n OBSERVADA mÃ¡s reciente ===== */
+    /* ===== 4) Calificación OBSERVADA más reciente ===== */
     $cal_id = null;
     $obs_ts = null;
     $obs_at_txt = '';
@@ -123,9 +123,9 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         }
         $stmt->close();
     }
-    if (!$cal_id) { error_log('notif_obs: no hay calificaciÃ³n observada'); return false; }
+    if (!$cal_id) { error_log('notif_obs: no hay calificación observada'); return false; }
 
-    /* ===== 4.1) dÃ­as de subsanaciÃ³n + fecha lÃ­mite (DÃAS HÃBILES) ===== */
+    /* ===== 4.1) días de subsanación + fecha límite (DÍAS HÁBILES) ===== */
     $dias_plazo = null;
     $stmt = $conexion->prepare("SELECT dias_subsanacion FROM eva_calificaciones WHERE id = ? LIMIT 1");
     if ($stmt) {
@@ -142,7 +142,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     $fecha_limite_txt = '';
     $dias_restantes   = null;
     if ($obs_ts) {
-        // utilidades de dÃ­as hÃ¡biles
+        // utilidades de días hábiles
         $addBusinessDays = function(int $tsBase, int $n): int {
             if ($n <= 0) return $tsBase;
             $y = (int)date('Y', $tsBase);
@@ -152,7 +152,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
             $i = (int)date('i', $tsBase);
 
             $daysInMonth = function(int $yy,int $mm){ return (int)date('t', strtotime(sprintf('%04d-%02d-01',$yy,$mm))); };
-            $dow = function(int $yy,int $mm,int $dd){ return (int)date('w', strtotime(sprintf('%04d-%02d-%02d',$yy,$mm,$dd))); }; // 0=Dom..6=SÃ¡b
+            $dow = function(int $yy,int $mm,int $dd){ return (int)date('w', strtotime(sprintf('%04d-%02d-%02d',$yy,$mm,$dd))); }; // 0=Dom..6=Sáb
             $isWeekend = function(int $yy,int $mm,int $dd) use ($dow){ $w=$dow($yy,$mm,$dd); return ($w===0 || $w===6); };
 
             $rest = (int)$n;
@@ -169,14 +169,14 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         $dias_restantes = max(0, (int)ceil(($lim_ts - time()) / 86400));
     }
 
-    /* ===== 4.2) Si es RÃšBRICA, armar tabla de aspectos ===== */
+    /* ===== 4.2) Si es RÚBRICA, armar tabla de aspectos ===== */
     $rubrica_html = '';
     if ($tipo === 'rubrica') {
         $mapNames = [
             'estructura'       => 'Estructura',
             'contenido'        => 'Contenido',
-            'redaccion'        => 'RedacciÃ³n',
-            'calidad_info'     => 'Calidad de informaciÃ³n',
+            'redaccion'        => 'Redacción',
+            'calidad_info'     => 'Calidad de información',
             'propuesta_mejora' => 'Propuesta de Mejora',
         ];
         $notaLabel = [
@@ -208,7 +208,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
                         'aspecto' => $aspNom,
                         'nota'    => $nota,
                         'notaTx'  => $notaTx,
-                        'obs'     => ($obsA === '' ? 'Sin ObservaciÃ³n' : $obsA),
+                        'obs'     => ($obsA === '' ? 'Sin Observación' : $obsA),
                     ];
                 }
             }
@@ -222,7 +222,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
             $rubrica_html .=     '<tr style="background:#f5f5f5;">';
             $rubrica_html .=       '<th align="left"  style="border:1px solid #ddd;padding:8px;font-weight:bold;">Aspecto</th>';
             $rubrica_html .=       '<th align="center"style="border:1px solid #ddd;padding:8px;font-weight:bold;width:140px;">Nota</th>';
-            $rubrica_html .=       '<th align="left"  style="border:1px solid #ddd;padding:8px;font-weight:bold;">ObservaciÃ³n</th>';
+            $rubrica_html .=       '<th align="left"  style="border:1px solid #ddd;padding:8px;font-weight:bold;">Observación</th>';
             $rubrica_html .=     '</tr>';
             $rubrica_html .=   '</thead><tbody>';
             foreach ($rows as $r) {
@@ -242,26 +242,26 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     }
 
     /* ===== 5) Cuerpo del correo ===== */
-    $subject  = "Recibiste una ObservaciÃ³n en {$of_nom} - Sistema DIRSU";
+    $subject  = "Recibiste una Observación en {$of_nom} - Sistema DIRSU";
     $url_det  = "https://rsu.unitru.edu.pe/sistema_web/login.php?id_py={$id_py}&tipo={$tipo}";
-    $tipo_txt = ($tipo === 'cotejo') ? 'Cotejo' : 'RÃºbrica';
+    $tipo_txt = ($tipo === 'cotejo') ? 'Cotejo' : 'Rúbrica';
 
     if ($tipo === 'cotejo' && !$obs_text && $obs_general_cotejo) {
         $obs_text = $obs_general_cotejo;
     }
     $lineaObs = ($tipo === 'cotejo' && $obs_text !== null && $obs_text !== '')
-        ? "<p><strong>ObservaciÃ³n:</strong><br>".nl2br(htmlspecialchars($obs_text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))."</p>"
+        ? "<p><strong>Observación:</strong><br>".nl2br(htmlspecialchars($obs_text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'))."</p>"
         : "";
 
     $lineaPlazo = ($fecha_limite_txt !== '')
-        ? "<p><strong>Fecha mÃ¡xima de subsanaciÃ³n:</strong> {$fecha_limite_txt}"
-          . ($dias_restantes !== null ? " <em>({$dias_restantes} dÃ­a(s) restantes)</em>" : "")
+        ? "<p><strong>Fecha máxima de subsanación:</strong> {$fecha_limite_txt}"
+          . ($dias_restantes !== null ? " <em>({$dias_restantes} día(s) restantes)</em>" : "")
           . "</p>"
         : "";
 
     $html = "
-      <p><strong>Recibiste una observaciÃ³n.</strong></p>
-      <p><strong>Proyecto:</strong> ".htmlspecialchars($titulo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')." (ID {$id_py}) ".($periodo ? "â€” ".htmlspecialchars($periodo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : "")."</p>
+      <p><strong>Recibiste una observación.</strong></p>
+      <p><strong>Proyecto:</strong> ".htmlspecialchars($titulo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')." (ID {$id_py}) ".($periodo ? "— ".htmlspecialchars($periodo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : "")."</p>
       <p><strong>Oficina:</strong> ".htmlspecialchars($of_nom, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')." ({$of_cod})
          &nbsp;|&nbsp; <strong>Tipo:</strong> {$tipo_txt}".
         ($obs_at_txt ? " &nbsp;|&nbsp; <strong>Fecha:</strong> {$obs_at_txt}" : "")
@@ -275,14 +275,14 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     ";
 
     /* ===== Texto plano ===== */
-    $text  = "Recibiste una observaciÃ³n.\n";
-    $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo ? " â€” {$periodo}" : "")."\n";
+    $text  = "Recibiste una observación.\n";
+    $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo ? " — {$periodo}" : "")."\n";
     $text .= "Oficina: {$of_nom} ({$of_cod}) | Tipo: {$tipo_txt}".($obs_at_txt ? " | Fecha: {$obs_at_txt}" : "")."\n";
     if ($tipo === 'cotejo' && $obs_text) {
-        $text .= "ObservaciÃ³n:\n{$obs_text}\n";
+        $text .= "Observación:\n{$obs_text}\n";
     }
     if ($tipo === 'rubrica' && $cal_id) {
-        $mapNames = ['estructura'=>'Estructura','contenido'=>'Contenido','redaccion'=>'RedacciÃ³n','calidad_info'=>'Calidad de informaciÃ³n','propuesta_mejora'=>'Propuesta de Mejora'];
+        $mapNames = ['estructura'=>'Estructura','contenido'=>'Contenido','redaccion'=>'Redacción','calidad_info'=>'Calidad de información','propuesta_mejora'=>'Propuesta de Mejora'];
         $notaLabel = [0=>'En espera',1=>'Insuficiente',2=>'Mejorable',3=>'Satisfactorio',4=>'Excelente'];
         $stmt = $conexion->prepare("
             SELECT aspecto, nota, observacion
@@ -299,7 +299,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
                     $nota = (int)($a['nota'] ?? 0);
                     $tx   = $notaLabel[$nota] ?? (string)$nota;
                     $obsA = trim((string)($a['observacion'] ?? ''));
-                    $text .= "- {$nom}: ({$nota}) {$tx} â€” ".($obsA === '' ? 'Sin ObservaciÃ³n' : $obsA)."\n";
+                    $text .= "- {$nom}: ({$nota}) {$tx} — ".($obsA === '' ? 'Sin Observación' : $obsA)."\n";
                 }
             }
             $stmt->close();
@@ -307,8 +307,8 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         if ($total_rb !== null) $text .= "Puntaje total: {$total_rb} / 20\n";
     }
     if ($fecha_limite_txt) {
-        $text .= "Fecha mÃ¡xima de subsanaciÃ³n: {$fecha_limite_txt}";
-        if ($dias_restantes !== null) $text .= " ({$dias_restantes} dÃ­a(s) restantes)";
+        $text .= "Fecha máxima de subsanación: {$fecha_limite_txt}";
+        if ($dias_restantes !== null) $text .= " ({$dias_restantes} día(s) restantes)";
         $text .= "\n";
     }
     $text .= "Revisar y subsanar: {$url_det}\n";

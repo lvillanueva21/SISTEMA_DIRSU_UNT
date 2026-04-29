@@ -1,11 +1,11 @@
-﻿<?php 
+<?php 
 // /sistema_web/informe_semestral/ver_informe.php
 include_once __DIR__ . '/../componentes/configSesion.php';
 include_once __DIR__ . '/../includes/db_connection.php';
 
 $id_py = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id_py <= 0) {
-    echo "<div class='alert alert-danger m-3'>ID de proyecto invÃ¡lido.</div>";
+    echo "<div class='alert alert-danger m-3'>ID de proyecto inválido.</div>";
     exit;
 }
 
@@ -28,7 +28,7 @@ if ($rs = mysqli_query($conexion, $sqlProy)) {
     mysqli_free_result($rs);
 }
 
-// === CatÃ¡logos para ODS y Programa-ODS ===
+// === Catálogos para ODS y Programa-ODS ===
 $ODS = [];      // id => nombre
 $PROGS = [];    // id => nombre
 $PROG_ODS = []; // programa_id => [ ['id'=>n,'nombre'=>'..'], ... ]
@@ -66,7 +66,7 @@ if ($rs = mysqli_query($conexion, $sqlCab)) {
     mysqli_free_result($rs);
 }
 
-// === Helpers de presentaciÃ³n ===
+// === Helpers de presentación ===
 function chip($txt) {
   return '<span class="badge badge-info mr-1 mb-1" style="font-weight:500;">'.htmlspecialchars($txt, ENT_QUOTES, 'UTF-8').'</span>';
 }
@@ -82,28 +82,28 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS): st
             return $txt !== '' ? $txt : '<em class="text-muted">Sin respuesta</em>'; // HTML sin escapar
 
         case 'tinyint':
-            return ($row['val_tinyint'] !== null) ? htmlspecialchars((string)$row['val_tinyint']) : '<em class="text-muted">â€”</em>';
+            return ($row['val_tinyint'] !== null) ? htmlspecialchars((string)$row['val_tinyint']) : '<em class="text-muted">—</em>';
 
         case 'int':
-            return ($row['val_int'] !== null) ? htmlspecialchars((string)$row['val_int']) : '<em class="text-muted">â€”</em>';
+            return ($row['val_int'] !== null) ? htmlspecialchars((string)$row['val_int']) : '<em class="text-muted">—</em>';
 
         case 'boolean':
-            if ($row['val_boolean'] === null) return '<em class="text-muted">â€”</em>';
-            return ((int)$row['val_boolean'] === 1) ? 'SÃ­' : 'No';
+            if ($row['val_boolean'] === null) return '<em class="text-muted">—</em>';
+            return ((int)$row['val_boolean'] === 1) ? 'Sí' : 'No';
 
         case 'datetime':
-            return !empty($row['val_datetime']) ? htmlspecialchars($row['val_datetime']) : '<em class="text-muted">â€”</em>';
+            return !empty($row['val_datetime']) ? htmlspecialchars($row['val_datetime']) : '<em class="text-muted">—</em>';
 
         case 'date':
-            return !empty($row['val_date']) ? htmlspecialchars($row['val_date']) : '<em class="text-muted">â€”</em>';
+            return !empty($row['val_date']) ? htmlspecialchars($row['val_date']) : '<em class="text-muted">—</em>';
 
         case 'decimal':
-            return ($row['val_decimal'] !== null) ? htmlspecialchars((string)$row['val_decimal']) : '<em class="text-muted">â€”</em>';
+            return ($row['val_decimal'] !== null) ? htmlspecialchars((string)$row['val_decimal']) : '<em class="text-muted">—</em>';
 
         case 'ubicacion':
             if (!empty($row['val_longtext'])) return nl2br(htmlspecialchars($row['val_longtext'], ENT_QUOTES, 'UTF-8'));
             if (!empty($row['val_varchar']))  return htmlspecialchars($row['val_varchar'], ENT_QUOTES, 'UTF-8');
-            return '<em class="text-muted">â€”</em>';
+            return '<em class="text-muted">—</em>';
 
         case 'pdf':
         case 'excel':
@@ -114,25 +114,25 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS): st
 
         case 'ods':
             $csv = trim((string)($row['val_varchar'] ?? ''));
-            if ($csv === '') return '<em class="text-muted">â€”</em>';
+            if ($csv === '') return '<em class="text-muted">—</em>';
             $ids = array_filter(array_map('intval', explode(',', $csv)));
-            if (!$ids) return '<em class="text-muted">â€”</em>';
+            if (!$ids) return '<em class="text-muted">—</em>';
             $out = '';
             foreach ($ids as $id) {
               $nom = $ODS[$id] ?? 'ODS '.$id;
-              $out .= chip("ODS $id â€” $nom");
+              $out .= chip("ODS $id — $nom");
             }
-            return $out ?: '<em class="text-muted">â€”</em>';
+            return $out ?: '<em class="text-muted">—</em>';
 
         case 'programa_ods':
             $pid = (int)trim((string)($row['val_varchar'] ?? '0'));
-            if ($pid <= 0) return '<em class="text-muted">â€”</em>';
+            if ($pid <= 0) return '<em class="text-muted">—</em>';
             $pnom = $PROGS[$pid] ?? ('Programa #'.$pid);
             $out = '<div><strong>'.htmlspecialchars($pnom, ENT_QUOTES, 'UTF-8').'</strong></div>';
             $odsArr = $PROG_ODS[$pid] ?? [];
             if ($odsArr) {
               $out .= '<div class="mt-1">';
-              foreach ($odsArr as $o) { $out .= chip('ODS '.$o['id'].' â€” '.$o['nombre']); }
+              foreach ($odsArr as $o) { $out .= chip('ODS '.$o['id'].' — '.$o['nombre']); }
               $out .= '</div>';
             } else {
               $out .= '<div class="text-muted"><em>Sin ODS asociados</em></div>';
@@ -180,7 +180,7 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS): st
 .item-title{ font-weight:600; margin-bottom:.35rem; }
 .badge-type{ font-size:.65rem; }
 
-/* Responsive: en pantallas chicas apilamos y damos scroll al Ã­ndice */
+/* Responsive: en pantallas chicas apilamos y damos scroll al índice */
 @media (max-width: 991.98px){
   .rsu-split-row{ display:block; }
   .rsu-left{ max-height:180px; margin-bottom:.5rem; }
@@ -189,9 +189,9 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS): st
 </style>
 
 <div class="rsu-info-head">
-  <div><strong>Proyecto:</strong> <?= htmlspecialchars($proy['titulo'] ?: 'â€”') ?></div>
+  <div><strong>Proyecto:</strong> <?= htmlspecialchars($proy['titulo'] ?: '—') ?></div>
   <div>
-    <strong>Coordinador:</strong> <?= htmlspecialchars($proy['coordinador'] ?: 'â€”') ?>
+    <strong>Coordinador:</strong> <?= htmlspecialchars($proy['coordinador'] ?: '—') ?>
     <?php if ($proy['cod_docente'] !== ''): ?>
       <span class="text-muted"> (<?= htmlspecialchars($proy['cod_docente']) ?>)</span>
     <?php endif; ?>
@@ -199,7 +199,7 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS): st
 </div>
 
 <?php if (empty($cabs)): ?>
-  <div class="alert alert-warning m-2">Este proyecto aÃºn no tiene respuestas registradas.</div>
+  <div class="alert alert-warning m-2">Este proyecto aún no tiene respuestas registradas.</div>
 <?php else: ?>
   <?php foreach ($cabs as $cab): ?>
     <?php
@@ -234,17 +234,17 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS): st
       </div>
 
       <?php if (empty($items)): ?>
-        <div class="p-3"><em class="text-muted">Este formulario no tiene Ã­tems activos.</em></div>
+        <div class="p-3"><em class="text-muted">Este formulario no tiene ítems activos.</em></div>
       <?php else: ?>
         <div class="form-body">
           <div class="rsu-split-row">
-            <!-- Barra lateral: Ã­ndice de Ã­tems (scroll propio) -->
+            <!-- Barra lateral: índice de ítems (scroll propio) -->
             <div class="col-md-3 pr-2 rsu-left">
               <div class="sticky-side">
                 <?php foreach ($items as $it): 
                       $anchor = '#F'.$rid.'I'.$it['orden']; ?>
                   <a class="item-link" href="<?= $anchor ?>">
-                    <div class="small text-muted mb-1">Ãtem <?= (int)$it['orden'] ?></div>
+                    <div class="small text-muted mb-1">Ítem <?= (int)$it['orden'] ?></div>
                     <div style="font-weight:600; line-height:1.1;"><?= htmlspecialchars($it['item_nombre']) ?></div>
                   </a>
                 <?php endforeach; ?>

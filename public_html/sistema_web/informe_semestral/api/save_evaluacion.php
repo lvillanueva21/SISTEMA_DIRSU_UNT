@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // /sistema_web/informe_semestral/api/save_evaluacion.php
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', 1); error_reporting(E_ALL);
@@ -25,7 +25,7 @@ use EvalV4\RSUHandler;
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
-        echo json_encode(['ok'=>false, 'error'=>'MÃ©todo no permitido']); exit;
+        echo json_encode(['ok'=>false, 'error'=>'Método no permitido']); exit;
     }
 
     $usr    = testeo();
@@ -37,16 +37,16 @@ try {
     $oficina = isset($_POST['oficina']) ? trim((string)$_POST['oficina']) : '';
 
     if ($id_py <= 0 || $accion === '' || $oficina === '') {
-        echo json_encode(['ok'=>false, 'error'=>'ParÃ¡metros incompletos']); exit;
+        echo json_encode(['ok'=>false, 'error'=>'Parámetros incompletos']); exit;
     }
 
-    // Mismo criterio que la UI para habilitar botÃ³n
+    // Mismo criterio que la UI para habilitar botón
     $perm = puedeClickearAccion($id_rol, $accion, $id_py);
     if (!$perm['enabled'] && $id_rol !== 0) { // Admin (0) puede forzar en pruebas
         echo json_encode(['ok'=>false, 'error'=>$perm['why'] ?: 'No autorizado']); exit;
     }
 
-    // Normaliza/valida segÃºn acciÃ³n
+    // Normaliza/valida según acción
     $val = ValidacionService::normalizar($accion, $_POST);
 
     // Despacho por oficina
@@ -55,7 +55,7 @@ try {
         case 'DD' : $handler = new DDHandler($conexion); break;
         case 'DF' : $handler = new DFHandler($conexion); break;
         case 'RSU': $handler = new RSUHandler($conexion); break;
-        default   : echo json_encode(['ok'=>false, 'error'=>'Oficina no vÃ¡lida']); exit;
+        default   : echo json_encode(['ok'=>false, 'error'=>'Oficina no válida']); exit;
     }
 
     $res = $handler->guardar($id_py, strtolower($accion), $val, $usr);
@@ -63,6 +63,6 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['ok'=>false, 'error'=>'ExcepciÃ³n: '.$e->getMessage()]);
+    echo json_encode(['ok'=>false, 'error'=>'Excepción: '.$e->getMessage()]);
 }
 

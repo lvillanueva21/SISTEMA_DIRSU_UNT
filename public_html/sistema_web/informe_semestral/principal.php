@@ -1,7 +1,7 @@
-﻿<?php
+<?php
 include_once __DIR__ . '/funciones.php';
 
-/* ===================== PARÃMETROS Y CATÃLOGOS ===================== */
+/* ===================== PARÁMETROS Y CATÁLOGOS ===================== */
 
 $por_pagina = 20;
 $pagina     = isset($_GET['pagina']) ? max(1, (int) $_GET['pagina']) : 1;
@@ -14,16 +14,17 @@ $departamento = isset($_GET['departamento']) ? (int)$_GET['departamento'] : 0;
 $revision     = isset($_GET['revision']) ? (string)$_GET['revision'] : '';
 $periodo      = isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0;
 $tieneInforme = isset($_GET['tiene_informe']) ? (string)$_GET['tiene_informe'] : '';
+$titulo       = isset($_GET['titulo']) ? (string)$_GET['titulo'] : 'si';
 $oficina      = isset($_GET['oficina']) ? (string)$_GET['oficina'] : ''; // '', 'PCF','DD','DF','RSU','APROB','SIN'
 $q            = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
 
-// CatÃ¡logos
+// Catálogos
 $facultades   = obtenerFacultades();
 
-// Facultad â€œbaseâ€ para cargar departamentos en el select
+// Facultad “base” para cargar departamentos en el select
 $fac_for_deps = $facultad;
 if ($fac_for_deps <= 0) {
-    if (in_array((int)$usr['id_rol'], [3,5], true)) $fac_for_deps = (int)$usr['id_escuela']; // decano / comitÃ©
+    if (in_array((int)$usr['id_rol'], [3,5], true)) $fac_for_deps = (int)$usr['id_escuela']; // decano / comité
 }
 $departamentos_cat = obtenerDepartamentos((int)$fac_for_deps);
 $periodos          = obtenerPeriodos();
@@ -35,6 +36,7 @@ $filtros = [
     'revision'     => $revision,  // '', '1', '0', 'sin'
     'periodo'      => $periodo,
     'tiene_informe'=> $tieneInforme,
+    'titulo'       => $titulo,
     'oficina'      => $oficina,   // '', 'PCF','DD','DF','RSU','APROB','SIN'
     'q'            => $q,
 ];
@@ -51,7 +53,7 @@ $info = [
     'usuario' => $usr['usuario'],
 ];
 
-/* ===================== PAGINACIÃ“N COMPACTA ===================== */
+/* ===================== PAGINACIÓN COMPACTA ===================== */
 
 function compact_pages($current, $total)
 {
@@ -75,6 +77,7 @@ function link_con_filtros($p, $f)
     'revision'    => (string)$f['revision'],
     'periodo'     => (int)$f['periodo'],
     'tiene_informe'=> isset($f['tiene_informe']) ? (string)$f['tiene_informe'] : '',
+    'titulo'      => isset($f['titulo']) ? (string)$f['titulo'] : 'si',
     'oficina'     => isset($f['oficina']) ? (string)$f['oficina'] : '',
     'q'           => (string)$f['q'],
 ];
@@ -88,12 +91,12 @@ $hasta = ($total_items > 0) ? (($pagina - 1) * $por_pagina + count($items)) : 0;
 // Visibilidad de controles por rol
 $id_rol = (int)$usr['id_rol'];
 $mostrarFac   = in_array($id_rol, [0,1], true);          // Admin/RSU ven "Facultad"
-$mostrarDep   = in_array($id_rol, [0,1,3,5], true);      // RSU/Admin/Decano/ComitÃ©
+$mostrarDep   = in_array($id_rol, [0,1,3,5], true);      // RSU/Admin/Decano/Comité
 $mostrarRev   = true;
 $mostrarPer   = true;
 $mostrarBusq  = true;
 
-// Â¿Departamento deshabilitado?
+// ¿Departamento deshabilitado?
 $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 ?>
 <style>
@@ -104,23 +107,23 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 #modalInforme .modal-body { padding:0; overflow:hidden !important; }
 #contenidoInforme { height: 78vh; overflow:hidden; }
 
-/* UI filtros â€” compatible con BS4/BS5 */
+/* UI filtros — compatible con BS4/BS5 */
 .filtros-card .form-label{ font-weight:600; margin-bottom:.25rem; }
 .filtros-card .form-control{ min-width: 120px; width:100%; }
-.filtros-card .row > [class*="col-"]{ margin-bottom:.5rem; } /* â€œgapâ€ para BS4 */
+.filtros-card .row > [class*="col-"]{ margin-bottom:.5rem; } /* “gap” para BS4 */
 </style>
 <style>
-/* BotÃ³n deshabilitado: cursor y ðŸš« en hover */
+/* Botón deshabilitado: cursor y 🚫 en hover */
 .btn-eval[disabled], .btn-eval.disabled { cursor: not-allowed !important; }
 .btn-eval[disabled]:hover::after,
 .btn-eval[aria-disabled="true"]:hover::after{
-  content:" ðŸš«";
+  content:" 🚫";
   font-size: 14px;
 }
 </style>
 <style>
 /* Colores por oficina */
-.badge-ofic-pcf { background-color:#0275D8 !important; color:#fff !important; }  /* ComitÃ© */
+.badge-ofic-pcf { background-color:#0275D8 !important; color:#fff !important; }  /* Comité */
 .badge-ofic-dd  { background-color:#F0AD4E !important; color:#111 !important; }  /* Dir. Departamento */
 .badge-ofic-df  { background-color:#5BC0DE !important; color:#111 !important; }  /* Decanato */
 .badge-ofic-rsu { background-color:#5CB85C !important; color:#fff !important; }  /* RSU */
@@ -157,7 +160,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
             <label class="form-label" for="selDepartamento">Departamento:</label>
             <select name="departamento" id="selDepartamento" class="form-control" <?= $dep_disabled?'disabled':''; ?>>
               <?php if ($dep_disabled): ?>
-                <option value="0" selected>Sin Departamento AcadÃ©mico</option>
+                <option value="0" selected>Sin Departamento Académico</option>
               <?php else: ?>
                 <option value="0" <?= $departamento===0?'selected':''; ?>>Todos</option>
                 <?php foreach ($departamentos_cat as $id=>$nom): ?>
@@ -172,11 +175,11 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 
         <?php if ($mostrarRev): ?>
           <div class="col-12 col-md-3 col-lg-2">
-            <label class="form-label" for="selRevision">RevisiÃ³n:</label>
+            <label class="form-label" for="selRevision">Revisión:</label>
             <select name="revision" id="selRevision" class="form-control">
 <option value=""   <?= $revision===''?'selected':''; ?>>Todos</option>
-<option value="0"  <?= $revision==='0'?'selected':''; ?>>No solicitÃ³</option>
-<option value="1"  <?= $revision==='1'?'selected':''; ?>>Si solicitÃ³</option>
+<option value="0"  <?= $revision==='0'?'selected':''; ?>>No solicitó</option>
+<option value="1"  <?= $revision==='1'?'selected':''; ?>>Si solicitó</option>
 <option value="2"  <?= $revision==='2'?'selected':''; ?>>Aprobado</option>
 <option value="3"  <?= $revision==='3'?'selected':''; ?>>Observado</option>
 <option value="sin"<?= $revision==='sin'?'selected':''; ?>>Sin Informe Semestral</option>
@@ -189,17 +192,17 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
           <label class="form-label" for="selOficina">Estado / Oficina:</label>
           <select name="oficina" id="selOficina" class="form-control">
             <option value=""    <?= ($oficina==='')?'selected':''; ?>>Todos</option>
-            <option value="PCF" <?= ($oficina==='PCF')?'selected':''; ?>>ComitÃ© de Facultad</option>
-            <option value="DD"  <?= ($oficina==='DD')?'selected':''; ?>>DirecciÃ³n de Departamento</option>
+            <option value="PCF" <?= ($oficina==='PCF')?'selected':''; ?>>Comité de Facultad</option>
+            <option value="DD"  <?= ($oficina==='DD')?'selected':''; ?>>Dirección de Departamento</option>
             <option value="DF"  <?= ($oficina==='DF')?'selected':''; ?>>Decanato de Facultad</option>
-            <option value="RSU" <?= ($oficina==='RSU')?'selected':''; ?>>DirecciÃ³n RSU</option>
-            <option value="APROB" <?= ($oficina==='APROB')?'selected':''; ?>>AprobaciÃ³n Total</option>
+            <option value="RSU" <?= ($oficina==='RSU')?'selected':''; ?>>Dirección RSU</option>
+            <option value="APROB" <?= ($oficina==='APROB')?'selected':''; ?>>Aprobación Total</option>
             <option value="SIN" <?= ($oficina==='SIN')?'selected':''; ?>>sin Estado / Oficina</option>
           </select>
         </div>     
         <?php if ($mostrarPer): ?>
           <div class="col-12 col-md-3 col-lg-2">
-            <label class="form-label" for="selPeriodo">PerÃ­odo:</label>
+            <label class="form-label" for="selPeriodo">Período:</label>
             <select name="periodo" id="selPeriodo" class="form-control">
               <option value="0" <?= $periodo===0?'selected':''; ?>>Todos</option>
               <?php foreach ($periodos as $id=>$nom): ?>
@@ -220,11 +223,20 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
           </select>
         </div>
 
+        <div class="col-12 col-md-3 col-lg-2">
+          <label class="form-label" for="selTitulo">Título:</label>
+          <select name="titulo" id="selTitulo" class="form-control">
+            <option value="si" <?= $titulo==='si'?'selected':''; ?>>Si</option>
+            <option value="no" <?= $titulo==='no'?'selected':''; ?>>No</option>
+            <option value="todos" <?= $titulo==='todos'?'selected':''; ?>>Todos</option>
+          </select>
+        </div>
+
         <?php if ($mostrarBusq): ?>
           <div class="col-12 col-md-6 col-lg-3">
-            <label class="form-label" for="txtQ">BÃºsqueda:</label>
+            <label class="form-label" for="txtQ">Búsqueda:</label>
             <input type="text" name="q" id="txtQ" value="<?= htmlspecialchars($q) ?>" class="form-control"
-                   placeholder="Coordinador, cÃ³digo, id, tÃ­tulo">
+                   placeholder="Coordinador, código, id, título">
           </div>
         <?php endif; ?>
 
@@ -234,7 +246,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
               <i class="fas fa-search"></i>
             </button>
 <a class="btn btn-danger" title="Limpiar filtros"
-   href="<?= htmlspecialchars(link_con_filtros(1, ['facultad'=>0,'departamento'=>0,'revision'=>'','periodo'=>0,'tiene_informe'=>'','oficina'=>'','q'=>''])) ?>">
+   href="<?= htmlspecialchars(link_con_filtros(1, ['facultad'=>0,'departamento'=>0,'revision'=>'','periodo'=>0,'tiene_informe'=>'','titulo'=>'si','oficina'=>'','q'=>''])) ?>">
   <i class="fas fa-broom"></i>
 </a>
           </div>
@@ -248,11 +260,11 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 <div class="alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-2" role="status" aria-live="polite">
   <div>
     <i class="fas fa-database"></i>
-    Mostrando <strong><?= ($total_items > 0) ? $desde . 'â€“' . $hasta : 0 ?></strong>
+    Mostrando <strong><?= ($total_items > 0) ? $desde . '–' . $hasta : 0 ?></strong>
     de <strong><?= number_format($total_items) ?></strong> resultado<?= ($total_items === 1) ? '' : 's' ?>.
   </div>
   <div class="text-muted small">
-    PÃ¡gina <?= (int)$pagina ?> de <?= (int)$total_pages ?>
+    Página <?= (int)$pagina ?> de <?= (int)$total_pages ?>
   </div>
 </div>
 
@@ -262,9 +274,9 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
         <thead>
             <tr>
                 <th style="width: 4%;">#</th>
-                <th style="width: 34%;">TÃ­tulo del proyecto</th>
+                <th style="width: 34%;">Título del proyecto</th>
                 <th style="width: 18%;">Coordinador</th>
-                <th style="width: 12%;">PrÃ³ximo paso</th>
+                <th style="width: 12%;">Próximo paso</th>
                 <th style="width: 14%;">Estado / Oficina</th>
                 <th style="width: 18%;">Acciones</th>
             </tr>
@@ -284,14 +296,14 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
                         </td>
                         <td><?= htmlspecialchars($it['coordinador']) ?></td>
 
-                        <!-- Columna RevisiÃ³n (vacÃ­a) -->
-<!-- Columna PrÃ³ximo paso -->
+                        <!-- Columna Revisión (vacía) -->
+<!-- Columna Próximo paso -->
 <td>
   <?php
     // Cortos
-    $estPrin = (string)($it['estado_oficina'] ?? 'â€”');     // â€˜AprobaciÃ³n Totalâ€™ | nombre oficina | â€˜Sin Informeâ€¦â€™ | â€˜No solicitÃ³â€¦â€™ | â€˜â€”â€™
+    $estPrin = (string)($it['estado_oficina'] ?? '—');     // ‘Aprobación Total’ | nombre oficina | ‘Sin Informe…’ | ‘No solicitó…’ | ‘—’
     $respId  = $it['resp_id'] ?? null;
-    $respSt  = $it['resp_estado'] ?? null;                 // 0/1/2/3 segÃºn tu sm_respuestas
+    $respSt  = $it['resp_estado'] ?? null;                 // 0/1/2/3 según tu sm_respuestas
     $sitEva  = $it['situacion'] ?? null;                   // 'en_oficina' | 'aprobado'
     $ofCod   = $it['oficina_cod'] ?? null;                 // PCF/DD/DF/RSU
     $ofNom   = $it['oficina_nom'] ?? null;
@@ -306,10 +318,10 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     if ($respId === null) {
       echo 'El coordinador debe crear su informe semestral.';
     } elseif ($sitEva === null && (int)$respSt === 0) {
-      echo 'El coordinador debe completar su informe y solicitar RevisiÃ³n.';
+      echo 'El coordinador debe completar su informe y solicitar Revisión.';
     }
-    // 2) AprobaciÃ³n total
-    elseif (mb_strtolower($estPrin,'UTF-8') === 'aprobaciÃ³n total') {
+    // 2) Aprobación total
+    elseif (mb_strtolower($estPrin,'UTF-8') === 'aprobación total') {
       echo 'Sin acciones requeridas.';
     }
     // 3) Observado (cualquier tipo observado en la oficina actual)
@@ -319,25 +331,25 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
       // Botones de detalle (uno por tipo observado)
       if ($cj === 'observado') {
         echo '<button type="button" class="btn btn-sm btn-outline-danger mt-1 btn-detalle-obs" data-id_py="'.(int)$it['id_py'].'" data-tipo="cotejo">'
-           . '<i class="fas fa-exclamation-triangle"></i> Detalle ObservaciÃ³n Cotejo'
+           . '<i class="fas fa-exclamation-triangle"></i> Detalle Observación Cotejo'
            . '</button><br>';
       }
       if ($rb === 'observado') {
         echo '<button type="button" class="btn btn-sm btn-outline-danger mt-1 btn-detalle-obs" data-id_py="'.(int)$it['id_py'].'" data-tipo="rubrica">'
-           . '<i class="fas fa-exclamation-triangle"></i> Detalle ObservaciÃ³n RÃºbrica'
+           . '<i class="fas fa-exclamation-triangle"></i> Detalle Observación Rúbrica'
            . '</button>';
       }
     }
-    // 4) En espera en oficina -> indicar quiÃ©n debe calificar + chips de estado por tipo
+    // 4) En espera en oficina -> indicar quién debe calificar + chips de estado por tipo
     elseif ($instSt === 'en_espera' || $instSt === 'aprobado' || $instSt === null) {
       $rol = rolCalificadorPorCodigo($ofCod);
       echo 'El ' . htmlspecialchars($rol) . ' debe Calificar el proyecto para continuar.';
 
-      // Chips debajo con estado de cada calificaciÃ³n aplicable a la oficina
+      // Chips debajo con estado de cada calificación aplicable a la oficina
       $chips = [];
       if (in_array($ofCod, ['PCF','RSU'], true)) {
         if ($cj) $chips[] = ['Cotejo', $cj];
-        if ($rb) $chips[] = ['RÃºbrica', $rb];
+        if ($rb) $chips[] = ['Rúbrica', $rb];
       } elseif (in_array($ofCod, ['DD','DF'], true)) {
         if ($vb) $chips[] = ['Visto Bueno', $vb];
       }
@@ -356,10 +368,10 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     }
   ?>
 </td>
-                        <!-- Columna Estado / Oficina (vacÃ­a) -->
+                        <!-- Columna Estado / Oficina (vacía) -->
 <td>
   <?php
-    $main = (string)($it['estado_oficina'] ?? 'â€”');      // etiqueta principal
+    $main = (string)($it['estado_oficina'] ?? '—');      // etiqueta principal
     $sub  = (string)($it['estado_sub']     ?? '');       // Observado / En Espera / ''
     $dt   = (string)($it['estado_dt']      ?? '');       // fecha/hora RAW
 
@@ -371,15 +383,15 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     }
 
     // Casos sin oficina/seguimiento
-    if ($main === 'Sin Informe Semestral' || $main === 'No solicitÃ³ RevisiÃ³n' || $main === 'â€”') {
+    if ($main === 'Sin Informe Semestral' || $main === 'No solicitó Revisión' || $main === '—') {
         echo '--';
     } else {
-        // Label principal (oficina o AprobaciÃ³n Total)
+        // Label principal (oficina o Aprobación Total)
         $clsMain = badgeClaseEstadoOficina($main);
         echo '<span class="'. $clsMain .'">'. htmlspecialchars($main) .'</span>';
 
-        // Si es AprobaciÃ³n Total: SOLO mostrar la fecha/hora debajo (sin sub-label)
-        if ($main === 'AprobaciÃ³n Total') {
+        // Si es Aprobación Total: SOLO mostrar la fecha/hora debajo (sin sub-label)
+        if ($main === 'Aprobación Total') {
             if ($dtTxt !== '') {
                 echo '<br><small class="text-muted">'. htmlspecialchars($dtTxt) .'</small>';
             }
@@ -408,7 +420,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
                                 <strong>Departamento:</strong> <?= htmlspecialchars($it['departamento']) ?>
                             </p>
                             <p style="margin: 0;">
-                                <strong>CÃ³digo Docente:</strong> <?= htmlspecialchars($it['cod_docente']) ?> |
+                                <strong>Código Docente:</strong> <?= htmlspecialchars($it['cod_docente']) ?> |
                                 <strong>id_py:</strong> <?= htmlspecialchars($it['id_py']) ?>
                             </p>
                         </td>
@@ -419,15 +431,15 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     </table>
 </div>
 
-<!-- PaginaciÃ³n compacta -->
+<!-- Paginación compacta -->
 <?php if ($total_pages > 1) : ?>
-    <nav aria-label="PaginaciÃ³n" style="margin-top: 10px;">
+    <nav aria-label="Paginación" style="margin-top: 10px;">
         <ul class="pagination justify-content-center">
             <?php foreach ($pages as $p) : ?>
                 <?php if ($p === '...') : ?>
-                    <li class="page-item disabled"><span class="page-link" style="border:none;background:transparent;">â€¢</span></li>
-                    <li class="page-item disabled"><span class="page-link" style="border:none;background:transparent;">â€¢</span></li>
-                    <li class="page-item disabled"><span class="page-link" style="border:none;background:transparent;">â€¢</span></li>
+                    <li class="page-item disabled"><span class="page-link" style="border:none;background:transparent;">•</span></li>
+                    <li class="page-item disabled"><span class="page-link" style="border:none;background:transparent;">•</span></li>
+                    <li class="page-item disabled"><span class="page-link" style="border:none;background:transparent;">•</span></li>
                 <?php else : ?>
                     <?php if ((int)$p === (int)$pagina) : ?>
                         <li class="page-item active" aria-current="page"><span class="page-link"><?= (int)$p ?></span></li>
@@ -460,42 +472,42 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
         </div>
     </div>
 </div>
-<!-- ======= MODAL: EVALUACIÃ“N (GENÃ‰RICO) ======= -->
+<!-- ======= MODAL: EVALUACIÓN (GENÉRICO) ======= -->
 <div class="modal fade" id="modalEval" tabindex="-1" role="dialog" aria-labelledby="tituloEval" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
     <div class="modal-content border-warning">
       <div class="modal-header bg-warning text-dark py-2">
-        <h5 class="modal-title" id="tituloEval"><i class="fas fa-info-circle"></i> AcciÃ³n</h5>
+        <h5 class="modal-title" id="tituloEval"><i class="fas fa-info-circle"></i> Acción</h5>
         <button type="button" class="close text-dark" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div id="contenidoEval" class="modal-body">
-        <p class="text-center text-muted my-4">Cargandoâ€¦</p>
+        <p class="text-center text-muted my-4">Cargando…</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ======= MODAL: DETALLE OBSERVACIÃ“N ======= -->
+<!-- ======= MODAL: DETALLE OBSERVACIÓN ======= -->
 <div class="modal fade" id="modalDetalleObs" tabindex="-1" role="dialog" aria-labelledby="tituloDetObs" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
     <div class="modal-content border-danger">
       <div class="modal-header bg-danger text-white py-2">
-        <h5 class="modal-title" id="tituloDetObs"><i class="fas fa-exclamation-triangle"></i> Detalle de ObservaciÃ³n</h5>
+        <h5 class="modal-title" id="tituloDetObs"><i class="fas fa-exclamation-triangle"></i> Detalle de Observación</h5>
         <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div id="contenidoDetObs" class="modal-body">
-        <p class="text-center text-muted my-4">Cargandoâ€¦</p>
+        <p class="text-center text-muted my-4">Cargando…</p>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-/* Auto-submit + cascada de filtros + debounce de bÃºsqueda (incluye Estado/Oficina) */
+/* Auto-submit + cascada de filtros + debounce de búsqueda (incluye Estado/Oficina) */
 (function(){
   const form = document.getElementById('frmFiltros');
   if (!form) return;
@@ -506,11 +518,12 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
   const ofi = document.getElementById('selOficina');
   const per = document.getElementById('selPeriodo');
   const tin = document.getElementById('selTieneInforme');
+  const tit = document.getElementById('selTitulo');
   const q   = document.getElementById('txtQ');
 
   function submit(){ form.requestSubmit ? form.requestSubmit() : form.submit(); }
 
-  [fac, dep, rev, ofi, per, tin].forEach(el => {
+  [fac, dep, rev, ofi, per, tin, tit].forEach(el => {
     if (!el) return;
     el.addEventListener('change', function(){
       // Si cambia la facultad, reinicia Departamento (cascada) y (des)habilita
@@ -528,7 +541,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     if (fac.value === '0' && !dep.hasAttribute('disabled')) dep.setAttribute('disabled','disabled');
   }
 
-  // Debounce para la bÃºsqueda
+  // Debounce para la búsqueda
   if (q) {
     let t = null;
     q.addEventListener('input', function(){
@@ -556,7 +569,7 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
 </script>
 
 <script>
-/* Abrir modal "Ver Informe" y cargar HTML (Ãºnico botÃ³n funcional) */
+/* Abrir modal "Ver Informe" y cargar HTML (único botón funcional) */
 (function () {
   document.addEventListener('click', function (e) {
     const btn = e.target.closest('.btn-ver-informe');
@@ -606,15 +619,15 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
 })();
 </script>
 <script>
-/* Botones de evaluaciÃ³n: abren modal demo y cargan contenido remoto */
+/* Botones de evaluación: abren modal demo y cargan contenido remoto */
 (function () {
-  const labels = { cotejo: 'Calificar Cotejo', rubrica: 'Calificar RÃºbrica', vb: 'Visto Bueno' };
+  const labels = { cotejo: 'Calificar Cotejo', rubrica: 'Calificar Rúbrica', vb: 'Visto Bueno' };
 
   document.addEventListener('click', function (e) {
     const btn = e.target.closest('.btn-eval');
     if (!btn) return;
 
-    // No abrir si estÃ¡ deshabilitado
+    // No abrir si está deshabilitado
     if (btn.hasAttribute('disabled') || btn.classList.contains('disabled') || btn.getAttribute('aria-disabled') === 'true' || btn.disabled) {
       e.preventDefault();
       e.stopPropagation();
@@ -627,12 +640,12 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     const accion = btn.getAttribute('data-accion') || '';
     const idpy   = btn.getAttribute('data-id_py')    || '';
 
-    const titulo = labels[accion] || 'AcciÃ³n';
+    const titulo = labels[accion] || 'Acción';
     const $t = document.getElementById('tituloEval');
     const $c = document.getElementById('contenidoEval');
 
     if ($t) $t.innerHTML = '<i class="fas fa-info-circle"></i> ' + titulo;
-    if ($c) $c.innerHTML = '<p class="text-center text-muted my-4">Cargandoâ€¦</p>';
+    if ($c) $c.innerHTML = '<p class="text-center text-muted my-4">Cargando…</p>';
 
     const url = '../informe_semestral/modales/evaluacion_msg.php?accion='
               + encodeURIComponent(accion) + '&id=' + encodeURIComponent(idpy);
@@ -655,7 +668,7 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     if (window.bootstrap && window.bootstrap.Modal) {
       new bootstrap.Modal(modal).show();
     } else {
-      // Fallback mÃ­nimo si no hay Bootstrap: mostrar el contenedor
+      // Fallback mínimo si no hay Bootstrap: mostrar el contenedor
       modal.classList.add('show');
       modal.style.display = 'block';
       modal.removeAttribute('aria-hidden');
@@ -665,7 +678,7 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
 })();
 </script>
 <script>
-/* Abrir modal â€œDetalle ObservaciÃ³nâ€ (cotejo/rÃºbrica) */
+/* Abrir modal “Detalle Observación” (cotejo/rúbrica) */
 (function () {
   document.addEventListener('click', function (e) {
     const btn = e.target.closest('.btn-detalle-obs');
@@ -679,7 +692,7 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     if (!idpy || !tipo) return;
 
     const $contenedor = window.jQuery ? jQuery('#contenidoDetObs') : null;
-    if ($contenedor) $contenedor.html('<p class="text-center text-muted my-4">Cargandoâ€¦</p>');
+    if ($contenedor) $contenedor.html('<p class="text-center text-muted my-4">Cargando…</p>');
 
     const url = '../informe_semestral/modales/detalle_observacion.php?id_py='
               + encodeURIComponent(idpy) + '&tipo=' + encodeURIComponent(tipo);

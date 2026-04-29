@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 include_once __DIR__ . '/../componentes/configSesion.php';
 include_once __DIR__ . '/../includes/db_connection.php';
 include_once __DIR__ . '/control_oficinas.php';
@@ -31,7 +31,7 @@ function testeo()
     ];
 }
 
-/* ===================== CATÃLOGOS PARA LOS FILTROS ===================== */
+/* ===================== CATÁLOGOS PARA LOS FILTROS ===================== */
 
 function obtenerFacultades(): array
 {
@@ -92,11 +92,16 @@ function periodoNombrePorId(int $id_periodo): string
 function sqlFiltroPeriodoSemestral(int $id_periodo, string $sem_alias = 's'): string
 {
     if ($id_periodo <= 0) return '';
+    $periodoExpr = "CONCAT(
+                      CAST($sem_alias.anio AS CHAR CHARACTER SET utf8mb4),
+                      '-',
+                      CAST($sem_alias.periodo AS CHAR CHARACTER SET utf8mb4)
+                    ) COLLATE utf8mb4_unicode_ci";
     return " AND EXISTS (
                 SELECT 1
                 FROM periodos prf
                 WHERE prf.id = $id_periodo
-                  AND prf.nombre = CONCAT($sem_alias.anio, '-', $sem_alias.periodo)
+                  AND prf.nombre COLLATE utf8mb4_unicode_ci = $periodoExpr
             ) ";
 }
 
@@ -120,14 +125,14 @@ function sqlUltimaRespuestaSemestralPorProyecto(int $id_periodo = 0): string
 function badgeClaseEstadoOficina(string $txt): string {
   $t = mb_strtolower(trim($txt), 'UTF-8');
 
-  // Estados globales â€” se mantienen igual
-  if ($t === 'aprobaciÃ³n total')      return 'badge badge-success bg-success';
+  // Estados globales — se mantienen igual
+  if ($t === 'aprobación total')      return 'badge badge-success bg-success';
   if ($t === 'sin informe semestral') return 'badge badge-secondary bg-secondary';
-  if ($t === 'no solicitÃ³ revisiÃ³n')  return 'badge badge-warning bg-warning text-dark';
-  if ($t === 'â€”' || $t === '')        return 'badge badge-light bg-light text-muted';
+  if ($t === 'no solicitó revisión')  return 'badge badge-warning bg-warning text-dark';
+  if ($t === '—' || $t === '')        return 'badge badge-light bg-light text-muted';
 
-  // Oficinas â€” detecta por nombre/abreviatura, sin depender de un 2Âº parÃ¡metro
-  if (preg_match('/\bpcf\b|comit[Ã©e]\s*de\s*facultad/i', $txt)) return 'badge badge-ofic-pcf';
+  // Oficinas — detecta por nombre/abreviatura, sin depender de un 2º parámetro
+  if (preg_match('/\bpcf\b|comit[ée]\s*de\s*facultad/i', $txt)) return 'badge badge-ofic-pcf';
   if (preg_match('/\bdd\b|departamento/i', $txt))                return 'badge badge-ofic-dd';
   if (preg_match('/\bdf\b|decan/i', $txt))                       return 'badge badge-ofic-df';
   if (preg_match('/\brsu\b/i', $txt))                            return 'badge badge-ofic-rsu';
@@ -139,16 +144,16 @@ function badgeClaseEstadoOficina(string $txt): string {
 function badgeClaseSubEstado(string $txt): string {
   $t = mb_strtolower(trim($txt), 'UTF-8');
   if ($t === 'observado')  return 'badge badge-danger bg-danger';
-  if ($t === 'en espera')  return 'badge badge-primary bg-primary text-white'; // <- aquÃ­
+  if ($t === 'en espera')  return 'badge badge-primary bg-primary text-white'; // <- aquí
   return 'badge badge-light bg-light text-muted';
 }
 
-/** Rol â€œhumanoâ€ que debe calificar, segÃºn cÃ³digo de oficina */
+/** Rol “humano” que debe calificar, según código de oficina */
 function rolCalificadorPorCodigo(?string $cod): string {
   $c = strtoupper(trim((string)$cod));
   switch ($c) {
-    case 'PCF': return 'Presidente de ComitÃ© de Facultad';
-    case 'DD':  return 'Director de Departamento AcadÃ©mico';
+    case 'PCF': return 'Presidente de Comité de Facultad';
+    case 'DD':  return 'Director de Departamento Académico';
     case 'DF':  return 'Decano de Facultad';
     case 'RSU': return 'Director de RSU';
     default:    return 'responsable';
@@ -168,19 +173,19 @@ function whereFiltroPorRol(array $usr)
         return '';
     }
 
-    // Decanato (3) y ComitÃ© (5): facultad = id_escuela del usuario
+    // Decanato (3) y Comité (5): facultad = id_escuela del usuario
     if ($id_rol === 3 || $id_rol === 5) {
         $fac = (int) $usr['id_escuela'];
         return ($fac > 0) ? " AND f.id = $fac " : " AND 1=0 ";
     }
 
-    // DirecciÃ³n de Departamento (4): departamento = id_depa del usuario
+    // Dirección de Departamento (4): departamento = id_depa del usuario
     if ($id_rol === 4) {
         $depa = (int) $usr['id_depa'];
         return ($depa > 0) ? " AND d.id = $depa " : " AND 1=0 ";
     }
 
-    // Coordinador (2): solo sus proyectos (por cÃ³digo docente u.usuario)
+    // Coordinador (2): solo sus proyectos (por código docente u.usuario)
     if ($id_rol === 2) {
         $cod = isset($usr['usuario']) ? mysqli_real_escape_string($conexion, $usr['usuario']) : '';
         return ($cod !== '') ? " AND u.usuario = '$cod' " : " AND 1=0 ";
@@ -192,13 +197,20 @@ function whereFiltroPorRol(array $usr)
 /**
  * WHERE adicional por filtros de UI.
  * $filtros: ['facultad','departamento','periodo','revision','q']
- * NOTA: Conserva el filtro "RevisiÃ³n" para segmentar por sm_respuestas (estado del Informe),
- * NO tiene relaciÃ³n con la evaluaciÃ³n V3.
+ * NOTA: Conserva el filtro "Revisión" para segmentar por sm_respuestas (estado del Informe),
+ * NO tiene relación con la evaluación V3.
  */
 function whereFiltros(array $filtros): string
 {
     global $conexion;
     $w = '';
+
+    $titulo = isset($filtros['titulo']) ? strtolower(trim((string)$filtros['titulo'])) : 'si';
+    if ($titulo === '' || $titulo === 'si' || $titulo === '1' || $titulo === 'yes') {
+        $w .= " AND p.p2 IS NOT NULL AND TRIM(p.p2) <> '' ";
+    } elseif ($titulo === 'no' || $titulo === '0') {
+        $w .= " AND (p.p2 IS NULL OR TRIM(p.p2) = '') ";
+    }
 
     $fac = isset($filtros['facultad']) ? (int)$filtros['facultad'] : 0;
     if ($fac > 0) $w .= " AND f.id = $fac ";
@@ -208,11 +220,20 @@ function whereFiltros(array $filtros): string
 
     $per = isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0;
     if ($per > 0) {
+        $periodoExpr = "CONCAT(
+                          CAST(spf.anio AS CHAR CHARACTER SET utf8mb4),
+                          '-',
+                          CAST(spf.periodo AS CHAR CHARACTER SET utf8mb4)
+                        ) COLLATE utf8mb4_unicode_ci";
         $w .= " AND EXISTS (
                     SELECT 1
-                    FROM proyectos_periodo ppf
-                    WHERE ppf.id_py = p.id
-                      AND ppf.id_periodo = $per
+                    FROM sm_proyecto_semestres spf
+                    JOIN periodos prf
+                      ON prf.nombre COLLATE utf8mb4_unicode_ci = $periodoExpr
+                    WHERE spf.id_py = p.id
+                      AND spf.tipo = 'semestral'
+                      AND COALESCE(spf.vigente, 1) = 1
+                      AND prf.id = $per
                 ) ";
     }
 
@@ -233,7 +254,7 @@ function whereFiltros(array $filtros): string
     } elseif ($rev !== '') {
         $revInt = (int)$rev;
         $extraPer = sqlFiltroPeriodoSemestral($per, 'sx');
-        // Ãšltimo estado del informe semestral en contexto (periodo o total)
+        // Último estado del informe semestral en contexto (periodo o total)
         $w .= " AND COALESCE((
                     SELECT r.estado
                     FROM sm_respuestas r
@@ -295,14 +316,14 @@ function whereTieneInforme(array $filtros): string
 /**
  * WHERE adicional por filtro "Estado / Oficina" (select 'oficina' en codigos.php)
  * Valores esperados:
- *  - 'PCF', 'DD', 'DF', 'RSU'      => oficina activa especÃ­fica (e/o join)
- *  - 'APROB'                       => AprobaciÃ³n Total
- *  - 'SIN'                         => Sin Estado / Oficina (sin informe / no solicitÃ³ / sin oficina activa)
+ *  - 'PCF', 'DD', 'DF', 'RSU'      => oficina activa específica (e/o join)
+ *  - 'APROB'                       => Aprobación Total
+ *  - 'SIN'                         => Sin Estado / Oficina (sin informe / no solicitó / sin oficina activa)
  *  - ''                            => Todos
  *
  * IMPORTANTE:
  *  Este filtro se apoya en los alias de JOIN que ya existen en proyectosListado (r0, e, o).
- *  Para totalProyectos hemos aÃ±adido los mismos JOINs mÃ­nimos (r0, e, o) para que cuente bien.
+ *  Para totalProyectos hemos añadido los mismos JOINs mínimos (r0, e, o) para que cuente bien.
  */
 function whereOficina(array $filtros): string
 {
@@ -313,13 +334,13 @@ function whereOficina(array $filtros): string
     if ($of === '') return $w;
 
     if ($of === 'APROB') {
-        // AprobaciÃ³n Total
+        // Aprobación Total
         $w .= " AND e.situacion = 'aprobado' ";
         return $w;
     }
 
     if ($of === 'SIN') {
-        // Sin estado/oficina (coincide con la lÃ³gica de la CASE de estado_oficina en proyectosListado)
+        // Sin estado/oficina (coincide con la lógica de la CASE de estado_oficina en proyectosListado)
         $w .= " AND (
                    r0.id IS NULL
                 OR (e.id IS NULL AND COALESCE(r0.estado,0)=0)
@@ -328,13 +349,13 @@ function whereOficina(array $filtros): string
         return $w;
     }
 
-    // Oficinas especÃ­ficas por cÃ³digo (PCF, DD, DF, RSU)
+    // Oficinas específicas por código (PCF, DD, DF, RSU)
     $safe = mysqli_real_escape_string($conexion, $of);
     $w   .= " AND e.id_oficina_actual IS NOT NULL AND o.codigo = '{$safe}' ";
     return $w;
 }
 
-/* ===================== TOTAL Y LISTA (SIN LÃ“GICA DE EVALUACIÃ“N) ===================== */
+/* ===================== TOTAL Y LISTA (SIN LÓGICA DE EVALUACIÓN) ===================== */
 
 function totalProyectos(array $usr, array $filtros = [])
 {
@@ -360,11 +381,11 @@ function totalProyectos(array $usr, array $filtros = [])
              LEFT JOIN facultades f
                     ON f.id = d.id_facultad
 
-             -- Ãšltima respuesta del proyecto (r0)
+             -- Última respuesta del proyecto (r0)
              LEFT JOIN sm_respuestas r0
                  ON r0.id = $latestRespSql
 
-             -- EvaluaciÃ³n + oficina actual (e/o)
+             -- Evaluación + oficina actual (e/o)
              LEFT JOIN eva_evaluaciones e
                  ON e.id_respuesta = r0.id
              LEFT JOIN eva_oficinas o
@@ -373,7 +394,10 @@ function totalProyectos(array $usr, array $filtros = [])
              WHERE 1=1 $whereRol $whereExtras $whereTiene $whereOficina ";
 
     $res = mysqli_query($conexion, $sql);
-    if (!$res) return 0;
+    if (!$res) {
+        error_log('informe_semestral totalProyectos SQL error: ' . mysqli_error($conexion));
+        return 0;
+    }
 
     $row = mysqli_fetch_assoc($res);
     mysqli_free_result($res);
@@ -406,6 +430,17 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
                     CONCAT(s0.anio, '-', s0.periodo),
                     " . ($periodoFiltroNombre !== '' ? ("'" . mysqli_real_escape_string($conexion, $periodoFiltroNombre) . "'") : "NULL") . ",
                     (
+                      SELECT CONCAT(spx.anio, '-', spx.periodo)
+                      FROM sm_proyecto_semestres spx
+                      WHERE spx.id_py = p.id
+                        AND spx.tipo = 'semestral'
+                        AND COALESCE(spx.vigente, 1) = 1
+                      ORDER BY spx.anio DESC,
+                               CASE spx.periodo WHEN 'II' THEN 2 WHEN 'I' THEN 1 ELSE 0 END DESC,
+                               spx.id DESC
+                      LIMIT 1
+                    ),
+                    (
                       SELECT prx.nombre
                       FROM proyectos_periodo ppx
                       JOIN periodos prx ON prx.id = ppx.id_periodo
@@ -416,16 +451,16 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
                     'No definido'
                  ) AS nombre_periodo,
 
-                 -- Ãšltima respuesta del proyecto
+                 -- Última respuesta del proyecto
                  r0.id      AS resp_id,
                  r0.estado  AS resp_estado,
 
-                 -- EvaluaciÃ³n (si iniciÃ³ ruta) + oficina actual
+                 -- Evaluación (si inició ruta) + oficina actual
                  e.situacion,
                  o.codigo   AS oficina_cod,
                  o.nombre   AS oficina_nom,
 
-                 -- Ãšltima instancia de esa oficina para la evaluaciÃ³n actual
+                 -- Última instancia de esa oficina para la evaluación actual
                  oi.estado  AS instancia_estado,
                  oi.llegada AS instancia_llegada,
                  oi.salida  AS instancia_salida,
@@ -442,11 +477,11 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
 
                  -- Label principal (columna 'Estado / Oficina')
                  CASE
-                   WHEN e.situacion = 'aprobado'                   THEN 'AprobaciÃ³n Total'
+                   WHEN e.situacion = 'aprobado'                   THEN 'Aprobación Total'
                    WHEN e.id_oficina_actual IS NOT NULL            THEN o.nombre
                    WHEN r0.id IS NULL                              THEN 'Sin Informe Semestral'
-                   WHEN e.id IS NULL AND COALESCE(r0.estado,0)=0   THEN 'No solicitÃ³ RevisiÃ³n'
-                   ELSE 'â€”'
+                   WHEN e.id IS NULL AND COALESCE(r0.estado,0)=0   THEN 'No solicitó Revisión'
+                   ELSE '—'
                  END AS estado_oficina,
 
                  -- Sub-estado visible como segundo label (si corresponde)
@@ -462,7 +497,7 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
                    ELSE NULL
                  END AS estado_sub,
 
-                 -- Fecha/hora a mostrar bajo el label (regla: calificaciÃ³n > instancia)
+                 -- Fecha/hora a mostrar bajo el label (regla: calificación > instancia)
                  CASE
                    WHEN e.situacion='aprobado' THEN e.actualizado_at
                    WHEN e.id_oficina_actual IS NOT NULL THEN
@@ -492,19 +527,19 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
              LEFT JOIN facultades f
                  ON f.id = d.id_facultad
 
-             -- Ãšltima respuesta del proyecto
+             -- Última respuesta del proyecto
              LEFT JOIN sm_respuestas r0
                  ON r0.id = $latestRespSql
              LEFT JOIN sm_proyecto_semestres s0
                  ON s0.id = r0.id_semestre
 
-             -- EvaluaciÃ³n (si iniciÃ³ ruta) + oficina actual
+             -- Evaluación (si inició ruta) + oficina actual
              LEFT JOIN eva_evaluaciones e
                  ON e.id_respuesta = r0.id
              LEFT JOIN eva_oficinas o
                  ON o.id = e.id_oficina_actual
 
-             -- Ãšltima instancia de esa oficina para la evaluaciÃ³n actual
+             -- Última instancia de esa oficina para la evaluación actual
              LEFT JOIN (
                  SELECT id_evaluacion, id_oficina, MAX(id) AS last_id
                  FROM eva_oficina_instancias
@@ -515,7 +550,7 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
              LEFT JOIN eva_oficina_instancias oi
                ON oi.id = lastoi.last_id
 
-             -- Calificaciones en oficina actual (cotejo / rÃºbrica / visto bueno)
+             -- Calificaciones en oficina actual (cotejo / rúbrica / visto bueno)
              LEFT JOIN eva_calificaciones cj
                ON cj.id_evaluacion = e.id AND cj.id_oficina = e.id_oficina_actual AND cj.tipo='cotejo'
              LEFT JOIN eva_calificaciones rb
@@ -529,6 +564,7 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
 
     $rs = mysqli_query($conexion, $sql);
     if (!$rs) {
+        error_log('informe_semestral proyectosListado SQL error: ' . mysqli_error($conexion));
         return $data;
     }
 
@@ -538,7 +574,7 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
             'titulo'           => $row['titulo'] ?? '',
             'periodo'          => $row['nombre_periodo'] ?? 'No definido',
             'coordinador'      => trim(($row['nombres'] ?? '') . ' ' . ($row['apellidos'] ?? '')),
-            'cod_docente'      => $row['cod_docente'] ?? 'Sin cÃ³digo',
+            'cod_docente'      => $row['cod_docente'] ?? 'Sin código',
             'facultad'         => $row['nombre_facultad'] ?? 'No registrada',
             'departamento'     => $row['nombre_departamento'] ?? 'No registrado',
 
@@ -546,7 +582,7 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
             'resp_id'          => isset($row['resp_id']) ? (int)$row['resp_id'] : null,
             'resp_estado'      => isset($row['resp_estado']) ? (int)$row['resp_estado'] : null,
 
-            // evaluaciÃ³n/oficina
+            // evaluación/oficina
             'situacion'        => $row['situacion'] ?? null,
             'oficina_cod'      => $row['oficina_cod'] ?? null,
             'oficina_nom'      => $row['oficina_nom'] ?? null,
@@ -563,7 +599,7 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
             'vb_at'            => $row['vb_at'] ?? null,
 
             // columna Estado/Oficina
-            'estado_oficina'   => $row['estado_oficina'] ?? 'â€”',
+            'estado_oficina'   => $row['estado_oficina'] ?? '—',
             'estado_sub'       => $row['estado_sub']     ?? null,
             'estado_dt'        => $row['estado_dt']      ?? null,
         ];
@@ -573,8 +609,8 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
 }
 
 /* ===================== ACCIONES / BOTONES ===================== */
-/* Mantenemos los botones visuales; solo â€œVer Inf. Semestralâ€ funciona.
-   Los demÃ¡s estÃ¡n DESHABILITADOS y no ejecutan nada. */
+/* Mantenemos los botones visuales; solo “Ver Inf. Semestral” funciona.
+   Los demás están DESHABILITADOS y no ejecutan nada. */
 function accionesPorRol(int $id_rol, string $rol_nombre): array
 {
     // Siempre mostrar "Ver Inf. Semestral"
@@ -608,7 +644,7 @@ function renderBotonesAccion(array $acciones, int $id_py, ?int $id_respuesta = n
     $labels = [
         'ver'     => 'Ver Inf. Semestral',
         'cotejo'  => 'Calificar Cotejo',
-        'rubrica' => 'Calificar RÃºbrica',
+        'rubrica' => 'Calificar Rúbrica',
         'vb'      => 'Visto Bueno',
     ];
 
@@ -618,17 +654,17 @@ function renderBotonesAccion(array $acciones, int $id_py, ?int $id_respuesta = n
         $style = $styles[$a] ?? '';
 
         if ($a === 'ver') {
-            // BotÃ³n siempre habilitado
+            // Botón siempre habilitado
             $out .= '<button type="button" data-id_py="' . (int)$id_py . '"'
                  .  (($id_respuesta !== null && $id_respuesta > 0) ? (' data-id_respuesta="' . (int)$id_respuesta . '"') : '')
                  .  ' class="' . $clases[$a] . '" style="' . $style . '"'
-                 .  ' title="ðŸ“„ Ver el informe semestral">'
+                 .  ' title="📄 Ver el informe semestral">'
                  .    $iconos[$a] . ' ' . $labels[$a]
                  .  '</button>';
             continue;
         }
 
-        // EvaluaciÃ³n: decidir habilitado/bloqueado + mensaje humano
+        // Evaluación: decidir habilitado/bloqueado + mensaje humano
         $perm = puedeClickearAccion($id_rol, $a, $id_py);
         $st   = $perm['state'] ?? [];
         $ofNom = $st['oficina_nom'] ?? ($st['oficina_cod'] ?? 'otra oficina');
@@ -637,31 +673,31 @@ function renderBotonesAccion(array $acciones, int $id_py, ?int $id_respuesta = n
         $enabled = (bool)$perm['enabled'];
 
         if ($enabled) {
-            $title = 'âœ… Califica ahora este proyecto.';
+            $title = '✅ Califica ahora este proyecto.';
             $msg   = $title;
         } else {
-            // Priorizar razones especÃ­ficas
+            // Priorizar razones específicas
             if ($sit === 'aprobado' || stripos((string)$perm['why'], 'aprobado') !== false) {
-                $msg = 'ðŸš« No puedes calificar. El proyecto ha recibido la aprobaciÃ³n total.';
+                $msg = '🚫 No puedes calificar. El proyecto ha recibido la aprobación total.';
             } elseif ($inst === 'observado' || stripos((string)$perm['why'], 'observado') !== false) {
-                $msg = 'ðŸš« No puedes calificar, el proyecto necesita ser subsanado por coordinador.';
-            } elseif (stripos((string)$perm['why'], 'no iniciÃ³') !== false) {
-                $msg = 'ðŸš« No puedes calificar. AÃºn no inicia la ruta de evaluaciÃ³n.';
+                $msg = '🚫 No puedes calificar, el proyecto necesita ser subsanado por coordinador.';
+            } elseif (stripos((string)$perm['why'], 'no inició') !== false) {
+                $msg = '🚫 No puedes calificar. Aún no inicia la ruta de evaluación.';
             } elseif (stripos((string)$perm['why'], 'espera') !== false) {
-                $msg = 'ðŸš« No puedes calificar. La oficina no estÃ¡ en espera de revisiÃ³n.';
+                $msg = '🚫 No puedes calificar. La oficina no está en espera de revisión.';
             } elseif (stripos((string)$perm['why'], 'oficina') !== false || $ofNom) {
-                $msg = 'ðŸš« No puede calificar, el proyecto se encuentra en la Oficina de ' . htmlspecialchars($ofNom);
+                $msg = '🚫 No puede calificar, el proyecto se encuentra en la Oficina de ' . htmlspecialchars($ofNom);
             } else {
-                $msg = 'ðŸš« No disponible para calificar en este momento.';
+                $msg = '🚫 No disponible para calificar en este momento.';
             }
-            $title = $msg; // el title muestra el porquÃ© en hover
+            $title = $msg; // el title muestra el porqué en hover
         }
 
         $disabledAttr = $enabled ? '' : ' disabled aria-disabled="true"';
-        $styleExtra   = $enabled ? '' : 'opacity:.6;'; // SIN pointer-events:none para permitir hover ðŸš«
+        $styleExtra   = $enabled ? '' : 'opacity:.6;'; // SIN pointer-events:none para permitir hover 🚫
         $toggleId     = 'why-' . $a . '-' . (int)$id_py;
 
-        // BotÃ³n
+        // Botón
         $out .= '<button type="button"'
              .  ' class="' . $clases[$a] . '"'
              .  ' style="' . $style . $styleExtra . '"'
