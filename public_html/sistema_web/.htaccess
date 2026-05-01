@@ -1,0 +1,7 @@
+# Fuerza UTF-8 para respuestas de texto en todo sistema_web
+AddDefaultCharset UTF-8
+
+<IfModule mod_mime.c>
+    AddCharset UTF-8 .html .htm .php .css .js .json .xml .txt
+</IfModule>
+

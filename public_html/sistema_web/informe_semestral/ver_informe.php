@@ -5,6 +5,7 @@ include_once __DIR__ . '/../includes/db_connection.php';
 
 $id_py = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $id_respuesta = isset($_GET['id_respuesta']) ? (int)$_GET['id_respuesta'] : 0;
+$url_descarga_pdf = '';
 
 if ($id_respuesta > 0) {
   $sqlResp = "SELECT id_py FROM sm_respuestas WHERE id = $id_respuesta LIMIT 1";
@@ -18,8 +19,11 @@ if ($id_respuesta > 0) {
 
 if ($id_py <= 0) { echo "<div class='alert alert-danger m-3'>ID de proyecto inválido.</div>"; exit; }
 
+$url_descarga_pdf = '../informe_semestral/descargar_pdf_tcpdf.php?id=' . $id_py;
+if ($id_respuesta > 0) $url_descarga_pdf .= '&id_respuesta=' . $id_respuesta;
+
 // === Encabezado del proyecto ===
-$proy = ['titulo' => '', 'coordinador' => '', 'cod_docente' => ''];
+$proy = ['titulo' => '', 'coordinador' => '', 'cod_docente' => '', 'periodo_pdf' => ''];
 $sqlProy = "
   SELECT p.p2 AS titulo, u.nombres, u.apellidos, u.usuario AS cod_docente
   FROM usuarios_proyectos up
@@ -29,6 +33,33 @@ $sqlProy = "
   LIMIT 1
 ";
 if ($rs = mysqli_query($conexion, $sqlProy)) { if ($r = mysqli_fetch_assoc($rs)) { $proy['titulo']=(string)$r['titulo']; $proy['coordinador']=trim(($r['nombres']??'').' '.($r['apellidos']??'')); $proy['cod_docente']=(string)($r['cod_docente']??''); } mysqli_free_result($rs); }
+
+// Periodo para nombre del PDF (prioriza la respuesta seleccionada)
+if ($id_respuesta > 0) {
+  $sqlPeriodoPdf = "
+    SELECT CONCAT(s.anio, '-', s.periodo) AS periodo
+    FROM sm_respuestas r
+    JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
+    WHERE r.id = $id_respuesta
+    LIMIT 1
+  ";
+} else {
+  $sqlPeriodoPdf = "
+    SELECT CONCAT(s.anio, '-', s.periodo) AS periodo
+    FROM sm_respuestas r
+    JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
+    WHERE r.id_py = $id_py
+      AND s.tipo = 'semestral'
+    ORDER BY r.actualizado_at DESC, r.id DESC
+    LIMIT 1
+  ";
+}
+if ($rsPeriodo = mysqli_query($conexion, $sqlPeriodoPdf)) {
+  if ($rowPeriodo = mysqli_fetch_assoc($rsPeriodo)) {
+    $proy['periodo_pdf'] = (string)($rowPeriodo['periodo'] ?? '');
+  }
+  mysqli_free_result($rsPeriodo);
+}
 
 // === Catálogos para ODS y Programa-ODS ===
 $ODS = []; $PROGS = []; $PROG_ODS = [];
@@ -192,6 +223,7 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
 /* Botón Drive (amarillo/negro) */ .btn-drive{background:#FFEB3B;color:#111;border:1px solid #F1D334;} .btn-drive:hover{background:#F7E369;color:#111;border-color:#E8C92A;}
 /* Botón PDF reporte */ .btn-report{background:#E53935;color:#fff;border:1px solid #C62828;} .btn-report:hover{background:#D32F2F;color:#fff;border-color:#B71C1C;}
 /* Responsive */ @media (max-width:991.98px){ .rsu-split-row{display:block;} .rsu-left{max-height:180px;margin-bottom:.5rem;} .rsu-right{height:calc(72vh - 200px);} }
+
 </style>
 
 <!-- ROOT del informe: lo usamos para imprimir solo esto -->
@@ -202,7 +234,7 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
       <div><strong>Coordinador:</strong> <?= htmlspecialchars($proy['coordinador'] ?: '—') ?> <?php if ($proy['cod_docente']!==''): ?><span class="text-muted"> (<?= htmlspecialchars($proy['cod_docente']) ?>)</span><?php endif; ?></div>
     </div>
     <div>
-      <button type="button" class="btn btn-report" onclick="rsu_imprimir_informe()"><i class="fas fa-file-pdf"></i> Generar reporte en PDF</button>
+      <a class="btn btn-report" href="<?= htmlspecialchars($url_descarga_pdf, ENT_QUOTES, 'UTF-8') ?>"><i class="fas fa-file-pdf"></i> Generar reporte en PDF</a>
     </div>
   </div>
 
@@ -263,72 +295,3 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
     <?php endforeach; ?>
   <?php endif; ?>
 </div>
-<script>
-function rsu_imprimir_informe(){
-  try{
-    var root = document.getElementById('rsu-informe-root');
-    if(!root){ window.print(); return; }
-
-    // 👉 Todo lo imprimimos en un iframe oculto (sin ventanas nuevas ni about:blank)
-    var iframe = document.getElementById('rsu-print-iframe');
-    if (!iframe) {
-      iframe = document.createElement('iframe');
-      iframe.id = 'rsu-print-iframe';
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.style.opacity = '0';
-      document.body.appendChild(iframe);
-    }
-
-    var styles = `
-      <style>
-        html,body{margin:0;padding:0;}
-        *{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
-        .rsu-info-head{background:#f8f9fa;border:1px solid #e5e5e5;border-radius:8px;padding:10px 12px;margin:10px 10px 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
-        .form-card{border:1px solid #e5e5e5;border-radius:10px;margin:10px;overflow:hidden;page-break-inside:avoid;}
-        .form-head{background:#e9f4ff;border-bottom:1px solid #d6eaff;padding:8px 12px;font-weight:600;}
-        .item-section{padding:8px 12px;border-bottom:1px dashed #e9ecef;}
-        .item-section:last-child{border-bottom:0;}
-        .item-title{font-weight:700;margin:6px 0;color:#0d6efd;}
-        .badge{display:inline-block;padding:.35em .6em;border-radius:.35rem;}
-        .table{border-collapse:collapse;width:100%;}
-        .table th,.table td{border:1px solid #e5e7eb;padding:6px;vertical-align:middle;}
-        .apple-table{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:none;}
-        .apple-table thead th{background:#111;color:#fff;border-color:#111;}
-        .apple-table tbody tr:nth-child(odd){background:#fafafa;}
-        .drive-table thead th{background:#FFEB3B;color:#111;border-color:#F1D334;}
-        a[href]:after{content:'' !important;}
-        .btn{display:inline-block;padding:6px 10px;border-radius:6px;text-decoration:none;}
-        .btn-drive{background:#FFEB3B;color:#111;border:1px solid #F1D334;}
-        .btn-file-pdf{background:#E53935;color:#fff;border:1px solid #C62828;}
-        .btn-file-excel{background:#1E7E34;color:#fff;border:1px solid #19692c;}
-        .btn-file-word{background:#185ABD;color:#fff;border:1px solid #0f4bb0;}
-        .btn-file-generic{background:#6c757d;color:#fff;border:1px solid #5a6268;}
-        @page{size:A4; margin:12mm;}
-        @media print{ .btn-report{display:none !important;} .rsu-left{display:none !important;} .rsu-right{width:100% !important; padding-left:0 !important;} }
-      </style>
-    `;
-
-    var doc = iframe.contentWindow || iframe.contentDocument;
-    if (doc.document) doc = doc.document;
-    doc.open();
-    doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reporte</title>'+styles+'</head><body>'+document.getElementById('rsu-informe-root').innerHTML+'</body></html>');
-    doc.close();
-
-    setTimeout(function(){
-      (iframe.contentWindow || iframe).focus();
-      (iframe.contentWindow || iframe).print();
-    }, 300);
-  }catch(e){
-    console.error(e);
-    window.print();
-  }
-}
-</script>
-
-
-

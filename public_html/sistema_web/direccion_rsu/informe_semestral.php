@@ -44,11 +44,11 @@ error_reporting(E_ALL);
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                     <a href="https://gla.pe/b_demo/" class="nav-link" target="_blank">
-                        <p style="color: white;">Ir a página DIRSU</p>
+                        <p style="color: white;">Ir a p&aacute;gina DIRSU</p>
                     </a>
                 </li>
                 <li class="nav-item d-none d-sm-inline-block">
-                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
+                    <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesi&oacute;n</a>
                 </li>
             </ul>
         </nav>
@@ -60,9 +60,9 @@ error_reporting(E_ALL);
 </section>
         </div>
         <footer class="main-footer">
-            <strong>© 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
+            <strong>&copy; 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <p>Desarrollado por el <a href="https://adminlte.io"> Área  informática - DIRSU</a></p>
+                <p>Desarrollado por el <a href="https://adminlte.io"> &Aacute;rea inform&aacute;tica - DIRSU</a></p>
             </div>
         </footer>
     </div>
