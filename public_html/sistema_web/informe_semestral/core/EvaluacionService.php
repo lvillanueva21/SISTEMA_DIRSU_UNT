@@ -47,6 +47,21 @@ class EvaluacionService {
     return $row;
   }
 
+  /** Evaluación de una respuesta específica, con FOR UPDATE (debes estar en transacción) */
+  public function getEvalForUpdateByRespuesta(int $id_respuesta): ?array {
+    $sql = "SELECT e.*
+            FROM eva_evaluaciones e
+            WHERE e.id_respuesta = ?
+            LIMIT 1 FOR UPDATE";
+    $st = $this->db->prepare($sql);
+    $st->bind_param('i', $id_respuesta);
+    $st->execute();
+    $res = $st->get_result();
+    $row = ($res && $res->num_rows) ? $res->fetch_assoc() : null;
+    $st->close();
+    return $row;
+  }
+
   /** Única por (evaluación, oficina) gracias a uk_eval_ofi */
   public function getInstanciaActual(int $eval_id, int $oficina_id): ?array {
     $sql = "SELECT *

@@ -10,6 +10,105 @@ $rol_nombre = $usr['rol'] ?? 'Rol no identificado';
 
 $accion = isset($_GET['accion']) ? strtolower(trim((string)$_GET['accion'])) : '';
 $id_py  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_py_req = $id_py;
+$id_respuesta = isset($_GET['id_respuesta']) ? (int)$_GET['id_respuesta'] : 0;
+$id_periodo = isset($_GET['semestral']) ? (int)$_GET['semestral'] : (isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0);
+$periodo_sel_nombre = '';
+$forzar_sin_respuesta = false;
+
+if ($id_periodo > 0) {
+    $sqlNomPeriodo = "SELECT nombre FROM periodos WHERE id = $id_periodo LIMIT 1";
+    if ($rsNomPeriodo = mysqli_query($conexion, $sqlNomPeriodo)) {
+        if ($rNomPeriodo = mysqli_fetch_assoc($rsNomPeriodo)) {
+            $periodo_sel_nombre = (string)($rNomPeriodo['nombre'] ?? '');
+        }
+        mysqli_free_result($rsNomPeriodo);
+    }
+}
+
+$periodoMatchSql = '';
+if ($id_periodo > 0) {
+    $periodoMatchSql = " AND EXISTS (
+      SELECT 1
+      FROM periodos prf
+      WHERE prf.id = $id_periodo
+        AND prf.nombre COLLATE utf8mb4_unicode_ci = CONCAT(
+          CAST(s.anio AS CHAR CHARACTER SET utf8mb4),
+          '-',
+          CAST(s.periodo AS CHAR CHARACTER SET utf8mb4)
+        ) COLLATE utf8mb4_unicode_ci
+    ) ";
+}
+
+if ($id_respuesta > 0) {
+    $sqlResp = "SELECT id_py FROM sm_respuestas WHERE id = $id_respuesta LIMIT 1";
+    if ($rsResp = mysqli_query($conexion, $sqlResp)) {
+        if ($rResp = mysqli_fetch_assoc($rsResp)) {
+            $id_py_resp = (int)($rResp['id_py'] ?? 0);
+            if ($id_py_req > 0 && $id_py_resp > 0 && $id_py_req !== $id_py_resp) {
+                mysqli_free_result($rsResp);
+                echo '<div class="alert alert-danger mb-0">Parámetros inconsistentes entre proyecto y respuesta.</div>';
+                exit;
+            }
+            $id_py = $id_py_resp;
+        }
+        mysqli_free_result($rsResp);
+    }
+
+    if ($id_periodo > 0) {
+        $sqlRespPeriodo = "
+          SELECT 1
+          FROM sm_respuestas r
+          JOIN sm_proyecto_semestres s
+            ON s.id = r.id_semestre
+           AND s.tipo = 'semestral'
+           AND COALESCE(s.vigente, 1) = 1
+          WHERE r.id = $id_respuesta
+          $periodoMatchSql
+          LIMIT 1
+        ";
+        $match = false;
+        if ($rsRespPeriodo = mysqli_query($conexion, $sqlRespPeriodo)) {
+            $match = (bool)mysqli_fetch_assoc($rsRespPeriodo);
+            mysqli_free_result($rsRespPeriodo);
+        }
+        if (!$match) {
+            $id_respuesta = 0;
+            $forzar_sin_respuesta = true;
+        }
+    }
+} elseif ($id_py > 0) {
+    // Fallback controlado: resolver respuesta según periodo seleccionado (si existe)
+    if ($id_periodo > 0) {
+        $sqlUltRespPeriodo = "
+          SELECT r.id
+          FROM sm_respuestas r
+          JOIN sm_proyecto_semestres s
+            ON s.id = r.id_semestre
+           AND s.tipo = 'semestral'
+           AND COALESCE(s.vigente, 1) = 1
+          WHERE r.id_py = $id_py
+          $periodoMatchSql
+          ORDER BY r.actualizado_at DESC, r.id DESC
+          LIMIT 1
+        ";
+        if ($rsUlt = mysqli_query($conexion, $sqlUltRespPeriodo)) {
+            if ($rUlt = mysqli_fetch_assoc($rsUlt)) {
+                $id_respuesta = (int)($rUlt['id'] ?? 0);
+            }
+            mysqli_free_result($rsUlt);
+        }
+        if ($id_respuesta <= 0) $forzar_sin_respuesta = true;
+    } else {
+        $sqlUltResp = "SELECT id FROM sm_respuestas WHERE id_py = $id_py ORDER BY actualizado_at DESC, id DESC LIMIT 1";
+        if ($rsUlt = mysqli_query($conexion, $sqlUltResp)) {
+            if ($rUlt = mysqli_fetch_assoc($rsUlt)) {
+                $id_respuesta = (int)($rUlt['id'] ?? 0);
+            }
+            mysqli_free_result($rsUlt);
+        }
+    }
+}
 
 $labels = [
   'cotejo'  => 'Calificar Cotejo',
@@ -36,19 +135,16 @@ if ($id_py > 0) {
              ON up.id_proyecto = p.id AND up.activo = 1
       LEFT JOIN usuarios u
              ON u.id = up.id_usuario
-      LEFT JOIN (
-        SELECT r.id_py, r.id_formulario
-        FROM sm_respuestas r
-        WHERE r.id_py = ?
-        ORDER BY r.actualizado_at DESC, r.id DESC
-        LIMIT 1
-      ) r ON r.id_py = p.id
+      LEFT JOIN sm_respuestas r
+             ON r.id_py = p.id
+            AND r.id = ?
       LEFT JOIN sm_formularios f ON f.id = r.id_formulario
       WHERE p.id = ?
       LIMIT 1
     ";
     if ($stmt = mysqli_prepare($conexion, $sql)) {
-        mysqli_stmt_bind_param($stmt, 'ii', $id_py, $id_py);
+        $ridBind = ($id_respuesta > 0) ? $id_respuesta : 0;
+        mysqli_stmt_bind_param($stmt, 'ii', $ridBind, $id_py);
         if (mysqli_stmt_execute($stmt)) {
             $res = mysqli_stmt_get_result($stmt);
             if ($res && ($row = mysqli_fetch_assoc($res))) {
@@ -78,17 +174,15 @@ $rb_obss           = [1=>'',
                       4=>'',
                       5=>''];
 
-if ($id_py > 0) {
-    // Ubicar última evaluación y oficina actual (si hay)
+if ($id_py > 0 && $id_respuesta > 0 && !$forzar_sin_respuesta) {
+    // Ubicar evaluación de la respuesta seleccionada y oficina actual (si hay)
     $eval = null;
     $sqlEval = "SELECT e.id AS eval_id, e.id_oficina_actual
                 FROM eva_evaluaciones e
-                JOIN sm_respuestas r ON r.id = e.id_respuesta
-                WHERE r.id_py = ?
-                ORDER BY e.id DESC
+                WHERE e.id_respuesta = ?
                 LIMIT 1";
     if ($st = $conexion->prepare($sqlEval)) {
-        $st->bind_param('i', $id_py);
+        $st->bind_param('i', $id_respuesta);
         if ($st->execute()) {
             $res = $st->get_result();
             $eval = ($res && $res->num_rows) ? $res->fetch_assoc() : null;
@@ -221,8 +315,15 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
 </style>
 
 <div class="container-fluid py-2">
-<?php if (!$id_py || $titulo === ''): ?>
+<?php if (!$id_py): ?>
   <div class="alert alert-danger mb-0">No se pudo obtener el proyecto (ID: <?= (int)$id_py ?>) o no tienes acceso.</div>
+<?php elseif ($forzar_sin_respuesta || $id_respuesta <= 0): ?>
+  <div class="alert alert-warning mb-0">
+    No existe informe semestral para el periodo seleccionado<?= $periodo_sel_nombre !== '' ? ' (' . htmlspecialchars($periodo_sel_nombre, ENT_QUOTES, 'UTF-8') . ')' : '' ?>.
+    No se puede registrar evaluación sin informe del periodo activo.
+  </div>
+<?php elseif ($titulo === ''): ?>
+  <div class="alert alert-danger mb-0">No se pudo obtener el contexto del proyecto o no tienes acceso.</div>
 <?php else: ?>
 
   <!-- ——— Encabezado compacto: Proyecto / Revisión / Coordinador ——— -->
@@ -617,6 +718,8 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
 (function(){
   const API = '/sistema_web/informe_semestral/api/save_evaluacion.php';
   const ID_PY   = <?= (int)$id_py ?>;
+  const ID_RESP = <?= (int)$id_respuesta ?>;
+  const SEMESTRAL = <?= (int)$id_periodo ?>;
   const ACCION  = '<?= htmlspecialchars($accion, ENT_QUOTES) ?>';
   const OFICINA = '<?= htmlspecialchars($ofCode ?? '', ENT_QUOTES) ?>';
 
@@ -625,7 +728,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
   const $mask = document.getElementById('evSavingMask');
   const $contenedor = document.getElementById('contenidoEval');
 
-  if (!$btnGuardar || !ID_PY || !ACCION || !OFICINA) return;
+  if (!$btnGuardar || !ID_PY || !ID_RESP || !ACCION || !OFICINA) return;
 
   /* ========= Helpers de red ========= */
   function post(data){
@@ -710,7 +813,13 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
   $btnGuardar.addEventListener('click', async function(){
     setBusy(true);
     try{
-      let payload = { id_py: ID_PY, accion: ACCION, oficina: OFICINA };
+      let payload = {
+        id_py: ID_PY,
+        id_respuesta: ID_RESP,
+        semestral: SEMESTRAL,
+        accion: ACCION,
+        oficina: OFICINA
+      };
 
       if (ACCION === 'cotejo') {
         const cal   = document.getElementById('evCalificacion');

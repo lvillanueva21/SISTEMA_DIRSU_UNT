@@ -40,17 +40,15 @@ function oficinasActivasOrdered(): array {
 
 /** Mapea rol -> posición en la ruta (por orden) y devuelve {id, codigo, nombre} de su oficina */
 function oficinaIdNombrePorRol(int $id_rol): ?array {
-    // Mapa por ORDINAL (asumiendo el orden de la ruta: 0:PCF, 1:DD, 2:DF, 3:RSU)
-    $idxMap = [
-        5 => 0, // Comité de Facultad
-        4 => 1, // Dirección de Departamento
-        3 => 2, // Decanato
-        1 => 3, // RSU
-    ];
-    if (!isset($idxMap[$id_rol])) return null; // Admin/Coordinador: sin oficina fija
+    $codigo = oficinaCodigoPorRol($id_rol);
+    if ($codigo === null) return null; // Admin/Coordinador: sin oficina fija
     $ofs = oficinasActivasOrdered();
-    $i = $idxMap[$id_rol];
-    return isset($ofs[$i]) ? $ofs[$i] : null;
+    foreach ($ofs as $of) {
+        if (strtoupper((string)($of['codigo'] ?? '')) === strtoupper($codigo)) {
+            return $of;
+        }
+    }
+    return null;
 }
 
 /** Estado actual de evaluación para un proyecto */
@@ -95,12 +93,54 @@ function estadoEvaluacionActualPorProyecto(int $id_py): ?array {
     ];
 }
 
+/** Estado de evaluación asociado a una respuesta específica (contexto semestral exacto) */
+function estadoEvaluacionPorRespuesta(int $id_respuesta): ?array {
+    global $conexion;
+    $id_respuesta = (int)$id_respuesta;
+    if ($id_respuesta <= 0) return null;
+
+    $sql = "SELECT
+                e.id                AS eval_id,
+                e.situacion         AS situacion,
+                e.id_oficina_actual AS oficina_id,
+                o.codigo            AS oficina_cod,
+                o.nombre            AS oficina_nom,
+                (
+                  SELECT oi.estado
+                  FROM eva_oficina_instancias oi
+                  WHERE oi.id_evaluacion = e.id
+                    AND oi.id_oficina    = e.id_oficina_actual
+                  ORDER BY oi.id DESC
+                  LIMIT 1
+                ) AS instancia_estado
+            FROM eva_evaluaciones e
+            LEFT JOIN eva_oficinas o ON o.id = e.id_oficina_actual
+            WHERE e.id_respuesta = ?
+            LIMIT 1";
+    if (!($stmt = $conexion->prepare($sql))) return null;
+    $stmt->bind_param('i', $id_respuesta);
+    if (!$stmt->execute()) { $stmt->close(); return null; }
+    $res = $stmt->get_result();
+    $row = ($res && $res->num_rows) ? $res->fetch_assoc() : null;
+    $stmt->close();
+    if (!$row) return null;
+
+    return [
+        'eval_id'          => (int)$row['eval_id'],
+        'situacion'        => $row['situacion'] ?: null,
+        'oficina_id'       => $row['oficina_id'] ? (int)$row['oficina_id'] : null,
+        'oficina_cod'      => $row['oficina_cod'] ?: null,
+        'oficina_nom'      => $row['oficina_nom'] ?: null,
+        'instancia_estado' => $row['instancia_estado'] ?: null,
+    ];
+}
+
 /**
  * ¿El botón se puede CLICKear?
  * Regla: proyecto debe estar en la oficina del rol (salvo admin), la instancia en 'en_espera',
  * y NO estar aprobado total ni observado.
  */
-function puedeClickearAccion(int $id_rol, string $accion, int $id_py): array {
+function puedeClickearAccion(int $id_rol, string $accion, int $id_py, ?int $id_respuesta = null): array {
     $out = ['enabled' => false, 'why' => 'No autorizado', 'state' => null];
 
     // Coordinador nunca califica
@@ -111,8 +151,14 @@ function puedeClickearAccion(int $id_rol, string $accion, int $id_py): array {
         $out['why'] = 'Acción no corresponde a su oficina'; return $out;
     }
 
-    $st = estadoEvaluacionActualPorProyecto($id_py);
-    if (!$st) { $out['why'] = 'El proyecto aún no inició su ruta'; return $out; }
+    $rid = isset($id_respuesta) ? (int)$id_respuesta : 0;
+    $st = ($rid > 0) ? estadoEvaluacionPorRespuesta($rid) : estadoEvaluacionActualPorProyecto($id_py);
+    if (!$st) {
+        $out['why'] = ($rid > 0)
+            ? 'No hay evaluación para el informe semestral seleccionado'
+            : 'El proyecto aún no inició su ruta';
+        return $out;
+    }
     if (($st['situacion'] ?? '') === 'aprobado') { $out['why'] = 'Proyecto ya aprobado'; return $out; }
 
     // Admin (0) puede siempre que no esté observado ni aprobado

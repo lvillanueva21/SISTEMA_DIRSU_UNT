@@ -658,7 +658,12 @@ function renderBotonesAccion(array $acciones, int $id_py, ?int $id_respuesta = n
         }
 
         // Evaluación: decidir habilitado/bloqueado + mensaje humano
-        $perm = puedeClickearAccion($id_rol, $a, $id_py);
+        $rid = ($id_respuesta !== null && $id_respuesta > 0) ? (int)$id_respuesta : null;
+        if ($rid === null) {
+            $perm = ['enabled' => false, 'why' => 'No existe informe semestral para el periodo seleccionado.', 'state' => []];
+        } else {
+            $perm = puedeClickearAccion($id_rol, $a, $id_py, $rid);
+        }
         $st   = $perm['state'] ?? [];
         $ofNom = $st['oficina_nom'] ?? ($st['oficina_cod'] ?? 'otra oficina');
         $inst  = $st['instancia_estado'] ?? '';
@@ -670,7 +675,9 @@ function renderBotonesAccion(array $acciones, int $id_py, ?int $id_respuesta = n
             $msg   = $title;
         } else {
             // Priorizar razones específicas
-            if ($sit === 'aprobado' || stripos((string)$perm['why'], 'aprobado') !== false) {
+            if ($rid === null) {
+                $msg = '🚫 No puedes calificar. No existe informe semestral para el periodo seleccionado.';
+            } elseif ($sit === 'aprobado' || stripos((string)$perm['why'], 'aprobado') !== false) {
                 $msg = '🚫 No puedes calificar. El proyecto ha recibido la aprobación total.';
             } elseif ($inst === 'observado' || stripos((string)$perm['why'], 'observado') !== false) {
                 $msg = '🚫 No puedes calificar, el proyecto necesita ser subsanado por coordinador.';
@@ -696,6 +703,7 @@ function renderBotonesAccion(array $acciones, int $id_py, ?int $id_respuesta = n
              .  ' style="' . $style . $styleExtra . '"'
              .  ' data-accion="' . htmlspecialchars($a) . '"'
              .  ' data-id_py="' . (int)$id_py . '"'
+             .  (($id_respuesta !== null && $id_respuesta > 0) ? (' data-id_respuesta="' . (int)$id_respuesta . '"') : '')
              .  ' title="' . htmlspecialchars($title) . '"'
              .   $disabledAttr
              .  '>'

@@ -4,16 +4,73 @@ include_once __DIR__ . '/../componentes/configSesion.php';
 include_once __DIR__ . '/../includes/db_connection.php';
 
 $id_py = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_py_req = $id_py;
 $id_respuesta = isset($_GET['id_respuesta']) ? (int)$_GET['id_respuesta'] : 0;
+$id_periodo = isset($_GET['semestral']) ? (int)$_GET['semestral'] : (isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0);
+$periodo_sel_nombre = '';
+$forzar_sin_resultados = false;
 $url_descarga_pdf = '';
+
+if ($id_periodo > 0) {
+  $sqlNomPeriodo = "SELECT nombre FROM periodos WHERE id = $id_periodo LIMIT 1";
+  if ($rsNomPeriodo = mysqli_query($conexion, $sqlNomPeriodo)) {
+    if ($rNomPeriodo = mysqli_fetch_assoc($rsNomPeriodo)) {
+      $periodo_sel_nombre = (string)($rNomPeriodo['nombre'] ?? '');
+    }
+    mysqli_free_result($rsNomPeriodo);
+  }
+}
+
+$periodoMatchSql = '';
+if ($id_periodo > 0) {
+  $periodoMatchSql = " AND EXISTS (
+      SELECT 1
+      FROM periodos prf
+      WHERE prf.id = $id_periodo
+        AND prf.nombre COLLATE utf8mb4_unicode_ci = CONCAT(
+          CAST(s.anio AS CHAR CHARACTER SET utf8mb4),
+          '-',
+          CAST(s.periodo AS CHAR CHARACTER SET utf8mb4)
+        ) COLLATE utf8mb4_unicode_ci
+    ) ";
+}
 
 if ($id_respuesta > 0) {
   $sqlResp = "SELECT id_py FROM sm_respuestas WHERE id = $id_respuesta LIMIT 1";
   if ($rsResp = mysqli_query($conexion, $sqlResp)) {
     if ($rResp = mysqli_fetch_assoc($rsResp)) {
-      $id_py = (int)($rResp['id_py'] ?? 0);
+      $id_py_resp = (int)($rResp['id_py'] ?? 0);
+      if ($id_py_req > 0 && $id_py_resp > 0 && $id_py_req !== $id_py_resp) {
+        mysqli_free_result($rsResp);
+        echo "<div class='alert alert-danger m-3'>Par&aacute;metros inconsistentes entre proyecto y respuesta.</div>";
+        exit;
+      }
+      $id_py = $id_py_resp;
     }
     mysqli_free_result($rsResp);
+  }
+
+  if ($id_periodo > 0) {
+    $sqlRespPeriodo = "
+      SELECT 1
+      FROM sm_respuestas r
+      JOIN sm_proyecto_semestres s
+        ON s.id = r.id_semestre
+       AND s.tipo = 'semestral'
+       AND COALESCE(s.vigente, 1) = 1
+      WHERE r.id = $id_respuesta
+      $periodoMatchSql
+      LIMIT 1
+    ";
+    $match = false;
+    if ($rsRespPeriodo = mysqli_query($conexion, $sqlRespPeriodo)) {
+      $match = (bool)mysqli_fetch_assoc($rsRespPeriodo);
+      mysqli_free_result($rsRespPeriodo);
+    }
+    if (!$match) {
+      $id_respuesta = 0;
+      $forzar_sin_resultados = true;
+    }
   }
 }
 
@@ -21,6 +78,7 @@ if ($id_py <= 0) { echo "<div class='alert alert-danger m-3'>ID de proyecto inv�
 
 $url_descarga_pdf = '../informe_semestral/descargar_pdf_tcpdf.php?id=' . $id_py;
 if ($id_respuesta > 0) $url_descarga_pdf .= '&id_respuesta=' . $id_respuesta;
+if ($id_periodo > 0) $url_descarga_pdf .= '&semestral=' . $id_periodo;
 
 // === Encabezado del proyecto ===
 $proy = ['titulo' => '', 'coordinador' => '', 'cod_docente' => '', 'periodo_pdf' => ''];
@@ -50,6 +108,7 @@ if ($id_respuesta > 0) {
     JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
     WHERE r.id_py = $id_py
       AND s.tipo = 'semestral'
+      $periodoMatchSql
     ORDER BY r.actualizado_at DESC, r.id DESC
     LIMIT 1
   ";
@@ -87,8 +146,15 @@ $sqlCab = "
   SELECT r.id, r.id_formulario, r.estado, r.creado_at, r.actualizado_at, f.nombre AS formulario
   FROM sm_respuestas r
   JOIN sm_formularios f ON f.id = r.id_formulario
+  LEFT JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
   WHERE r.id_py = $id_py
-  " . ($id_respuesta > 0 ? " AND r.id = $id_respuesta " : "") . "
+  " . ($id_respuesta > 0
+      ? " AND r.id = $id_respuesta "
+      : (($id_periodo > 0)
+          ? " AND s.tipo = 'semestral' AND COALESCE(s.vigente, 1) = 1 $periodoMatchSql "
+          : "")
+    ) . "
+  " . ($forzar_sin_resultados ? " AND 1=0 " : "") . "
   ORDER BY f.nombre ASC, r.id ASC
 ";
 if ($rs = mysqli_query($conexion, $sqlCab)) { while ($r = mysqli_fetch_assoc($rs)) $cabs[] = $r; mysqli_free_result($rs); }
@@ -239,7 +305,13 @@ function render_valor(array $row, array $ODS, array $PROGS, array $PROG_ODS, arr
   </div>
 
   <?php if (empty($cabs)): ?>
-    <div class="alert alert-warning m-2">Este proyecto aún no tiene respuestas registradas.</div>
+    <?php if ($id_periodo > 0): ?>
+      <div class="alert alert-warning m-2">
+        No existe informe semestral para el periodo seleccionado<?= $periodo_sel_nombre !== '' ? ' (' . htmlspecialchars($periodo_sel_nombre, ENT_QUOTES, 'UTF-8') . ')' : '' ?>.
+      </div>
+    <?php else: ?>
+      <div class="alert alert-warning m-2">Este proyecto aún no tiene respuestas registradas.</div>
+    <?php endif; ?>
   <?php else: ?>
     <?php foreach ($cabs as $cab): ?>
       <?php

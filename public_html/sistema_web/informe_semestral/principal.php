@@ -346,12 +346,12 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 
       // Botones de detalle (uno por tipo observado)
       if ($cj === 'observado') {
-        echo '<button type="button" class="btn btn-sm btn-outline-danger mt-1 btn-detalle-obs" data-id_py="'.(int)$it['id_py'].'" data-tipo="cotejo">'
+        echo '<button type="button" class="btn btn-sm btn-outline-danger mt-1 btn-detalle-obs" data-id_py="'.(int)$it['id_py'].'" data-id_respuesta="'.(int)($it['resp_id'] ?? 0).'" data-tipo="cotejo">'
            . '<i class="fas fa-exclamation-triangle"></i> Detalle Observación Cotejo'
            . '</button><br>';
       }
       if ($rb === 'observado') {
-        echo '<button type="button" class="btn btn-sm btn-outline-danger mt-1 btn-detalle-obs" data-id_py="'.(int)$it['id_py'].'" data-tipo="rubrica">'
+        echo '<button type="button" class="btn btn-sm btn-outline-danger mt-1 btn-detalle-obs" data-id_py="'.(int)$it['id_py'].'" data-id_respuesta="'.(int)($it['resp_id'] ?? 0).'" data-tipo="rubrica">'
            . '<i class="fas fa-exclamation-triangle"></i> Detalle Observación Rúbrica'
            . '</button>';
       }
@@ -597,13 +597,15 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
 
     const idpy = btn.getAttribute('data-id_py');
     const idresp = btn.getAttribute('data-id_respuesta');
+    const semSel = document.getElementById('selSemestral');
+    const semVal = semSel ? semSel.value : '';
     if (!idpy) return;
 
     const $contenedor = window.jQuery ? jQuery('#contenidoInforme') : null;
     if ($contenedor) $contenedor.html('<p class="text-center text-muted my-4">Cargando informe...</p>');
 
     if (window.jQuery) {
-      jQuery.get('../informe_semestral/ver_informe.php', { id: idpy, id_respuesta: idresp || '' }, function (html) {
+      jQuery.get('../informe_semestral/ver_informe.php', { id: idpy, id_respuesta: idresp || '', semestral: semVal || '' }, function (html) {
         jQuery('#contenidoInforme').html(html);
       }, 'html').fail(function () {
         jQuery('#contenidoInforme').html('<div class="text-danger p-3">No se pudo cargar el informe.</div>');
@@ -612,7 +614,7 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
       return;
     }
 
-    fetch('../informe_semestral/ver_informe.php?id=' + encodeURIComponent(idpy) + '&id_respuesta=' + encodeURIComponent(idresp || ''))
+    fetch('../informe_semestral/ver_informe.php?id=' + encodeURIComponent(idpy) + '&id_respuesta=' + encodeURIComponent(idresp || '') + '&semestral=' + encodeURIComponent(semVal || ''))
       .then((r) => r.text())
       .then((html) => { document.getElementById('contenidoInforme').innerHTML = html; })
       .catch(() => { document.getElementById('contenidoInforme').innerHTML = '<div class="text-danger p-3">Error cargando informe.</div>'; });
@@ -656,6 +658,9 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
 
     const accion = btn.getAttribute('data-accion') || '';
     const idpy   = btn.getAttribute('data-id_py')    || '';
+    const idresp = btn.getAttribute('data-id_respuesta') || '';
+    const semSel = document.getElementById('selSemestral');
+    const semVal = semSel ? semSel.value : '';
 
     const titulo = labels[accion] || 'Acción';
     const $t = document.getElementById('tituloEval');
@@ -665,7 +670,10 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     if ($c) $c.innerHTML = '<p class="text-center text-muted my-4">Cargando…</p>';
 
     const url = '../informe_semestral/modales/evaluacion_msg.php?accion='
-              + encodeURIComponent(accion) + '&id=' + encodeURIComponent(idpy);
+              + encodeURIComponent(accion)
+              + '&id=' + encodeURIComponent(idpy)
+              + '&id_respuesta=' + encodeURIComponent(idresp || '')
+              + '&semestral=' + encodeURIComponent(semVal || '');
 
     // jQuery si existe, si no fetch nativo
     if (window.jQuery) {
@@ -706,13 +714,19 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
 
     const idpy = btn.getAttribute('data-id_py');
     const tipo = btn.getAttribute('data-tipo'); // 'cotejo' | 'rubrica'
+    const idresp = btn.getAttribute('data-id_respuesta') || '';
+    const semSel = document.getElementById('selSemestral');
+    const semVal = semSel ? semSel.value : '';
     if (!idpy || !tipo) return;
 
     const $contenedor = window.jQuery ? jQuery('#contenidoDetObs') : null;
     if ($contenedor) $contenedor.html('<p class="text-center text-muted my-4">Cargando…</p>');
 
     const url = '../informe_semestral/modales/detalle_observacion.php?id_py='
-              + encodeURIComponent(idpy) + '&tipo=' + encodeURIComponent(tipo);
+              + encodeURIComponent(idpy)
+              + '&tipo=' + encodeURIComponent(tipo)
+              + '&id_respuesta=' + encodeURIComponent(idresp || '')
+              + '&semestral=' + encodeURIComponent(semVal || '');
 
     if (window.jQuery) {
       jQuery.get(url, function (html) {

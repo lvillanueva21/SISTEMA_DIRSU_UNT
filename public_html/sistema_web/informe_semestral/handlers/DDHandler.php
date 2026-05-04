@@ -19,12 +19,12 @@ class DDHandler {
    * - No usa observación: se envía NULL.
    * - No usa días: se envía 0.
    */
-  public function guardar(int $id_py, string $accion, array $val, array $usr): array {
+  public function guardar(int $id_py, int $id_respuesta, string $accion, array $val, array $usr): array {
     if ($accion !== 'vb') return ['ok'=>false,'error'=>'Acción no soportada en DD'];
 
     $this->svc->begin();
     try{
-      $eval = $this->svc->getEvalForUpdate($id_py);
+      $eval = $this->svc->getEvalForUpdateByRespuesta($id_respuesta);
       if(!$eval){
         $this->svc->rollback();
         return ['ok'=>false,'error'=>'El proyecto no inició su ruta'];

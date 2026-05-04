@@ -4,15 +4,72 @@ include_once __DIR__ . '/../includes/db_connection.php';
 require_once __DIR__ . '/../modules/TCPDF/tcpdf.php';
 
 $id_py = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_py_req = $id_py;
 $id_respuesta = isset($_GET['id_respuesta']) ? (int)$_GET['id_respuesta'] : 0;
+$id_periodo = isset($_GET['semestral']) ? (int)$_GET['semestral'] : (isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0);
+$periodo_sel_nombre = '';
+$forzar_sin_resultados = false;
+
+if ($id_periodo > 0) {
+    $sqlNomPeriodo = "SELECT nombre FROM periodos WHERE id = $id_periodo LIMIT 1";
+    if ($rsNomPeriodo = mysqli_query($conexion, $sqlNomPeriodo)) {
+        if ($rNomPeriodo = mysqli_fetch_assoc($rsNomPeriodo)) {
+            $periodo_sel_nombre = (string)($rNomPeriodo['nombre'] ?? '');
+        }
+        mysqli_free_result($rsNomPeriodo);
+    }
+}
+
+$periodoMatchSql = '';
+if ($id_periodo > 0) {
+    $periodoMatchSql = " AND EXISTS (
+      SELECT 1
+      FROM periodos prf
+      WHERE prf.id = $id_periodo
+        AND prf.nombre COLLATE utf8mb4_unicode_ci = CONCAT(
+          CAST(s.anio AS CHAR CHARACTER SET utf8mb4),
+          '-',
+          CAST(s.periodo AS CHAR CHARACTER SET utf8mb4)
+        ) COLLATE utf8mb4_unicode_ci
+    ) ";
+}
 
 if ($id_respuesta > 0) {
     $sqlResp = "SELECT id_py FROM sm_respuestas WHERE id = $id_respuesta LIMIT 1";
     if ($rsResp = mysqli_query($conexion, $sqlResp)) {
         if ($rowResp = mysqli_fetch_assoc($rsResp)) {
-            $id_py = (int)($rowResp['id_py'] ?? 0);
+            $id_py_resp = (int)($rowResp['id_py'] ?? 0);
+            if ($id_py_req > 0 && $id_py_resp > 0 && $id_py_req !== $id_py_resp) {
+                mysqli_free_result($rsResp);
+                http_response_code(400);
+                exit('Parametros inconsistentes entre proyecto y respuesta.');
+            }
+            $id_py = $id_py_resp;
         }
         mysqli_free_result($rsResp);
+    }
+
+    if ($id_periodo > 0) {
+        $sqlRespPeriodo = "
+          SELECT 1
+          FROM sm_respuestas r
+          JOIN sm_proyecto_semestres s
+            ON s.id = r.id_semestre
+           AND s.tipo = 'semestral'
+           AND COALESCE(s.vigente, 1) = 1
+          WHERE r.id = $id_respuesta
+          $periodoMatchSql
+          LIMIT 1
+        ";
+        $match = false;
+        if ($rsRespPeriodo = mysqli_query($conexion, $sqlRespPeriodo)) {
+            $match = (bool)mysqli_fetch_assoc($rsRespPeriodo);
+            mysqli_free_result($rsRespPeriodo);
+        }
+        if (!$match) {
+            $id_respuesta = 0;
+            $forzar_sin_resultados = true;
+        }
     }
 }
 
@@ -429,6 +486,7 @@ if ($id_respuesta > 0) {
       JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
       WHERE r.id_py = $id_py
         AND s.tipo = 'semestral'
+        $periodoMatchSql
       ORDER BY r.actualizado_at DESC, r.id DESC
       LIMIT 1
     ";
@@ -471,8 +529,15 @@ $sqlCab = "
   SELECT r.id, r.id_formulario, f.nombre AS formulario
   FROM sm_respuestas r
   JOIN sm_formularios f ON f.id = r.id_formulario
+  LEFT JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
   WHERE r.id_py = $id_py
-  " . ($id_respuesta > 0 ? " AND r.id = $id_respuesta " : "") . "
+  " . ($id_respuesta > 0
+      ? " AND r.id = $id_respuesta "
+      : (($id_periodo > 0)
+          ? " AND s.tipo = 'semestral' AND COALESCE(s.vigente, 1) = 1 $periodoMatchSql "
+          : "")
+    ) . "
+  " . ($forzar_sin_resultados ? " AND 1=0 " : "") . "
   ORDER BY f.nombre ASC, r.id ASC
 ";
 if ($rs = mysqli_query($conexion, $sqlCab)) {
@@ -507,7 +572,12 @@ $html .= '<div><b>Periodo:</b> ' . rsu_h($periodo ?: '-') . '</div>';
 $html .= '</div>';
 
 if (empty($cabs)) {
-    $html .= '<div style="margin-top:10px;color:#856404;background-color:#fff3cd;border:1px solid #ffeeba;padding:8px;">Este proyecto aun no tiene respuestas registradas.</div>';
+    if ($id_periodo > 0) {
+        $labelPeriodo = rsu_h($periodo_sel_nombre !== '' ? $periodo_sel_nombre : ('ID ' . (int)$id_periodo));
+        $html .= '<div style="margin-top:10px;color:#856404;background-color:#fff3cd;border:1px solid #ffeeba;padding:8px;">No existe informe semestral para el periodo seleccionado (' . $labelPeriodo . ').</div>';
+    } else {
+        $html .= '<div style="margin-top:10px;color:#856404;background-color:#fff3cd;border:1px solid #ffeeba;padding:8px;">Este proyecto aun no tiene respuestas registradas.</div>';
+    }
 } else {
     foreach ($cabs as $cab) {
         $rid = (int)$cab['id'];
