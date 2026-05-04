@@ -196,7 +196,7 @@ function whereFiltroPorRol(array $usr)
 
 /**
  * WHERE adicional por filtros de UI.
- * $filtros: ['facultad','departamento','periodo','revision','q']
+ * $filtros: ['facultad','departamento','creacion','semestral','revision','q']
  * NOTA: Conserva el filtro "Revisión" para segmentar por sm_respuestas (estado del Informe),
  * NO tiene relación con la evaluación V3.
  */
@@ -218,29 +218,23 @@ function whereFiltros(array $filtros): string
     $dep = isset($filtros['departamento']) ? (int)$filtros['departamento'] : 0;
     if ($dep > 0) $w .= " AND d.id = $dep ";
 
-    $per = isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0;
-    if ($per > 0) {
-        $periodoExpr = "CONCAT(
-                          CAST(spf.anio AS CHAR CHARACTER SET utf8mb4),
-                          '-',
-                          CAST(spf.periodo AS CHAR CHARACTER SET utf8mb4)
-                        ) COLLATE utf8mb4_unicode_ci";
-        $w .= " AND EXISTS (
-                    SELECT 1
-                    FROM sm_proyecto_semestres spf
-                    JOIN periodos prf
-                      ON prf.nombre COLLATE utf8mb4_unicode_ci = $periodoExpr
-                    WHERE spf.id_py = p.id
-                      AND spf.tipo = 'semestral'
-                      AND COALESCE(spf.vigente, 1) = 1
-                      AND prf.id = $per
-                ) ";
+    $cre = isset($filtros['creacion']) ? (int)$filtros['creacion'] : (isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0);
+    if ($cre > 0) {
+        $w .= " AND COALESCE((
+                    SELECT ppx.id_periodo
+                    FROM proyectos_periodo ppx
+                    WHERE ppx.id_py = p.id
+                    ORDER BY ppx.id DESC
+                    LIMIT 1
+                ), 0) = $cre ";
     }
+
+    $sem = isset($filtros['semestral']) ? (int)$filtros['semestral'] : (isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0);
 
     $rev = isset($filtros['revision']) ? trim((string)$filtros['revision']) : '';
     if ($rev === 'sin') {
-        $extraPer = sqlFiltroPeriodoSemestral($per, 'sx');
-        // Proyectos sin informe semestral en el contexto (periodo o total)
+        $extraPer = sqlFiltroPeriodoSemestral($sem, 'sx');
+        // Proyectos sin informe semestral en el contexto (semestral o total)
         $w .= " AND NOT EXISTS (
                     SELECT 1
                     FROM sm_respuestas rx
@@ -253,8 +247,8 @@ function whereFiltros(array $filtros): string
                 ) ";
     } elseif ($rev !== '') {
         $revInt = (int)$rev;
-        $extraPer = sqlFiltroPeriodoSemestral($per, 'sx');
-        // Último estado del informe semestral en contexto (periodo o total)
+        $extraPer = sqlFiltroPeriodoSemestral($sem, 'sx');
+        // Último estado del informe semestral en el contexto (semestral o total)
         $w .= " AND COALESCE((
                     SELECT r.estado
                     FROM sm_respuestas r
@@ -288,10 +282,10 @@ function whereFiltros(array $filtros): string
 function whereTieneInforme(array $filtros): string
 {
     $tiene = isset($filtros['tiene_informe']) ? strtolower(trim((string)$filtros['tiene_informe'])) : '';
-    $per   = isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0;
+    $sem   = isset($filtros['semestral']) ? (int)$filtros['semestral'] : (isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0);
     if ($tiene === '') return '';
 
-    $extraPer = sqlFiltroPeriodoSemestral($per, 'sx');
+    $extraPer = sqlFiltroPeriodoSemestral($sem, 'sx');
     $existsSql = " EXISTS (
                       SELECT 1
                       FROM sm_respuestas rx
@@ -365,8 +359,8 @@ function totalProyectos(array $usr, array $filtros = [])
     $whereExtras   = whereFiltros($filtros);
     $whereTiene    = whereTieneInforme($filtros);
     $whereOficina  = whereOficina($filtros);
-    $per           = isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0;
-    $latestRespSql = sqlUltimaRespuestaSemestralPorProyecto($per);
+    $sem           = isset($filtros['semestral']) ? (int)$filtros['semestral'] : (isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0);
+    $latestRespSql = sqlUltimaRespuestaSemestralPorProyecto($sem);
 
     $sql = " SELECT COUNT(DISTINCT p.id) AS total
              FROM proyectos p
@@ -414,9 +408,8 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
     $whereExtras   = whereFiltros($filtros);
     $whereTiene    = whereTieneInforme($filtros);
     $whereOficina  = whereOficina($filtros);
-    $per           = isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0;
-    $latestRespSql = sqlUltimaRespuestaSemestralPorProyecto($per);
-    $periodoFiltroNombre = periodoNombrePorId($per);
+    $sem           = isset($filtros['semestral']) ? (int)$filtros['semestral'] : (isset($filtros['periodo']) ? (int)$filtros['periodo'] : 0);
+    $latestRespSql = sqlUltimaRespuestaSemestralPorProyecto($sem);
 
     $sql = " SELECT
                  p.id AS id_py,
@@ -427,29 +420,30 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
                  d.nombre   AS nombre_departamento,
                  f.nombre   AS nombre_facultad,
                  COALESCE(
-                    CONCAT(s0.anio, '-', s0.periodo),
-                    " . ($periodoFiltroNombre !== '' ? ("'" . mysqli_real_escape_string($conexion, $periodoFiltroNombre) . "'") : "NULL") . ",
-                    (
-                      SELECT CONCAT(spx.anio, '-', spx.periodo)
-                      FROM sm_proyecto_semestres spx
-                      WHERE spx.id_py = p.id
-                        AND spx.tipo = 'semestral'
-                        AND COALESCE(spx.vigente, 1) = 1
-                      ORDER BY spx.anio DESC,
-                               CASE spx.periodo WHEN 'II' THEN 2 WHEN 'I' THEN 1 ELSE 0 END DESC,
-                               spx.id DESC
-                      LIMIT 1
-                    ),
                     (
                       SELECT prx.nombre
                       FROM proyectos_periodo ppx
                       JOIN periodos prx ON prx.id = ppx.id_periodo
                       WHERE ppx.id_py = p.id
-                      ORDER BY prx.nombre DESC, prx.id DESC
+                      ORDER BY ppx.id DESC
                       LIMIT 1
                     ),
                     'No definido'
                  ) AS nombre_periodo,
+                 (
+                   SELECT pcx.codigo
+                   FROM proyecto_codigos pcx
+                   WHERE pcx.id_py = p.id
+                     AND pcx.periodo_id = (
+                       SELECT ppy.id_periodo
+                       FROM proyectos_periodo ppy
+                       WHERE ppy.id_py = p.id
+                       ORDER BY ppy.id DESC
+                       LIMIT 1
+                     )
+                   ORDER BY pcx.id DESC
+                   LIMIT 1
+                 ) AS codigo_proyecto,
 
                  -- Última respuesta del proyecto
                  r0.id      AS resp_id,
@@ -530,8 +524,6 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
              -- Última respuesta del proyecto
              LEFT JOIN sm_respuestas r0
                  ON r0.id = $latestRespSql
-             LEFT JOIN sm_proyecto_semestres s0
-                 ON s0.id = r0.id_semestre
 
              -- Evaluación (si inició ruta) + oficina actual
              LEFT JOIN eva_evaluaciones e
@@ -573,6 +565,7 @@ function proyectosListado($pagina = 1, $por_pagina = 20, array $usr = [], array 
             'id_py'            => (int)$row['id_py'],
             'titulo'           => $row['titulo'] ?? '',
             'periodo'          => $row['nombre_periodo'] ?? 'No definido',
+            'codigo_proyecto'  => $row['codigo_proyecto'] ?? '',
             'coordinador'      => trim(($row['nombres'] ?? '') . ' ' . ($row['apellidos'] ?? '')),
             'cod_docente'      => $row['cod_docente'] ?? 'Sin código',
             'facultad'         => $row['nombre_facultad'] ?? 'No registrada',

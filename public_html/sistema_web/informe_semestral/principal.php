@@ -12,7 +12,8 @@ $usr = testeo(); // rol, usuario, ids
 $facultad     = isset($_GET['facultad']) ? (int)$_GET['facultad'] : 0;
 $departamento = isset($_GET['departamento']) ? (int)$_GET['departamento'] : 0;
 $revision     = isset($_GET['revision']) ? (string)$_GET['revision'] : '';
-$periodo      = isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0;
+$creacion     = isset($_GET['creacion']) ? (int)$_GET['creacion'] : (isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0);
+$semestral    = isset($_GET['semestral']) ? (int)$_GET['semestral'] : 0;
 $tieneInforme = isset($_GET['tiene_informe']) ? (string)$_GET['tiene_informe'] : '';
 $titulo       = isset($_GET['titulo']) ? (string)$_GET['titulo'] : 'si';
 $oficina      = isset($_GET['oficina']) ? (string)$_GET['oficina'] : ''; // '', 'PCF','DD','DF','RSU','APROB','SIN'
@@ -34,7 +35,8 @@ $filtros = [
     'facultad'     => $facultad,
     'departamento' => $departamento,
     'revision'     => $revision,  // '', '1', '0', 'sin'
-    'periodo'      => $periodo,
+    'creacion'     => $creacion,
+    'semestral'    => $semestral,
     'tiene_informe'=> $tieneInforme,
     'titulo'       => $titulo,
     'oficina'      => $oficina,   // '', 'PCF','DD','DF','RSU','APROB','SIN'
@@ -57,13 +59,8 @@ $info = [
 
 function compact_pages($current, $total)
 {
-    if ($total <= 7) return range(1, $total);
-    $first = [1, 2, 3];
-    $last  = [$total - 2, $total - 1, $total];
-    $pages = $first;
-    if ($first[2] + 1 < $last[0]) $pages[] = '...';
-    foreach ($last as $p) if (!in_array($p, $pages, true)) $pages[] = $p;
-    return $pages;
+    if ($total <= 0) return [];
+    return range(1, $total);
 }
 $pages = compact_pages($pagina, $total_pages);
 
@@ -75,7 +72,8 @@ function link_con_filtros($p, $f)
     'facultad'    => (int)$f['facultad'],
     'departamento'=> (int)$f['departamento'],
     'revision'    => (string)$f['revision'],
-    'periodo'     => (int)$f['periodo'],
+    'creacion'    => (int)($f['creacion'] ?? 0),
+    'semestral'   => (int)($f['semestral'] ?? 0),
     'tiene_informe'=> isset($f['tiene_informe']) ? (string)$f['tiene_informe'] : '',
     'titulo'      => isset($f['titulo']) ? (string)$f['titulo'] : 'si',
     'oficina'     => isset($f['oficina']) ? (string)$f['oficina'] : '',
@@ -127,6 +125,8 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 .badge-ofic-dd  { background-color:#F0AD4E !important; color:#111 !important; }  /* Dir. Departamento */
 .badge-ofic-df  { background-color:#5BC0DE !important; color:#111 !important; }  /* Decanato */
 .badge-ofic-rsu { background-color:#5CB85C !important; color:#fff !important; }  /* RSU */
+.badge-code { background:#111 !important; color:#fff !important; }
+.badge-code-pending { background:#fff !important; color:#c82333 !important; border:1px solid #c82333; }
 </style>
 
 <!-- Info del usuario -->
@@ -202,11 +202,22 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
         </div>     
         <?php if ($mostrarPer): ?>
           <div class="col-12 col-md-3 col-lg-2">
-            <label class="form-label" for="selPeriodo">Período:</label>
-            <select name="periodo" id="selPeriodo" class="form-control">
-              <option value="0" <?= $periodo===0?'selected':''; ?>>Todos</option>
+            <label class="form-label" for="selCreacion">Creación:</label>
+            <select name="creacion" id="selCreacion" class="form-control">
+              <option value="0" <?= $creacion===0?'selected':''; ?>>Todos</option>
               <?php foreach ($periodos as $id=>$nom): ?>
-                <option value="<?= (int)$id ?>" <?= ($periodo===(int)$id)?'selected':''; ?>>
+                <option value="<?= (int)$id ?>" <?= ($creacion===(int)$id)?'selected':''; ?>>
+                  <?= htmlspecialchars($nom) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-12 col-md-3 col-lg-2">
+            <label class="form-label" for="selSemestral">Semestral:</label>
+            <select name="semestral" id="selSemestral" class="form-control">
+              <option value="0" <?= $semestral===0?'selected':''; ?>>Todos</option>
+              <?php foreach ($periodos as $id=>$nom): ?>
+                <option value="<?= (int)$id ?>" <?= ($semestral===(int)$id)?'selected':''; ?>>
                   <?= htmlspecialchars($nom) ?>
                 </option>
               <?php endforeach; ?>
@@ -246,7 +257,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
               <i class="fas fa-search"></i>
             </button>
 <a class="btn btn-danger" title="Limpiar filtros"
-   href="<?= htmlspecialchars(link_con_filtros(1, ['facultad'=>0,'departamento'=>0,'revision'=>'','periodo'=>0,'tiene_informe'=>'','titulo'=>'si','oficina'=>'','q'=>''])) ?>">
+   href="<?= htmlspecialchars(link_con_filtros(1, ['facultad'=>0,'departamento'=>0,'revision'=>'','creacion'=>0,'semestral'=>0,'tiene_informe'=>'','titulo'=>'si','oficina'=>'','q'=>''])) ?>">
   <i class="fas fa-broom"></i>
 </a>
           </div>
@@ -291,8 +302,13 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
                     <tr class="fila-toggle" data-id="<?= $i ?>">
                         <td><?= ($pagina - 1) * $por_pagina + $i + 1 ?></td>
                         <td>
-                            <?= htmlspecialchars($it['titulo']) ?><br>
-                            <span class="badge badge-secondary bg-secondary"><?= htmlspecialchars($it['periodo']) ?></span>
+                            <?= htmlspecialchars($it['titulo']) ?> <span class="badge badge-secondary bg-secondary"><?= htmlspecialchars($it['periodo']) ?></span>
+                            <br>
+                            <?php if (!empty($it['codigo_proyecto'])): ?>
+                              <span class="badge badge-code">CÓDIGO: <?= htmlspecialchars($it['codigo_proyecto']) ?></span>
+                            <?php else: ?>
+                              <span class="badge badge-code-pending">Código pendiente</span>
+                            <?php endif; ?>
                         </td>
                         <td><?= htmlspecialchars($it['coordinador']) ?></td>
 
@@ -516,14 +532,15 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
   const dep = document.getElementById('selDepartamento');
   const rev = document.getElementById('selRevision');
   const ofi = document.getElementById('selOficina');
-  const per = document.getElementById('selPeriodo');
+  const cre = document.getElementById('selCreacion');
+  const sem = document.getElementById('selSemestral');
   const tin = document.getElementById('selTieneInforme');
   const tit = document.getElementById('selTitulo');
   const q   = document.getElementById('txtQ');
 
   function submit(){ form.requestSubmit ? form.requestSubmit() : form.submit(); }
 
-  [fac, dep, rev, ofi, per, tin, tit].forEach(el => {
+  [fac, dep, rev, ofi, cre, sem, tin, tit].forEach(el => {
     if (!el) return;
     el.addEventListener('change', function(){
       // Si cambia la facultad, reinicia Departamento (cascada) y (des)habilita

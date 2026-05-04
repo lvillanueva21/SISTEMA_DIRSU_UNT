@@ -1,6 +1,6 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 // Incluir configSesion.php para verificar la sesión
 include "../componentes/configSesion.php";
@@ -11,14 +11,58 @@ include_once __DIR__ . '/../evaluacion/funciones.php';
 <?php
 /* ==== ENDPOINTS AJAX (para DIGITAR desde codigo_pool y GENERAR secuencial) ==== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+  ini_set('display_errors', 0);
+  ini_set('display_startup_errors', 0);
+  if (function_exists('ob_get_level')) {
+    while (ob_get_level() > 0) { @ob_end_clean(); }
+  }
   header('Content-Type: application/json; charset=utf-8');
 
   if (!isset($conexion) || !$conexion) {
-    echo json_encode(['ok'=>false,'msg'=>'Sin conexión a BD']); exit;
+    echo '{"ok":false,"msg":"Sin conexión a BD"}'; exit;
+  }
+  if ($conexion instanceof mysqli) {
+    @mysqli_set_charset($conexion, 'utf8mb4');
   }
 
-  $ok  = function($data=[]) { echo json_encode(array_merge(['ok'=>true],  $data)); exit; };
-  $err = function($msg, $extra=[]) { echo json_encode(array_merge(['ok'=>false,'msg'=>$msg], $extra)); exit; };
+  $emitJson = function(array $payload) {
+    $flags = 0;
+    if (defined('JSON_UNESCAPED_UNICODE')) $flags |= JSON_UNESCAPED_UNICODE;
+    if (defined('JSON_UNESCAPED_SLASHES')) $flags |= JSON_UNESCAPED_SLASHES;
+    if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+    $json = json_encode($payload, $flags);
+    if ($json === false) {
+      $fallback = [
+        'ok' => false,
+        'msg' => 'json_encode_failed',
+        'json_error' => function_exists('json_last_error_msg') ? json_last_error_msg() : 'unknown',
+      ];
+      $json = json_encode($fallback);
+      if ($json === false) $json = '{"ok":false,"msg":"json_encode_failed_hard"}';
+    }
+    echo $json;
+    exit;
+  };
+  register_shutdown_function(function() {
+    $e = error_get_last();
+    if (!$e) return;
+    $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if (!in_array($e['type'], $fatalTypes, true)) return;
+    if (headers_sent()) return;
+    header('Content-Type: application/json; charset=utf-8');
+    $msg = 'fatal_error: ' . ($e['message'] ?? 'unknown') . ' @ ' . ($e['file'] ?? '') . ':' . ($e['line'] ?? '');
+    $json = json_encode(['ok'=>false,'msg'=>$msg]);
+    if ($json === false) $json = '{"ok":false,"msg":"fatal_error"}';
+    echo $json;
+  });
+
+  $ok  = function($data=[]) use ($emitJson) { $emitJson(array_merge(['ok'=>true],  $data)); };
+  $err = function($msg, $extra=[]) use ($emitJson) { $emitJson(array_merge(['ok'=>false,'msg'=>$msg], $extra)); };
+  $id_rol_sesion = isset($_SESSION['id_rol']) ? (int)$_SESSION['id_rol'] : 0;
+  $extraerCorrel = function(string $codigo): int {
+    if (preg_match('/^[^-]+-([0-9]+)-[0-9]{4}$/', $codigo, $m)) return (int)$m[1];
+    return 0;
+  };
 
   $action = $_POST['action'];
 
@@ -104,14 +148,123 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$okIns) { mysqli_rollback($conexion); $err('No se pudo registrar: '.$eIns); }
 
     mysqli_commit($conexion);
-    $ok(['codigo'=>$codigo]);
+    $ok(['codigo'=>$codigo, 'pool_id'=>$pool_id]);
   }
 
-  // 3) Generar código secuencial (alias y ancho desde codigo_alias_facultad; control con codigo_secuencias_periodo)
+  // 3) Previsualizar código automático (sin reservar)
+  if ($action === 'preview_codigo_auto') {
+    $id_py       = isset($_POST['id_py']) ? (int)$_POST['id_py'] : 0;
+    $facultad_id = isset($_POST['facultad_id']) ? (int)$_POST['facultad_id'] : 0;
+    $periodo_id  = isset($_POST['periodo_id']) ? (int)$_POST['periodo_id'] : 0;
+    if ($id_py<=0 || $facultad_id<=0 || $periodo_id<=0) $err('Parámetros incompletos.');
+
+    $sql = "SELECT alias, correlativo_width FROM codigo_alias_facultad WHERE facultad_id=? LIMIT 1";
+    if (!$stmt = mysqli_prepare($conexion, $sql)) $err('Error SQL (alias preview)');
+    mysqli_stmt_bind_param($stmt, 'i', $facultad_id);
+    mysqli_stmt_execute($stmt);
+    $rs = mysqli_stmt_get_result($stmt);
+    $al = mysqli_fetch_assoc($rs);
+    mysqli_stmt_close($stmt);
+    if (!$al) $err('No hay alias definido para la facultad.');
+    $alias = (string)$al['alias'];
+    $width = (int)$al['correlativo_width'];
+    if ($width <= 0) $width = 3;
+
+    $sql = "SELECT nombre FROM periodos WHERE id=? LIMIT 1";
+    if (!$stmt = mysqli_prepare($conexion, $sql)) $err('Error SQL (periodo preview)');
+    mysqli_stmt_bind_param($stmt, 'i', $periodo_id);
+    mysqli_stmt_execute($stmt);
+    $rs = mysqli_stmt_get_result($stmt);
+    $pr = mysqli_fetch_assoc($rs);
+    mysqli_stmt_close($stmt);
+    if (!$pr) $err('Período inválido.');
+    $yyyy = (int)substr($pr['nombre'], 0, 4);
+    if ($yyyy <= 0) $yyyy = (int)date('Y');
+
+    $sql = "SELECT id FROM proyecto_codigos WHERE id_py=? AND periodo_id=? LIMIT 1";
+    if (!$stmt = mysqli_prepare($conexion, $sql)) $err('Error SQL (chk preview)');
+    mysqli_stmt_bind_param($stmt, 'ii', $id_py, $periodo_id);
+    mysqli_stmt_execute($stmt);
+    $rs = mysqli_stmt_get_result($stmt);
+    $ya = mysqli_fetch_assoc($rs);
+    mysqli_stmt_close($stmt);
+    if ($ya) $err('El proyecto ya tiene código en este periodo.');
+
+    $pool_id = 0;
+    $codigo = '';
+    $fuente = 'nuevo';
+    $sql = "SELECT cp.id, cp.codigo
+              FROM codigo_pool cp
+             WHERE cp.periodo_id=? AND cp.facultad_id=? AND cp.disponible=1
+               AND NOT EXISTS (
+                 SELECT 1 FROM proyecto_codigos pc
+                  WHERE pc.periodo_id = cp.periodo_id
+                    AND pc.codigo = cp.codigo
+               )
+             ORDER BY CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(cp.codigo,'-',2),'-',-1) AS UNSIGNED) ASC, cp.id ASC
+             LIMIT 1";
+    if ($stmt = mysqli_prepare($conexion, $sql)) {
+      mysqli_stmt_bind_param($stmt, 'ii', $periodo_id, $facultad_id);
+      mysqli_stmt_execute($stmt);
+      $rs = mysqli_stmt_get_result($stmt);
+      if ($rw = mysqli_fetch_assoc($rs)) {
+        $pool_id = (int)$rw['id'];
+        $codigo  = (string)$rw['codigo'];
+        $fuente  = 'pool';
+      }
+      mysqli_stmt_close($stmt);
+    }
+
+    if ($codigo === '') {
+      $max_ultimo = 0;
+      $sql = "SELECT ultimo FROM codigo_secuencias_periodo WHERE periodo_id=? AND facultad_id=? LIMIT 1";
+      if ($stmt = mysqli_prepare($conexion, $sql)) {
+        mysqli_stmt_bind_param($stmt, 'ii', $periodo_id, $facultad_id);
+        mysqli_stmt_execute($stmt);
+        $rs = mysqli_stmt_get_result($stmt);
+        if ($r = mysqli_fetch_assoc($rs)) $max_ultimo = (int)$r['ultimo'];
+        mysqli_stmt_close($stmt);
+      }
+
+      $max_asignados = 0;
+      $sql = "SELECT codigo FROM proyecto_codigos WHERE periodo_id=? AND codigo LIKE CONCAT(?, '-%')";
+      if ($stmt = mysqli_prepare($conexion, $sql)) {
+        mysqli_stmt_bind_param($stmt, 'is', $periodo_id, $alias);
+        mysqli_stmt_execute($stmt);
+        $rs = mysqli_stmt_get_result($stmt);
+        while ($r = mysqli_fetch_assoc($rs)) {
+          $n = $extraerCorrel((string)$r['codigo']);
+          if ($n > $max_asignados) $max_asignados = $n;
+        }
+        mysqli_stmt_close($stmt);
+      }
+
+      $max_pool = 0;
+      $sql = "SELECT codigo FROM codigo_pool WHERE periodo_id=? AND facultad_id=?";
+      if ($stmt = mysqli_prepare($conexion, $sql)) {
+        mysqli_stmt_bind_param($stmt, 'ii', $periodo_id, $facultad_id);
+        mysqli_stmt_execute($stmt);
+        $rs = mysqli_stmt_get_result($stmt);
+        while ($r = mysqli_fetch_assoc($rs)) {
+          $n = $extraerCorrel((string)$r['codigo']);
+          if ($n > $max_pool) $max_pool = $n;
+        }
+        mysqli_stmt_close($stmt);
+      }
+
+      $next = max($max_ultimo, $max_asignados, $max_pool) + 1;
+      $correl = str_pad((string)$next, $width, '0', STR_PAD_LEFT);
+      $codigo = $alias . '-' . $correl . '-' . $yyyy;
+    }
+
+    $ok(['codigo'=>$codigo, 'pool_id'=>$pool_id, 'fuente'=>$fuente]);
+  }
+
+  // 4) Generar código automático (reutiliza pool libre y, si no hay, genera siguiente)
   if ($action === 'generar_codigo_auto') {
-    $id_py      = isset($_POST['id_py'])      ? (int)$_POST['id_py']      : 0;
-    $facultad_id= isset($_POST['facultad_id'])? (int)$_POST['facultad_id']: 0;
-    $periodo_id = isset($_POST['periodo_id']) ? (int)$_POST['periodo_id'] : 0;
+    $id_py       = isset($_POST['id_py']) ? (int)$_POST['id_py'] : 0;
+    $facultad_id = isset($_POST['facultad_id']) ? (int)$_POST['facultad_id'] : 0;
+    $periodo_id  = isset($_POST['periodo_id']) ? (int)$_POST['periodo_id'] : 0;
     if ($id_py<=0 || $facultad_id<=0 || $periodo_id<=0) $err('Parámetros incompletos.');
 
     mysqli_begin_transaction($conexion);
@@ -151,68 +304,176 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     mysqli_stmt_close($stmt);
     if ($ya) { mysqli_rollback($conexion); $err('El proyecto ya tiene código en este periodo.'); }
 
-    // (d) Calcular siguiente correlativo con seguridad (max entre secuencia guardada, asignados y pool)
-    $max_ultimo = 0;
-    $sql = "SELECT ultimo FROM codigo_secuencias_periodo WHERE periodo_id=? AND facultad_id=? FOR UPDATE";
+    // (d) Reutilizar primero el menor código disponible del pool
+    $pool_id = 0;
+    $codigo = '';
+    $sql = "SELECT cp.id, cp.codigo
+              FROM codigo_pool cp
+             WHERE cp.periodo_id=? AND cp.facultad_id=? AND cp.disponible=1
+               AND NOT EXISTS (
+                 SELECT 1 FROM proyecto_codigos pc
+                  WHERE pc.periodo_id = cp.periodo_id
+                    AND pc.codigo = cp.codigo
+               )
+             ORDER BY CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(cp.codigo,'-',2),'-',-1) AS UNSIGNED) ASC, cp.id ASC
+             LIMIT 1
+             FOR UPDATE";
     if ($stmt = mysqli_prepare($conexion, $sql)) {
       mysqli_stmt_bind_param($stmt, 'ii', $periodo_id, $facultad_id);
       mysqli_stmt_execute($stmt);
       $rs = mysqli_stmt_get_result($stmt);
-      if ($r = mysqli_fetch_assoc($rs)) $max_ultimo = (int)$r['ultimo'];
+      if ($rw = mysqli_fetch_assoc($rs)) {
+        $pool_id = (int)$rw['id'];
+        $codigo  = (string)$rw['codigo'];
+      }
       mysqli_stmt_close($stmt);
     }
 
-    $max_asignados = 0;
-    $sql = "SELECT MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(codigo,'-',2),'-',-1) AS UNSIGNED)) AS mx
-            FROM proyecto_codigos
-            WHERE periodo_id=? AND codigo LIKE CONCAT(?, '-%')";
-    if ($stmt = mysqli_prepare($conexion, $sql)) {
-      mysqli_stmt_bind_param($stmt, 'is', $periodo_id, $alias);
+    if ($pool_id > 0) {
+      $sql = "UPDATE codigo_pool SET disponible=0 WHERE id=? AND disponible=1";
+      if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (consumir pool auto)'); }
+      mysqli_stmt_bind_param($stmt, 'i', $pool_id);
       mysqli_stmt_execute($stmt);
-      $rs = mysqli_stmt_get_result($stmt);
-      if ($r = mysqli_fetch_assoc($rs)) $max_asignados = (int)$r['mx'];
+      if (mysqli_stmt_affected_rows($stmt) <= 0) { mysqli_stmt_close($stmt); mysqli_rollback($conexion); $err('El código del pool ya no está disponible.'); }
       mysqli_stmt_close($stmt);
-    }
+    } else {
+      // (e) Si no hay pool libre, generar siguiente correlativo
+      $max_ultimo = 0;
+      $sql = "SELECT ultimo FROM codigo_secuencias_periodo WHERE periodo_id=? AND facultad_id=? FOR UPDATE";
+      if ($stmt = mysqli_prepare($conexion, $sql)) {
+        mysqli_stmt_bind_param($stmt, 'ii', $periodo_id, $facultad_id);
+        mysqli_stmt_execute($stmt);
+        $rs = mysqli_stmt_get_result($stmt);
+        if ($r = mysqli_fetch_assoc($rs)) $max_ultimo = (int)$r['ultimo'];
+        mysqli_stmt_close($stmt);
+      }
 
-    $max_pool = 0;
-    $sql = "SELECT MAX(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(codigo,'-',2),'-',-1) AS UNSIGNED)) AS mx
-            FROM codigo_pool
-            WHERE periodo_id=? AND facultad_id=?";
-    if ($stmt = mysqli_prepare($conexion, $sql)) {
-      mysqli_stmt_bind_param($stmt, 'ii', $periodo_id, $facultad_id);
-      mysqli_stmt_execute($stmt);
-      $rs = mysqli_stmt_get_result($stmt);
-      if ($r = mysqli_fetch_assoc($rs)) $max_pool = (int)$r['mx'];
+      $max_asignados = 0;
+      $sql = "SELECT codigo FROM proyecto_codigos WHERE periodo_id=? AND codigo LIKE CONCAT(?, '-%')";
+      if ($stmt = mysqli_prepare($conexion, $sql)) {
+        mysqli_stmt_bind_param($stmt, 'is', $periodo_id, $alias);
+        mysqli_stmt_execute($stmt);
+        $rs = mysqli_stmt_get_result($stmt);
+        while ($r = mysqli_fetch_assoc($rs)) {
+          $n = $extraerCorrel((string)$r['codigo']);
+          if ($n > $max_asignados) $max_asignados = $n;
+        }
+        mysqli_stmt_close($stmt);
+      }
+
+      $max_pool = 0;
+      $sql = "SELECT codigo FROM codigo_pool WHERE periodo_id=? AND facultad_id=?";
+      if ($stmt = mysqli_prepare($conexion, $sql)) {
+        mysqli_stmt_bind_param($stmt, 'ii', $periodo_id, $facultad_id);
+        mysqli_stmt_execute($stmt);
+        $rs = mysqli_stmt_get_result($stmt);
+        while ($r = mysqli_fetch_assoc($rs)) {
+          $n = $extraerCorrel((string)$r['codigo']);
+          if ($n > $max_pool) $max_pool = $n;
+        }
+        mysqli_stmt_close($stmt);
+      }
+
+      $next = max($max_ultimo, $max_asignados, $max_pool) + 1;
+      $correl = str_pad((string)$next, $width, '0', STR_PAD_LEFT);
+      $codigo = $alias . '-' . $correl . '-' . $yyyy;
+
+      $sql = "INSERT INTO codigo_secuencias_periodo (periodo_id, facultad_id, ultimo)
+              VALUES (?, ?, ?)
+              ON DUPLICATE KEY UPDATE ultimo=VALUES(ultimo)";
+      if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (upsert secuencia)'); }
+      mysqli_stmt_bind_param($stmt, 'iii', $periodo_id, $facultad_id, $next);
+      $okUp = mysqli_stmt_execute($stmt);
+      $eUp  = mysqli_error($conexion);
       mysqli_stmt_close($stmt);
+      if (!$okUp) { mysqli_rollback($conexion); $err('No se pudo actualizar secuencia: '.$eUp); }
     }
-
-    $next = max($max_ultimo, $max_asignados, $max_pool) + 1;
-    $correl = str_pad((string)$next, $width, '0', STR_PAD_LEFT);
-    $codigo = $alias . '-' . $correl . '-' . $yyyy;
-
-    // (e) Upsert a codigo_secuencias_periodo con el nuevo "ultimo"
-    $sql = "INSERT INTO codigo_secuencias_periodo (periodo_id, facultad_id, ultimo)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE ultimo=VALUES(ultimo)";
-    if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (upsert secuencia)'); }
-    mysqli_stmt_bind_param($stmt, 'iii', $periodo_id, $facultad_id, $next);
-    $okUp = mysqli_stmt_execute($stmt);
-    $eUp  = mysqli_error($conexion);
-    mysqli_stmt_close($stmt);
-    if (!$okUp) { mysqli_rollback($conexion); $err('No se pudo actualizar secuencia: '.$eUp); }
 
     // (f) Insertar en proyecto_codigos (origen=auto)
     $sql = "INSERT INTO proyecto_codigos (id_py, periodo_id, codigo, origen)
-            VALUES (?, ?, ?, 'auto')";
+            VALUES (?, ?, ?, ?)";
     if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (ins generar)'); }
-    mysqli_stmt_bind_param($stmt, 'iis', $id_py, $periodo_id, $codigo);
+    $origen = 'auto';
+    mysqli_stmt_bind_param($stmt, 'iiss', $id_py, $periodo_id, $codigo, $origen);
     $okIns = mysqli_stmt_execute($stmt);
     $eIns  = mysqli_error($conexion);
     mysqli_stmt_close($stmt);
     if (!$okIns) { mysqli_rollback($conexion); $err('No se pudo registrar: '.$eIns); }
 
     mysqli_commit($conexion);
-    $ok(['codigo'=>$codigo]);
+    $ok(['codigo'=>$codigo, 'pool_id'=>$pool_id]);
+  }
+
+  // 5) Quitar código (solo RSU id_rol=1) y devolverlo al pool
+  if ($action === 'quitar_codigo') {
+    if ($id_rol_sesion !== 1) $err('No tienes permiso para quitar códigos.');
+
+    $id_py       = isset($_POST['id_py']) ? (int)$_POST['id_py'] : 0;
+    $facultad_id = isset($_POST['facultad_id']) ? (int)$_POST['facultad_id'] : 0;
+    $periodo_id  = isset($_POST['periodo_id']) ? (int)$_POST['periodo_id'] : 0;
+    if ($id_py<=0 || $periodo_id<=0 || $facultad_id<=0) $err('Parámetros incompletos.');
+
+    mysqli_begin_transaction($conexion);
+
+    $sql = "SELECT id, codigo
+              FROM proyecto_codigos
+             WHERE id_py=? AND periodo_id=?
+             LIMIT 1
+             FOR UPDATE";
+    if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (get quitar)'); }
+    mysqli_stmt_bind_param($stmt, 'ii', $id_py, $periodo_id);
+    mysqli_stmt_execute($stmt);
+    $rs = mysqli_stmt_get_result($stmt);
+    $rw = mysqli_fetch_assoc($rs);
+    mysqli_stmt_close($stmt);
+    if (!$rw) { mysqli_rollback($conexion); $err('El proyecto no tiene código para ese periodo.'); }
+
+    $codigo = (string)$rw['codigo'];
+    $id_reg = (int)$rw['id'];
+
+    $sql = "DELETE FROM proyecto_codigos WHERE id=? LIMIT 1";
+    if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (del código)'); }
+    mysqli_stmt_bind_param($stmt, 'i', $id_reg);
+    mysqli_stmt_execute($stmt);
+    if (mysqli_stmt_affected_rows($stmt) <= 0) { mysqli_stmt_close($stmt); mysqli_rollback($conexion); $err('No se pudo quitar el código.'); }
+    mysqli_stmt_close($stmt);
+
+    $sql = "SELECT id
+              FROM codigo_pool
+             WHERE periodo_id=? AND facultad_id=? AND codigo=?
+             LIMIT 1
+             FOR UPDATE";
+    if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (pool buscar)'); }
+    mysqli_stmt_bind_param($stmt, 'iis', $periodo_id, $facultad_id, $codigo);
+    mysqli_stmt_execute($stmt);
+    $rs = mysqli_stmt_get_result($stmt);
+    $pool = mysqli_fetch_assoc($rs);
+    mysqli_stmt_close($stmt);
+
+    if ($pool) {
+      $pool_id = (int)$pool['id'];
+      $sql = "UPDATE codigo_pool SET disponible=1 WHERE id=?";
+      if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (pool liberar)'); }
+      mysqli_stmt_bind_param($stmt, 'i', $pool_id);
+      $okUpd = mysqli_stmt_execute($stmt);
+      $eUpd  = mysqli_error($conexion);
+      mysqli_stmt_close($stmt);
+      if (!$okUpd) { mysqli_rollback($conexion); $err('No se pudo liberar en pool: '.$eUpd); }
+    } else {
+      $coment = 'Liberado desde quitar codigo';
+      $sql = "INSERT INTO codigo_pool (periodo_id, facultad_id, codigo, disponible, comentario)
+              VALUES (?, ?, ?, 1, ?)";
+      if (!$stmt = mysqli_prepare($conexion, $sql)) { mysqli_rollback($conexion); $err('Error SQL (pool insertar)'); }
+      mysqli_stmt_bind_param($stmt, 'iiss', $periodo_id, $facultad_id, $codigo, $coment);
+      $okIns = mysqli_stmt_execute($stmt);
+      $eIns  = mysqli_error($conexion);
+      mysqli_stmt_close($stmt);
+      if (!$okIns) { mysqli_rollback($conexion); $err('No se pudo insertar en pool: '.$eIns); }
+      $pool_id = (int)mysqli_insert_id($conexion);
+    }
+
+    mysqli_commit($conexion);
+    $ok(['codigo'=>$codigo, 'pool_id'=>$pool_id]);
   }
 
   $err('Acción inválida.');
@@ -276,7 +537,7 @@ $usr = testeo(); // rol, usuario, ids
 $facultad     = isset($_GET['facultad']) ? (int)$_GET['facultad'] : 0;
 $departamento = isset($_GET['departamento']) ? (int)$_GET['departamento'] : 0;
 $revision     = isset($_GET['revision']) ? (string)$_GET['revision'] : '';
-$periodo      = isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0;
+$creacion     = isset($_GET['creacion']) ? (int)$_GET['creacion'] : (isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0);
 $oficina      = isset($_GET['oficina']) ? (string)$_GET['oficina'] : ''; // NUEVO
 $q            = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
 
@@ -298,7 +559,8 @@ $filtros = [
   'facultad'     => $facultad,
   'departamento' => $departamento,
   'revision'     => $revision,
-  'periodo'      => $periodo,
+  'creacion'     => $creacion,
+  'periodo'      => $creacion,
   'oficina'      => $oficina, // NUEVO
   'q'            => $q,
 ];
@@ -311,13 +573,7 @@ $items       = proyectosListado($pagina, $por_pagina, $usr, $filtros);
 // Helpers
 if (!function_exists('compact_pages')) {
   function compact_pages($current, $total){
-    if ($total <= 7) return range(1, $total);
-    $first = [1, 2, 3];
-    $last  = [$total - 2, $total - 1, $total];
-    $pages = $first;
-    if ($first[2] + 1 < $last[0]) $pages[] = '...';
-    foreach ($last as $p) if (!in_array($p, $pages, true)) $pages[] = $p;
-    return $pages;
+    return ($total > 0) ? range(1, $total) : [1];
   }
 }
 $pages = compact_pages($pagina, $total_pages);
@@ -329,7 +585,7 @@ if (!function_exists('link_con_filtros')) {
       'facultad'    => (int)$f['facultad'],
       'departamento'=> (int)$f['departamento'],
       'revision'    => (string)$f['revision'],
-      'periodo'     => (int)$f['periodo'],
+      'creacion'    => (int)($f['creacion'] ?? ($f['periodo'] ?? 0)),
       'oficina'     => (string)($f['oficina'] ?? ''), // NUEVO
       'q'           => (string)$f['q'],
     ];
@@ -348,9 +604,61 @@ $mostrarDep   = in_array($id_rol, [0,1,3,5], true);
 $mostrarRev   = true;
 $mostrarPer   = true;
 $mostrarBusq  = true;
+$puede_quitar_codigo = ($id_rol === 1);
 
 // ¿Departamento deshabilitado?
 $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
+
+// Metadatos por proyecto: fuente oficial de periodo + fechas + facultad_id
+$meta_py = [];
+if (!empty($items) && isset($conexion) && $conexion instanceof mysqli) {
+  $ids = [];
+  foreach ($items as $it) {
+    $pid = isset($it['id_py']) ? (int)$it['id_py'] : 0;
+    if ($pid > 0) $ids[] = $pid;
+  }
+  $ids = array_values(array_unique($ids));
+  if (!empty($ids)) {
+    $id_list = implode(',', $ids);
+    $sqlMeta = "SELECT
+                  p.id AS id_py,
+                  p.fecha_inicio,
+                  p.fecha_fin,
+                  COALESCE(pp.id_periodo, 0) AS periodo_id,
+                  COALESCE(pr.nombre, '') AS periodo_nombre,
+                  COALESCE((
+                    SELECT d2.id_facultad
+                    FROM usuarios_proyectos up2
+                    INNER JOIN usuarios u2 ON u2.id = up2.id_usuario
+                    LEFT JOIN departamentos d2 ON d2.id = u2.id_depa
+                    WHERE up2.id_proyecto = p.id AND up2.activo = 1
+                    ORDER BY up2.id DESC
+                    LIMIT 1
+                  ), 0) AS facultad_id
+                FROM proyectos p
+                LEFT JOIN proyectos_periodo pp ON pp.id = (
+                  SELECT ppx.id
+                  FROM proyectos_periodo ppx
+                  WHERE ppx.id_py = p.id
+                  ORDER BY ppx.id DESC
+                  LIMIT 1
+                )
+                LEFT JOIN periodos pr ON pr.id = pp.id_periodo
+                WHERE p.id IN ($id_list)";
+    if ($rsMeta = mysqli_query($conexion, $sqlMeta)) {
+      while ($rm = mysqli_fetch_assoc($rsMeta)) {
+        $meta_py[(int)$rm['id_py']] = [
+          'periodo_id' => (int)$rm['periodo_id'],
+          'periodo_nombre' => (string)$rm['periodo_nombre'],
+          'facultad_id' => (int)$rm['facultad_id'],
+          'fecha_inicio' => (string)($rm['fecha_inicio'] ?? ''),
+          'fecha_fin' => (string)($rm['fecha_fin'] ?? ''),
+        ];
+      }
+      mysqli_free_result($rsMeta);
+    }
+  }
+}
 ?>
 
 <style>
@@ -366,6 +674,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 
 .small-muted { font-size:.82rem; color:#666; }
 .badge-code { background:#222; color:#fff; }
+.badge-code-pending { background:#fff; color:#c82333; border:1px solid #c82333; }
 </style>
 
 <div class="mb-2 p-2 border rounded">
@@ -440,11 +749,11 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 
         <?php if ($mostrarPer): ?>
           <div class="col-12 col-md-3 col-lg-2">
-            <label class="form-label" for="selPeriodo">Período:</label>
-            <select name="periodo" id="selPeriodo" class="form-control">
-              <option value="0" <?= $periodo===0?'selected':''; ?>>Todos</option>
+            <label class="form-label" for="selCreacion">Creación:</label>
+            <select name="creacion" id="selCreacion" class="form-control">
+              <option value="0" <?= $creacion===0?'selected':''; ?>>Todos</option>
               <?php foreach ($periodos as $id=>$nom): ?>
-                <option value="<?= (int)$id ?>" <?= ($periodo===(int)$id)?'selected':''; ?>>
+                <option value="<?= (int)$id ?>" <?= ($creacion===(int)$id)?'selected':''; ?>>
                   <?= htmlspecialchars($nom) ?>
                 </option>
               <?php endforeach; ?>
@@ -466,7 +775,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
               <i class="fas fa-search"></i>
             </button>
             <a class="btn btn-danger" title="Limpiar filtros"
-               href="<?= htmlspecialchars(link_con_filtros(1, ['facultad'=>0,'departamento'=>0,'revision'=>'','periodo'=>0,'q'=>''])) ?>">
+               href="<?= htmlspecialchars(link_con_filtros(1, ['facultad'=>0,'departamento'=>0,'revision'=>'','creacion'=>0,'oficina'=>'','q'=>''])) ?>">
               <i class="fas fa-broom"></i>
             </a>
           </div>
@@ -505,22 +814,33 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
         <tr><td colspan="6" class="text-center">Sin registros</td></tr>
       <?php else: foreach ($items as $i => $it): ?>
         <?php
-          // Resolver facultad_id y periodo_id desde los nombres
-          $facultad_id = 0;
-          if (!empty($it['facultad']) && isset($fac_by_name_to_id[$it['facultad']])) {
+          $pid = (int)$it['id_py'];
+          $meta = $meta_py[$pid] ?? [
+            'periodo_id' => 0,
+            'periodo_nombre' => '',
+            'facultad_id' => 0,
+            'fecha_inicio' => '',
+            'fecha_fin' => '',
+          ];
+
+          $periodo_id = (int)$meta['periodo_id'];
+          $periodo_nombre = trim((string)$meta['periodo_nombre']);
+          if ($periodo_nombre === '') $periodo_nombre = 'No definido';
+
+          $facultad_id = (int)$meta['facultad_id'];
+          if ($facultad_id <= 0 && !empty($it['facultad']) && isset($fac_by_name_to_id[$it['facultad']])) {
             $facultad_id = (int)$fac_by_name_to_id[$it['facultad']];
           }
-          $periodo_id = 0;
-          if (!empty($it['periodo']) && isset($per_by_name_to_id[$it['periodo']])) {
-            $periodo_id = (int)$per_by_name_to_id[$it['periodo']];
-          }
 
-          // Consultar si ya tiene código para este periodo (si conocemos periodo_id)
+          $fecha_inicio_py = trim((string)$meta['fecha_inicio']);
+          $fecha_fin_py = trim((string)$meta['fecha_fin']);
+
+          // Consultar si ya tiene código para este periodo oficial
           $codigo_asignado = '';
           if ($periodo_id > 0 && isset($conexion) && $conexion instanceof mysqli) {
             $sqlC = "SELECT codigo FROM proyecto_codigos WHERE id_py=? AND periodo_id=? LIMIT 1";
             if ($stmtC = mysqli_prepare($conexion, $sqlC)) {
-              mysqli_stmt_bind_param($stmtC, 'ii', $it['id_py'], $periodo_id);
+              mysqli_stmt_bind_param($stmtC, 'ii', $pid, $periodo_id);
               mysqli_stmt_execute($stmtC);
               $rsC = mysqli_stmt_get_result($stmtC);
               if ($rC = mysqli_fetch_assoc($rsC)) $codigo_asignado = (string)$rC['codigo'];
@@ -529,18 +849,44 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
           }
 
           $tiene_codigo = ($codigo_asignado !== '');
-          $btn_disabled = ($tiene_codigo || $facultad_id<=0 || $periodo_id<=0) ? 'disabled' : '';
-          $btn_title    = $tiene_codigo ? 'Ya tiene código en este periodo'
-                         : (($facultad_id<=0||$periodo_id<=0) ? 'Falta identificar Periodo/Facultad' : '');
+          $can_identify = ($facultad_id > 0 && $periodo_id > 0);
+          $btn_digitar_disabled = ($tiene_codigo || !$can_identify) ? 'disabled' : '';
+          $btn_digitar_title    = $tiene_codigo ? 'Ya tiene código en este periodo'
+                                 : (!$can_identify ? 'Falta identificar Periodo/Facultad' : 'Digitar/seleccionar un código pre-generado');
+          if ($tiene_codigo && $puede_quitar_codigo) {
+            $btn_gestion_disabled = '';
+            $btn_gestion_title    = '';
+            $accion_gestion       = 'quitar';
+            $texto_gestion        = 'Quitar código';
+            $icono_gestion        = 'fas fa-trash-alt';
+            $clase_gestion        = 'btn btn-sm btn-danger w-100 btn-gestionar-codigo';
+          } elseif ($tiene_codigo && !$puede_quitar_codigo) {
+            $btn_gestion_disabled = 'disabled';
+            $btn_gestion_title    = 'Ya tiene código en este periodo';
+            $accion_gestion       = 'none';
+            $texto_gestion        = 'Código asignado';
+            $icono_gestion        = 'fas fa-lock';
+            $clase_gestion        = 'btn btn-sm btn-dark w-100 btn-gestionar-codigo';
+          } else {
+            $btn_gestion_disabled = $can_identify ? '' : 'disabled';
+            $btn_gestion_title    = $can_identify ? '' : 'Falta identificar Periodo/Facultad';
+            $accion_gestion       = 'generar';
+            $texto_gestion        = 'Generar código';
+            $icono_gestion        = 'fas fa-hashtag';
+            $clase_gestion        = 'btn btn-sm btn-secondary w-100 btn-gestionar-codigo';
+          }
         ?>
         <tr class="fila-toggle" data-id="<?= $i ?>">
           <td><?= ($pagina - 1) * $por_pagina + $i + 1 ?></td>
           <td>
-            <?= htmlspecialchars($it['titulo']) ?><br>
-            <span class="badge badge-secondary bg-secondary"><?= htmlspecialchars($it['periodo']) ?></span>
-            <?php if ($tiene_codigo): ?>
-              <br><span class="badge badge-code">CÓDIGO: <?= htmlspecialchars($codigo_asignado) ?></span>
-            <?php endif; ?>
+            <?= htmlspecialchars($it['titulo']) ?> <span class="badge badge-secondary bg-secondary"><?= htmlspecialchars($periodo_nombre) ?></span>
+            <div class="codigo-badge-slot mt-1">
+              <?php if ($tiene_codigo): ?>
+                <span class="badge badge-code">CÓDIGO: <?= htmlspecialchars($codigo_asignado) ?></span>
+              <?php else: ?>
+                <span class="badge badge-code-pending">Código pendiente</span>
+              <?php endif; ?>
+            </div>
           </td>
           <td><?= htmlspecialchars($it['coordinador']) ?></td>
 
@@ -630,24 +976,31 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
             <div class="d-flex flex-column">
               <button type="button"
                 class="btn btn-sm btn-primary mb-1 w-100 btn-digitar-codigo" data-no-toggle="1"
-                title="<?= htmlspecialchars($btn_title ?: 'Digitar/seleccionar un código pre-generado') ?>"
-                data-id_py="<?= (int)$it['id_py'] ?>"
+                title="<?= htmlspecialchars($btn_digitar_title) ?>"
+                data-id_py="<?= (int)$pid ?>"
                 data-facultad_id="<?= (int)$facultad_id ?>"
                 data-periodo_id="<?= (int)$periodo_id ?>"
-                <?= $btn_disabled ?>>
+                <?= $btn_digitar_disabled ?>>
                 <i class="fas fa-keyboard"></i> Digitar código
               </button>
               <button type="button"
-                class="btn btn-sm btn-secondary w-100 btn-generar-codigo" data-no-toggle="1"
-                title="<?= htmlspecialchars($btn_title ?: 'Generar el siguiente código secuencial') ?>"
-                data-id_py="<?= (int)$it['id_py'] ?>"
+                class="<?= $clase_gestion ?>" data-no-toggle="1"
+                title="<?= htmlspecialchars($btn_gestion_title) ?>"
+                data-action="<?= htmlspecialchars($accion_gestion) ?>"
+                data-id_py="<?= (int)$pid ?>"
                 data-facultad_id="<?= (int)$facultad_id ?>"
                 data-periodo_id="<?= (int)$periodo_id ?>"
-                <?= $btn_disabled ?>>
-                <i class="fas fa-hashtag"></i> Generar código
+                data-titulo="<?= htmlspecialchars($it['titulo']) ?>"
+                data-coordinador="<?= htmlspecialchars($it['coordinador']) ?>"
+                data-facultad="<?= htmlspecialchars($it['facultad']) ?>"
+                data-periodo="<?= htmlspecialchars($periodo_nombre) ?>"
+                data-fecha_inicio="<?= htmlspecialchars($fecha_inicio_py) ?>"
+                data-fecha_fin="<?= htmlspecialchars($fecha_fin_py) ?>"
+                <?= $btn_gestion_disabled ?>>
+                <i class="<?= htmlspecialchars($icono_gestion) ?>"></i> <?= htmlspecialchars($texto_gestion) ?>
               </button>
-              <?php if ($btn_disabled && !$tiene_codigo): ?>
-                <small class="small-muted mt-1">Seleccione un <strong>Período</strong> en filtros y verifique la <strong>Facultad</strong>.</small>
+              <?php if ($btn_gestion_disabled && !$tiene_codigo): ?>
+                <small class="small-muted mt-1">Seleccione una <strong>Creación</strong> en filtros y verifique la <strong>Facultad</strong>.</small>
               <?php endif; ?>
             </div>
           </td>
@@ -737,6 +1090,115 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
   </div>
 </div>
 
+<!-- ===== Modal: Confirmar generación automática ===== -->
+<div class="modal fade" id="modalConfirmarCodigo" tabindex="-1" role="dialog" aria-labelledby="tituloConfirmarCodigo" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <form id="frmConfirmarCodigo" class="modal-content">
+      <div class="modal-header bg-secondary text-white py-2">
+        <h5 class="modal-title" id="tituloConfirmarCodigo"><i class="fas fa-hashtag"></i> Confirmar generación de código</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="cf_id_py">
+        <input type="hidden" id="cf_facultad_id">
+        <input type="hidden" id="cf_periodo_id">
+        <div class="mb-2"><strong>Proyecto:</strong> <span id="cf_titulo"></span></div>
+        <div class="mb-1"><strong>ID proyecto:</strong> <span id="cf_id_txt"></span></div>
+        <div class="mb-1"><strong>Coordinador:</strong> <span id="cf_coord"></span></div>
+        <div class="mb-1"><strong>Facultad:</strong> <span id="cf_fac"></span></div>
+        <div class="mb-1"><strong>Periodo de creación:</strong> <span id="cf_periodo"></span></div>
+        <div class="mb-1"><strong>Fecha inicio:</strong> <span id="cf_fi"></span></div>
+        <div class="mb-2"><strong>Fecha fin:</strong> <span id="cf_ff"></span></div>
+        <hr>
+        <div><strong>Código propuesto:</strong> <span id="cf_codigo" class="badge badge-dark"></span></div>
+        <div class="small text-muted mt-1" id="cf_fuente"></div>
+        <div id="cf_msg" class="text-danger small mt-2" style="display:none;"></div>
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-secondary"><i class="fas fa-check"></i> Confirmar y generar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Modal: Mensajes amigables ===== -->
+<div class="modal fade" id="modalMensajeApp" tabindex="-1" role="dialog" aria-labelledby="tituloMensajeApp" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header py-2" id="mensajeHeaderApp">
+        <h5 class="modal-title" id="tituloMensajeApp"><i class="fas fa-info-circle"></i> Mensaje</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="contenidoMensajeApp"></div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal: Confirmación ===== -->
+<div class="modal fade" id="modalConfirmarAccion" tabindex="-1" role="dialog" aria-labelledby="tituloConfirmarAccion" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark py-2">
+        <h5 class="modal-title" id="tituloConfirmarAccion"><i class="fas fa-exclamation-triangle"></i> Confirmar acción</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="contenidoConfirmarAccion"></div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning" id="btnAceptarConfirmarAccion">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Utilidad global de modales amigables ===== */
+(function(){
+  if (!window.jQuery) return;
+
+  function setHeader(type){
+    var $h = jQuery('#mensajeHeaderApp');
+    var $t = jQuery('#tituloMensajeApp');
+    if (type === 'error') {
+      $h.attr('class', 'modal-header bg-danger text-white py-2');
+      $t.html('<i class="fas fa-times-circle"></i> Error');
+    } else if (type === 'ok') {
+      $h.attr('class', 'modal-header bg-success text-white py-2');
+      $t.html('<i class="fas fa-check-circle"></i> Correcto');
+    } else {
+      $h.attr('class', 'modal-header bg-primary text-white py-2');
+      $t.html('<i class="fas fa-info-circle"></i> Mensaje');
+    }
+  }
+
+  window.AppUI = {
+    showMessage: function(message, type){
+      setHeader(type || 'info');
+      jQuery('#contenidoMensajeApp').text(message || 'Operación completada.');
+      jQuery('#modalMensajeApp').modal('show');
+    },
+    confirm: function(message, onConfirm){
+      jQuery('#contenidoConfirmarAccion').text(message || '¿Deseas continuar?');
+      jQuery('#btnAceptarConfirmarAccion').off('click').on('click', function(){
+        jQuery('#modalConfirmarAccion').modal('hide');
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+      jQuery('#modalConfirmarAccion').modal('show');
+    }
+  };
+})();
+</script>
+
 <script>
 /* Auto-submit + cascada filtros + debounce búsqueda (ahora incluye Estado/Oficina) */
 (function(){
@@ -746,12 +1208,12 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
   const dep = document.getElementById('selDepartamento');
   const rev = document.getElementById('selRevision');
   const ofi = document.getElementById('selOficina'); // NUEVO
-  const per = document.getElementById('selPeriodo');
+  const cre = document.getElementById('selCreacion');
   const q   = document.getElementById('txtQ');
 
   function submit(){ form.requestSubmit ? form.requestSubmit() : form.submit(); }
 
-  [fac, dep, rev, ofi, per].forEach(el => { if (!el) return;
+  [fac, dep, rev, ofi, cre].forEach(el => { if (!el) return;
     el.addEventListener('change', function(){
       if (this === fac && dep) {
         dep.value = '0';
@@ -825,6 +1287,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 /* ===== DIGITAR CÓDIGO (pool) — compatible con codigo_pool.disponible ===== */
 (function(){
   const $ = window.jQuery;
+  const PUEDE_QUITAR = <?= $puede_quitar_codigo ? 'true' : 'false' ?>;
   function postJSON(data){
     return $.ajax({url: window.location.href, method:'POST', data: data, dataType:'json'});
   }
@@ -838,7 +1301,8 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     const periodoId  = $(this).data('periodo_id');
 
     if (!id_py || !facultadId || !periodoId) {
-      alert('No se pudo determinar Periodo/Facultad. Seleccione filtros correctamente.'); return;
+      if (window.AppUI) AppUI.showMessage('No se pudo determinar período o facultad. Revisa los filtros y vuelve a intentar.', 'error');
+      return;
     }
     $('#dg_id_py').val(id_py);
     $('#dg_facultad_id').val(facultadId);
@@ -846,7 +1310,8 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     $('#dg_msg').hide().text('');
     $('#dg_codigo').empty().append($('<option>',{value:'',text:'Cargando...'}));
 
-    postJSON({action:'listar_codigos_disponibles', periodo_id:periodoId, facultad_id:facultadId})
+    var payloadListar = {action:'listar_codigos_disponibles', periodo_id:periodoId, facultad_id:facultadId};
+    postJSON(payloadListar)
       .done(function(r){
         $('#dg_codigo').empty();
         if (!r.ok) { $('#dg_codigo').append($('<option>',{value:'',text:r.msg||'Error'})); return; }
@@ -859,7 +1324,10 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
           });
         }
       })
-      .fail(function(){ $('#dg_codigo').empty().append($('<option>',{value:'',text:'Error de red'})); });
+      .fail(function(jqXHR, textStatus, errorThrown){
+        $('#dg_codigo').empty().append($('<option>',{value:'',text:'No se pudo cargar'}));
+        if (window.AppUI) AppUI.showMessage('No se pudo cargar la lista de códigos disponibles. Intenta nuevamente.', 'error');
+      });
 
     $('#modalDigitar').modal('show');
   });
@@ -869,53 +1337,190 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
     const pool_id = $('#dg_codigo').val();
     const id_py   = $('#dg_id_py').val();
     if (!pool_id) { $('#dg_msg').text('Seleccione un código.').show(); return; }
-    postJSON({action:'asignar_codigo_pool', pool_id:pool_id, id_py:id_py})
+    var payloadAsignar = {action:'asignar_codigo_pool', pool_id:pool_id, id_py:id_py};
+    postJSON(payloadAsignar)
       .done(function(r){
-        if (!r.ok){ $('#dg_msg').text(r.msg||'No se pudo asignar.').show(); return; }
+        if (!r.ok){
+          $('#dg_msg').text(r.msg||'No se pudo asignar.').show();
+          if (window.AppUI) AppUI.showMessage(r.msg||'No se pudo asignar el código seleccionado.', 'error');
+          return;
+        }
         if (rowCtx) {
-          rowCtx.find('.btn-digitar-codigo, .btn-generar-codigo').prop('disabled', true)
-                .attr('title','Ya tiene código en este periodo');
+          rowCtx.find('.btn-digitar-codigo').prop('disabled', true).attr('title','Ya tiene código en este periodo');
           const titleCell = rowCtx.find('td').eq(1);
-          if (titleCell.find('.badge-code').length===0) {
-            titleCell.append('<br><span class="badge badge-code">CÓDIGO: '+$('<div>').text(r.codigo).html()+'</span>');
+          const slot = titleCell.find('.codigo-badge-slot');
+          slot.html('<span class="badge badge-code">CÓDIGO: '+$('<div>').text(r.codigo||'').html()+'</span>');
+          const $gest = rowCtx.find('.btn-gestionar-codigo');
+          if (PUEDE_QUITAR) {
+            $gest.removeClass('btn-secondary').addClass('btn-danger')
+              .attr('data-action', 'quitar')
+              .attr('title', '')
+              .prop('disabled', false)
+              .html('<i class="fas fa-trash-alt"></i> Quitar código');
+          } else {
+            $gest.removeClass('btn-secondary btn-danger').addClass('btn-dark')
+              .attr('data-action', 'none')
+              .attr('title', 'Ya tiene código en este periodo')
+              .prop('disabled', true)
+              .html('<i class="fas fa-lock"></i> Código asignado');
           }
         }
         $('#modalDigitar').modal('hide');
+        if (window.AppUI) AppUI.showMessage('Código asignado correctamente.', 'ok');
       })
-      .fail(function(){ $('#dg_msg').text('Error de red.').show(); });
+      .fail(function(jqXHR, textStatus, errorThrown){
+        $('#dg_msg').text('Error de conexión o respuesta inválida.').show();
+        if (window.AppUI) AppUI.showMessage('No se pudo asignar el código por un problema de conexión. Intenta nuevamente.', 'error');
+      });
   });
 })();
 </script>
 
 <script>
-/* ===== GENERAR CÓDIGO (secuencial; alias+width: codigo_alias_facultad; secuencia: codigo_secuencias_periodo) ===== */
+/* ===== GENERAR / QUITAR CÓDIGO ===== */
 (function(){
   const $ = window.jQuery;
+  const PUEDE_QUITAR = <?= $puede_quitar_codigo ? 'true' : 'false' ?>;
   function postJSON(data){
     return $.ajax({url: window.location.href, method:'POST', data: data, dataType:'json'});
   }
-  $(document).on('click', '.btn-generar-codigo', function(e){
+  function escHtml(v){ return $('<div>').text(v == null ? '' : String(v)).html(); }
+  function texto(v){ return (v == null || String(v).trim()==='') ? 'No definido' : String(v); }
+
+  let filaCtx = null;
+
+  function actualizarUIConCodigo($row, codigo){
+    $row.find('.btn-digitar-codigo').prop('disabled', true).attr('title','Ya tiene código en este periodo');
+    const $gest = $row.find('.btn-gestionar-codigo');
+    const titleCell = $row.find('td').eq(1);
+    const slot = titleCell.find('.codigo-badge-slot');
+    slot.html('<span class="badge badge-code">CÓDIGO: '+escHtml(codigo||'')+'</span>');
+    if (PUEDE_QUITAR) {
+      $gest.removeClass('btn-secondary btn-dark').addClass('btn-danger')
+        .attr('data-action','quitar')
+        .attr('title','')
+        .prop('disabled', false)
+        .html('<i class="fas fa-trash-alt"></i> Quitar código');
+    } else {
+      $gest.removeClass('btn-secondary btn-danger').addClass('btn-dark')
+        .attr('data-action','none')
+        .attr('title','Ya tiene código en este periodo')
+        .prop('disabled', true)
+        .html('<i class="fas fa-lock"></i> Código asignado');
+    }
+  }
+
+  function actualizarUISinCodigo($row){
+    $row.find('.btn-digitar-codigo').prop('disabled', false).attr('title','Digitar/seleccionar un código pre-generado');
+    const $gest = $row.find('.btn-gestionar-codigo');
+    const titleCell = $row.find('td').eq(1);
+    const slot = titleCell.find('.codigo-badge-slot');
+    slot.html('<span class="badge badge-code-pending">Código pendiente</span>');
+    $gest.removeClass('btn-danger btn-dark').addClass('btn-secondary')
+      .attr('data-action','generar')
+      .attr('title','')
+      .prop('disabled', false)
+      .html('<i class="fas fa-hashtag"></i> Generar código');
+  }
+
+  $(document).on('click', '.btn-gestionar-codigo', function(e){
     e.preventDefault(); e.stopPropagation();
     const $btn = $(this);
+    const action = String($btn.attr('data-action') || 'none');
+    if (action === 'none') return;
     const id_py      = $btn.data('id_py');
     const facultadId = $btn.data('facultad_id');
     const periodoId  = $btn.data('periodo_id');
-    if (!id_py || !facultadId || !periodoId) { alert('Faltan datos: Periodo/Facultad.'); return; }
-    $btn.prop('disabled', true);
-    postJSON({action:'generar_codigo_auto', id_py:id_py, facultad_id:facultadId, periodo_id:periodoId})
+    if (!id_py || !facultadId || !periodoId) {
+      if (window.AppUI) AppUI.showMessage('Faltan datos de período o facultad para continuar.', 'error');
+      return;
+    }
+
+    if (action === 'quitar') {
+      if (!PUEDE_QUITAR) return;
+      if (!window.AppUI) return;
+      AppUI.confirm('¿Seguro que deseas quitar el código de este proyecto?', function(){
+        $btn.prop('disabled', true);
+        var payloadQuitar = {action:'quitar_codigo', id_py:id_py, facultad_id:facultadId, periodo_id:periodoId};
+        postJSON(payloadQuitar)
+          .done(function(r){
+            if (!r.ok){
+              AppUI.showMessage(r.msg||'No se pudo quitar el código.', 'error');
+              $btn.prop('disabled', false);
+              return;
+            }
+            actualizarUISinCodigo($btn.closest('tr'));
+            AppUI.showMessage('Código retirado correctamente. Quedó disponible para reutilización.', 'ok');
+          })
+          .fail(function(jqXHR, textStatus, errorThrown){
+            AppUI.showMessage('No se pudo quitar el código por un problema de conexión. Intenta nuevamente.', 'error');
+            $btn.prop('disabled', false);
+          });
+      });
+      return;
+    }
+
+    filaCtx = $btn.closest('tr');
+    $('#cf_id_py').val(id_py);
+    $('#cf_facultad_id').val(facultadId);
+    $('#cf_periodo_id').val(periodoId);
+    $('#cf_titulo').text(texto($btn.data('titulo')));
+    $('#cf_id_txt').text(id_py);
+    $('#cf_coord').text(texto($btn.data('coordinador')));
+    $('#cf_fac').text(texto($btn.data('facultad')));
+    $('#cf_periodo').text(texto($btn.data('periodo')));
+    $('#cf_fi').text(texto($btn.data('fecha_inicio')));
+    $('#cf_ff').text(texto($btn.data('fecha_fin')));
+    $('#cf_codigo').text('Calculando...');
+    $('#cf_fuente').text('');
+    $('#cf_msg').hide().text('');
+
+    var payloadPreview = {action:'preview_codigo_auto', id_py:id_py, facultad_id:facultadId, periodo_id:periodoId};
+    postJSON(payloadPreview)
       .done(function(r){
-        if (!r.ok){ alert(r.msg||'No se pudo generar.'); $btn.prop('disabled', false); return; }
-        // UI: deshabilitar ambos y pintar badge
-        const rowCtx = $btn.closest('tr');
-        rowCtx.find('.btn-digitar-codigo, .btn-generar-codigo').prop('disabled', true)
-              .attr('title','Ya tiene código en este periodo');
-        const titleCell = rowCtx.find('td').eq(1);
-        if (titleCell.find('.badge-code').length===0) {
-          titleCell.append('<br><span class="badge badge-code">CÓDIGO: '+$('<div>').text(r.codigo).html()+'</span>');
+        if (!r.ok){
+          if (window.AppUI) AppUI.showMessage(r.msg||'No se pudo previsualizar el código propuesto.', 'error');
+          return;
         }
+        $('#cf_codigo').text(r.codigo || 'No disponible');
+        $('#cf_fuente').text((r.fuente === 'pool') ? 'Fuente: código liberado (pool disponible).' : 'Fuente: nuevo correlativo.');
+        $('#modalConfirmarCodigo').modal('show');
       })
-      .fail(function(){ alert('Error de red.'); $btn.prop('disabled', false); });
+      .fail(function(jqXHR, textStatus, errorThrown){
+        if (window.AppUI) AppUI.showMessage('No se pudo previsualizar el código por un problema de conexión. Intenta nuevamente.', 'error');
+      });
   });
+
+  $('#frmConfirmarCodigo').on('submit', function(e){
+    e.preventDefault();
+    const id_py = $('#cf_id_py').val();
+    const facultadId = $('#cf_facultad_id').val();
+    const periodoId = $('#cf_periodo_id').val();
+    const $submit = $(this).find('button[type="submit"]');
+    $submit.prop('disabled', true);
+    $('#cf_msg').hide().text('');
+
+    var payloadGenerar = {action:'generar_codigo_auto', id_py:id_py, facultad_id:facultadId, periodo_id:periodoId};
+    postJSON(payloadGenerar)
+      .done(function(r){
+        if (!r.ok){
+          $('#cf_msg').text(r.msg||'No se pudo generar.').show();
+          if (window.AppUI) AppUI.showMessage(r.msg||'No se pudo generar el código.', 'error');
+          $submit.prop('disabled', false);
+          return;
+        }
+        if (filaCtx && filaCtx.length) actualizarUIConCodigo(filaCtx, r.codigo || '');
+        $('#modalConfirmarCodigo').modal('hide');
+        if (window.AppUI) AppUI.showMessage('Código generado y asignado correctamente.', 'ok');
+        $submit.prop('disabled', false);
+      })
+      .fail(function(jqXHR, textStatus, errorThrown){
+        $('#cf_msg').text('Error de conexión o respuesta inválida.').show();
+        if (window.AppUI) AppUI.showMessage('No se pudo generar el código por un problema de conexión. Intenta nuevamente.', 'error');
+        $submit.prop('disabled', false);
+      });
+  });
+
 })();
 </script>
 </section>
