@@ -101,9 +101,9 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
 /* Modal Ver Informe: altura fija + scroll interno */
 #modalInforme .modal-dialog { max-width: 1140px; }
 #modalInforme .modal-dialog.modal-dialog-scrollable { height: 90vh; }
-#modalInforme .modal-content { height: 100%; }
-#modalInforme .modal-body { padding:0; overflow:hidden !important; }
-#contenidoInforme { height: 78vh; overflow:hidden; }
+#modalInforme .modal-content { height: 100%; min-height:0; display:flex; }
+#modalInforme .modal-body { padding:0; overflow:hidden !important; flex:1 1 auto; min-height:0; }
+#contenidoInforme { height: 100%; min-height:0; overflow:hidden; }
 
 /* UI filtros — compatible con BS4/BS5 */
 .filtros-card .form-label{ font-weight:600; margin-bottom:.25rem; }
@@ -481,7 +481,7 @@ $dep_disabled = $mostrarDep && $fac_for_deps <= 0;
                 </button>
             </div>
             <div class="modal-body p-0">
-                <div id="contenidoInforme" style="height:78vh; overflow:hidden;">
+                <div id="contenidoInforme">
                     <p class="text-center text-muted my-4">Cargando informe...</p>
                 </div>
             </div>
@@ -588,6 +588,20 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
 <script>
 /* Abrir modal "Ver Informe" y cargar HTML (único botón funcional) */
 (function () {
+  const syncModalInformeLayout = function () {
+    if (!window.jQuery) return;
+    const $modal = jQuery('#modalInforme');
+    if ($modal.length && $modal.hasClass('show')) {
+      $modal.modal('handleUpdate');
+    }
+  };
+
+  if (window.jQuery) {
+    jQuery('#modalInforme').on('shown.bs.modal', function () {
+      syncModalInformeLayout();
+    });
+  }
+
   document.addEventListener('click', function (e) {
     const btn = e.target.closest('.btn-ver-informe');
     if (!btn) return;
@@ -607,8 +621,11 @@ document.querySelectorAll('.fila-toggle').forEach((row) => {
     if (window.jQuery) {
       jQuery.get('../informe_semestral/ver_informe.php', { id: idpy, id_respuesta: idresp || '', semestral: semVal || '' }, function (html) {
         jQuery('#contenidoInforme').html(html);
+        syncModalInformeLayout();
+        window.requestAnimationFrame(syncModalInformeLayout);
       }, 'html').fail(function () {
         jQuery('#contenidoInforme').html('<div class="text-danger p-3">No se pudo cargar el informe.</div>');
+        syncModalInformeLayout();
       });
       jQuery('#modalInforme').modal('show');
       return;
