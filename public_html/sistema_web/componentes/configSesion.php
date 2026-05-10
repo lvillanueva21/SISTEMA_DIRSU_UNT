@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__ . '/../includes/rsu_diag.php';
+rsu_diag_context('entry_point', 'componentes/configSesion.php');
+rsu_diag_context('evt_file_exists', file_exists(__DIR__ . '/../includes/evt_mantenimiento.php') ? 'yes' : 'no');
+rsu_diag_context('db_connection_file_exists', file_exists(__DIR__ . '/../includes/db_connection.php') ? 'yes' : 'no');
+
 if (!headers_sent()) {
     header('Content-Type: text/html; charset=UTF-8');
 }
@@ -55,7 +60,10 @@ if ((int)$evtMtoState['sistema_activo'] === 0) {
     }
 }
 
-include_once __DIR__ . '/../includes/db_connection.php';
+if (function_exists('evt_mto_db_connect')) {
+    $conexion = evt_mto_db_connect();
+}
+
 if (!isset($conexion) || !($conexion instanceof mysqli)) {
     echo "No se realizo la conexion a la base de datos.";
     exit();

@@ -7,6 +7,18 @@
 if (!defined('EVT_MTO_HELPERS_LOADED')) {
     define('EVT_MTO_HELPERS_LOADED', 1);
 
+    // Carga temprana en scope global para evitar problemas de alcance
+    // cuando este helper se invoca desde funciones.
+    if (!function_exists('rsu_db_connect')) {
+        try {
+            include_once __DIR__ . '/db_connection.php';
+        } catch (Throwable $e) {
+            if (function_exists('rsu_diag_context')) {
+                rsu_diag_context('evt_db_bootstrap_exception', $e->getMessage());
+            }
+        }
+    }
+
     function evt_mto_default_title()
     {
         return 'SISTEMA DIRSU EN MANTENIMIENTO';
@@ -33,12 +45,27 @@ if (!defined('EVT_MTO_HELPERS_LOADED')) {
         $initialized = true;
 
         if (!isset($GLOBALS['conexion']) || !($GLOBALS['conexion'] instanceof mysqli)) {
-            include_once __DIR__ . '/db_connection.php';
+            if (function_exists('rsu_db_connect')) {
+                try {
+                    $tmp = rsu_db_connect();
+                    if ($tmp instanceof mysqli) {
+                        $GLOBALS['conexion'] = $tmp;
+                    }
+                } catch (Throwable $e) {
+                    if (function_exists('rsu_diag_context')) {
+                        rsu_diag_context('evt_db_connect_exception', $e->getMessage());
+                    }
+                    $cached = false;
+                    return $cached;
+                }
+            }
         }
 
         if (isset($GLOBALS['conexion']) && ($GLOBALS['conexion'] instanceof mysqli)) {
             $cached = $GLOBALS['conexion'];
             @mysqli_set_charset($cached, 'utf8mb4');
+        } else {
+            $cached = false;
         }
 
         return $cached;

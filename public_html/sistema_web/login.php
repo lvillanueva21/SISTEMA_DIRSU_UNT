@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__ . '/includes/rsu_diag.php';
+rsu_diag_context('entry_point', 'login.php');
+rsu_diag_context('evt_file_exists', file_exists(__DIR__ . '/includes/evt_mantenimiento.php') ? 'yes' : 'no');
+rsu_diag_context('db_connection_file_exists', file_exists(__DIR__ . '/includes/db_connection.php') ? 'yes' : 'no');
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

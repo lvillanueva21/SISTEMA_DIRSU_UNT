@@ -1,8 +1,13 @@
 <?php
 session_start();
 
-include "../../includes/db_connection.php";
 require_once "../../includes/evt_mantenimiento.php";
+
+$conexion = evt_mto_db_connect();
+if (!($conexion instanceof mysqli)) {
+    header("Location: ../../login.php?error=2");
+    exit();
+}
 
 $usuario = isset($_POST['usuario']) ? trim((string)$_POST['usuario']) : '';
 $clave = isset($_POST['clave']) ? (string)$_POST['clave'] : '';
@@ -22,10 +27,6 @@ if ($usuario === '' || $clave === '') {
 $stmt = null;
 
 try {
-    if (!($conexion instanceof mysqli)) {
-        throw new Exception("Conexion de base de datos no disponible");
-    }
-
     $stmt = $conexion->prepare("SELECT
         id,
         usuario,
@@ -130,4 +131,3 @@ try {
     }
 }
 ?>
-

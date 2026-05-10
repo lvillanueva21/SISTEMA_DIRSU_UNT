@@ -6,6 +6,12 @@
 
 include_once __DIR__ . '/config.php';
 
+// Si este archivo se incluye dentro de una funcion, $RSU_CONFIG puede quedar
+// en scope local. Lo promovemos a $GLOBALS para rsu_db_connect().
+if (!isset($GLOBALS['RSU_CONFIG']) && isset($RSU_CONFIG) && is_array($RSU_CONFIG)) {
+    $GLOBALS['RSU_CONFIG'] = $RSU_CONFIG;
+}
+
 if (!function_exists('rsu_db_connect')) {
     function rsu_db_connect()
     {
