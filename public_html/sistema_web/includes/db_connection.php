@@ -29,8 +29,25 @@ if (!function_exists('rsu_db_connect')) {
         $charset = isset($RSU_CONFIG['db']['charset']) ? $RSU_CONFIG['db']['charset'] : 'utf8mb4';
         $sql_tz = isset($RSU_CONFIG['db']['sql_time_zone']) ? $RSU_CONFIG['db']['sql_time_zone'] : '-05:00';
 
-        $shared_connection = @mysqli_connect($host, $user, $pass, $name);
+        try {
+            $shared_connection = @mysqli_connect($host, $user, $pass, $name);
+        } catch (Throwable $e) {
+            error_log(
+                'RSU DB connection exception: host=' . (string)$host .
+                ' db=' . (string)$name .
+                ' user=' . (string)$user .
+                ' msg=' . $e->getMessage()
+            );
+            $shared_connection = false;
+        }
         if (!$shared_connection) {
+            error_log(
+                'RSU DB connection failed: host=' . (string)$host .
+                ' db=' . (string)$name .
+                ' user=' . (string)$user .
+                ' errno=' . (string)mysqli_connect_errno() .
+                ' error=' . (string)mysqli_connect_error()
+            );
             return false;
         }
 
@@ -48,9 +65,5 @@ if ($rsu_connection instanceof mysqli) {
     $conexion = $rsu_connection;
 } elseif (!isset($conexion) || !($conexion instanceof mysqli)) {
     $conexion = false;
-}
-
-if (!$conexion) {
-    echo "No se realizo la conexion a la base de datos, el error fue: " . mysqli_connect_error();
 }
 

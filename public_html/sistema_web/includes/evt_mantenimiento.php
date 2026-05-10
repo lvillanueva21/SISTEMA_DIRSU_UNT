@@ -26,7 +26,7 @@ if (!defined('EVT_MTO_HELPERS_LOADED')) {
 
     function evt_mto_default_message()
     {
-        return 'El Area Informatica a cargo de la gestion del SISTEMA DIRSU se encuentra realizando labores de mantenimiento para corregir incidencias surgidas tras la modernizacion de los servidores de la Oficina de Tecnologia e Informacion (OTI) de la UNT. Trabajaremos para restablecer el servicio a la brevedad. Gracias por su comprension.';
+        return 'El Área Informática a cargo de la gestión del SISTEMA DIRSU se encuentra realizando labores de mantenimiento para corregir incidencias surgidas tras la modernización de los servidores de la Oficina de Tecnología e Información (OTI) de la UNT. Trabajaremos para restablecer el servicio a la brevedad. Gracias por su comprensión.';
     }
 
     function evt_mto_default_image()

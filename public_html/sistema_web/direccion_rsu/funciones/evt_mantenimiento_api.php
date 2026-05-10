@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+ob_start();
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,6 +10,9 @@ require_once __DIR__ . '/../../includes/evt_mantenimiento.php';
 
 function evt_mto_api_exit($success, $msg, $data = null, $httpCode = 200)
 {
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
     if (!headers_sent()) {
         http_response_code($httpCode);
     }
@@ -21,11 +25,11 @@ function evt_mto_api_exit($success, $msg, $data = null, $httpCode = 200)
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    evt_mto_api_exit(false, 'Metodo no permitido.', null, 405);
+    evt_mto_api_exit(false, 'Método no permitido.', null, 405);
 }
 
 if (!isset($_SESSION['usuario'])) {
-    evt_mto_api_exit(false, 'Sesion no valida.', null, 401);
+    evt_mto_api_exit(false, 'Sesión no válida.', null, 401);
 }
 
 if (!isset($_SESSION['id_rol']) || (int)$_SESSION['id_rol'] !== 1) {
@@ -34,18 +38,20 @@ if (!isset($_SESSION['id_rol']) || (int)$_SESSION['id_rol'] !== 1) {
 
 $csrfToken = isset($_POST['csrf_token']) ? (string)$_POST['csrf_token'] : '';
 if (!evt_mto_validate_csrf_token($csrfToken, 'evt_mantenimiento_admin_csrf')) {
-    evt_mto_api_exit(false, 'Token CSRF invalido.', null, 403);
+    evt_mto_api_exit(false, 'Token CSRF inválido.', null, 403);
 }
 
 $conexion = evt_mto_db_connect();
 if (!($conexion instanceof mysqli)) {
-    evt_mto_api_exit(false, 'No se pudo conectar a base de datos.', null, 500);
+    error_log('evt_mantenimiento_api: conexión BD no disponible');
+    evt_mto_api_exit(false, 'No se pudo procesar la solicitud en este momento.', null, 500);
 }
 @mysqli_set_charset($conexion, 'utf8mb4');
 
 $userId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
 if (!evt_mto_ensure_seed($conexion, $userId > 0 ? $userId : null)) {
-    evt_mto_api_exit(false, 'No se pudo inicializar la configuracion. Verifique tablas evt_.', null, 500);
+    error_log('evt_mantenimiento_api: fallo al inicializar seed de evt_');
+    evt_mto_api_exit(false, 'No se pudo inicializar la configuración de mantenimiento.', null, 500);
 }
 
 $action = isset($_POST['action']) ? trim((string)$_POST['action']) : '';
@@ -55,12 +61,12 @@ if ($action === 'get_state') {
 }
 
 if ($action !== 'save_config') {
-    evt_mto_api_exit(false, 'Accion no permitida.', null, 400);
+    evt_mto_api_exit(false, 'Acción no permitida.', null, 400);
 }
 
 $sistemaActivo = isset($_POST['sistema_activo']) ? (int)$_POST['sistema_activo'] : -1;
 if ($sistemaActivo !== 0 && $sistemaActivo !== 1) {
-    evt_mto_api_exit(false, 'Estado de sistema invalido.', null, 422);
+    evt_mto_api_exit(false, 'Estado de sistema inválido.', null, 422);
 }
 
 $titulo = evt_mto_trim_limit(isset($_POST['titulo']) ? $_POST['titulo'] : '', 180);
@@ -81,7 +87,8 @@ if ($claveNueva !== '' && strlen($claveNueva) < 8) {
 $current = evt_mto_fetch_state();
 $eventoId = isset($current['evento_id']) ? (int)$current['evento_id'] : 0;
 if ($eventoId <= 0) {
-    evt_mto_api_exit(false, 'No se encontro el evento de mantenimiento.', null, 500);
+    error_log('evt_mantenimiento_api: evento mantenimiento_sistema no encontrado');
+    evt_mto_api_exit(false, 'No se encontró la configuración de mantenimiento.', null, 500);
 }
 
 $hasSecret = !empty($current['has_secret']);
@@ -112,7 +119,7 @@ try {
                  WHERE evento_id = ?";
         $st = mysqli_prepare($conexion, $sql);
         if (!$st) {
-            throw new Exception('No se pudo preparar la actualizacion.');
+            throw new Exception('No se pudo preparar la actualización.');
         }
         mysqli_stmt_bind_param($st, 'isssii', $sistemaActivo, $titulo, $mensaje, $hash, $userId, $eventoId);
     } else {
@@ -124,14 +131,14 @@ try {
                  WHERE evento_id = ?";
         $st = mysqli_prepare($conexion, $sql);
         if (!$st) {
-            throw new Exception('No se pudo preparar la actualizacion.');
+            throw new Exception('No se pudo preparar la actualización.');
         }
         mysqli_stmt_bind_param($st, 'issii', $sistemaActivo, $titulo, $mensaje, $userId, $eventoId);
     }
 
     if (!mysqli_stmt_execute($st)) {
         mysqli_stmt_close($st);
-        throw new Exception('No se pudo guardar la configuracion.');
+        throw new Exception('No se pudo guardar la configuración.');
     }
     mysqli_stmt_close($st);
 
@@ -142,9 +149,9 @@ try {
     }
 
     $state = evt_mto_fetch_state();
-    evt_mto_api_exit(true, 'Configuracion guardada correctamente.', $state);
+    evt_mto_api_exit(true, 'Configuración guardada correctamente.', $state);
 } catch (Exception $e) {
     mysqli_rollback($conexion);
-    evt_mto_api_exit(false, $e->getMessage(), null, 500);
+    error_log('evt_mantenimiento_api save_config: ' . $e->getMessage());
+    evt_mto_api_exit(false, 'No se pudo guardar la configuración de mantenimiento.', null, 500);
 }
-

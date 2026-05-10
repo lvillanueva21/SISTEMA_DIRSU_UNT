@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+ob_start();
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,6 +10,9 @@ require_once __DIR__ . '/../../includes/evt_mantenimiento.php';
 
 function evt_mto_unlock_exit($success, $msg, $data = null, $httpCode = 200)
 {
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
     if (!headers_sent()) {
         http_response_code($httpCode);
     }
@@ -21,12 +25,12 @@ function evt_mto_unlock_exit($success, $msg, $data = null, $httpCode = 200)
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    evt_mto_unlock_exit(false, 'Metodo no permitido.', null, 405);
+    evt_mto_unlock_exit(false, 'Método no permitido.', null, 405);
 }
 
 $csrfToken = isset($_POST['csrf_token']) ? (string)$_POST['csrf_token'] : '';
 if (!evt_mto_validate_csrf_token($csrfToken, 'evt_mantenimiento_unlock_csrf')) {
-    evt_mto_unlock_exit(false, 'Token CSRF invalido.', null, 403);
+    evt_mto_unlock_exit(false, 'Token CSRF inválido.', null, 403);
 }
 
 $state = evt_mto_fetch_state();
@@ -39,6 +43,7 @@ if (!$maintenanceOn) {
 
 $conexion = evt_mto_db_connect();
 if (!($conexion instanceof mysqli)) {
+    error_log('evt_mantenimiento_unlock: conexión BD no disponible');
     evt_mto_unlock_exit(false, 'No se pudo validar la clave en este momento.', null, 500);
 }
 
@@ -49,6 +54,7 @@ $sql = "SELECT m.clave_hash
          LIMIT 1";
 $res = @mysqli_query($conexion, $sql);
 if ($res === false) {
+    error_log('evt_mantenimiento_unlock: consulta de clave_hash falló');
     evt_mto_unlock_exit(false, 'No se pudo validar la clave en este momento.', null, 500);
 }
 
@@ -68,5 +74,4 @@ if (!password_verify($secret, $hash)) {
 }
 
 evt_mto_set_bypass_session(true);
-evt_mto_unlock_exit(true, 'Acceso habilitado para esta sesion.', array('unlocked' => true));
-
+evt_mto_unlock_exit(true, 'Acceso habilitado para esta sesión.', array('unlocked' => true));

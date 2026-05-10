@@ -5,7 +5,7 @@ require_once "../includes/evt_mantenimiento.php";
 $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,7 +25,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
         }
         .evt-card-action:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,.08);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .08);
         }
         .evt-status-pill {
             font-size: .78rem;
@@ -33,6 +33,9 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             padding: .35rem .6rem;
             border-radius: 999px;
             display: inline-block;
+        }
+        .btn-icon {
+            min-width: 40px;
         }
     </style>
 </head>
@@ -47,11 +50,11 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
         <ul class="navbar-nav ml-auto">
             <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                 <a href="https://rsu.unitru.edu.pe" class="nav-link" target="_blank">
-                    <p style="color: white;">Ir a p&aacute;gina DIRSU</p>
+                    <p style="color: white;">Ir a página DIRSU</p>
                 </a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesi&oacute;n</a>
+                <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
             </li>
         </ul>
     </nav>
@@ -88,7 +91,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                         </div>
                                         <div>
                                             <h5 class="mb-1">Mantenimiento del sistema</h5>
-                            <small class="text-muted">Controla disponibilidad de login y acceso general.</small>
+                                            <small class="text-muted">Controla disponibilidad de login y acceso general.</small>
                                         </div>
                                     </div>
                                     <button type="button" id="btnOpenMantenimiento" class="btn btn-primary btn-block mt-3">
@@ -98,7 +101,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                             </div>
                         </div>
                         <div class="alert alert-light border mt-4 mb-0">
-                            Esta vista est&aacute; preparada para agregar m&aacute;s controles en siguientes iteraciones.
+                            Esta vista está preparada para agregar más controles en siguientes iteraciones.
                         </div>
                     </div>
                 </div>
@@ -109,7 +112,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
     <footer class="main-footer">
         <strong>&copy; 2024 Universidad Nacional de Trujillo. Todos los derechos reservados.</strong>
         <div class="float-right d-none d-sm-inline-block">
-            <p>Desarrollado por el <a href="#">Area informatica - DIRSU</a></p>
+            <p>Desarrollado por el <a href="#">Área informática - DIRSU</a></p>
         </div>
     </footer>
 </div>
@@ -144,13 +147,23 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 </div>
 
                 <div class="alert alert-warning mb-3">
-                    Al cambiar el estado se bloquear&aacute;n o habilitar&aacute;n accesos de forma inmediata. Se pedir&aacute; confirmaci&oacute;n antes de guardar.
+                    Al cambiar el estado se bloquearán o habilitarán accesos de forma inmediata.
                 </div>
 
                 <div class="form-group">
                     <label for="evtMtoClaveNueva">Crear o actualizar clave secreta</label>
-                    <input type="password" class="form-control" id="evtMtoClaveNueva" autocomplete="new-password" placeholder="Dejar en blanco para mantener la clave actual">
-                    <small class="form-text text-muted">M&iacute;nimo 8 caracteres. No se mostrar&aacute; ni se guardar&aacute; en texto plano.</small>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="evtMtoClaveNueva" autocomplete="new-password" placeholder="Dejar en blanco para mantener la clave actual">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary btn-icon" id="btnEvtMtoToggle" type="button" title="Mostrar u ocultar clave">
+                                <i class="fa fa-eye" id="evtMtoEyeIcon"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary btn-icon" id="btnEvtMtoCopy" type="button" title="Copiar clave escrita">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Mínimo 8 caracteres. No se mostrará ni se guardará en texto plano.</small>
                 </div>
 
                 <div class="mb-3">
@@ -158,7 +171,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 </div>
 
                 <div class="form-group">
-                    <label for="evtMtoTitulo">Titulo del mensaje de mantenimiento</label>
+                    <label for="evtMtoTitulo">Título del mensaje de mantenimiento</label>
                     <input type="text" class="form-control" id="evtMtoTitulo" maxlength="180">
                 </div>
 
@@ -168,7 +181,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 </div>
 
                 <div class="text-muted small">
-                    &Uacute;ltima actualizaci&oacute;n: <span id="evtMtoUpdatedAt">-</span>
+                    Última actualización: <span id="evtMtoUpdatedAt">-</span>
                 </div>
             </div>
             <div class="modal-footer">
@@ -177,6 +190,26 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                     <span class="normal-label">Guardar</span>
                     <span class="loading-label d-none"><i class="fas fa-spinner fa-spin mr-1"></i>Guardando...</span>
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEvtMtoConfirm" tabindex="-1" role="dialog" aria-labelledby="modalEvtMtoConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="modalEvtMtoConfirmLabel">Confirmar acción</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" id="evtMtoConfirmText">¿Estás seguro?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnEvtMtoConfirmAction">Confirmar</button>
             </div>
         </div>
     </div>
@@ -198,6 +231,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
         var apiUrl = 'funciones/evt_mantenimiento_api.php';
         var csrfToken = <?php echo json_encode($evtMtoCsrf); ?>;
         var currentState = null;
+        var pendingPayload = null;
 
         function escapeHtml(value) {
             return String(value || '')
@@ -222,6 +256,69 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             $btn.find('.loading-label').toggleClass('d-none', !isSaving);
         }
 
+        function fallbackCopyText(text) {
+            var aux = document.createElement('textarea');
+            aux.value = text;
+            aux.setAttribute('readonly', '');
+            aux.style.position = 'absolute';
+            aux.style.left = '-9999px';
+            document.body.appendChild(aux);
+            aux.select();
+            aux.setSelectionRange(0, 99999);
+            var ok = false;
+            try {
+                ok = document.execCommand('copy');
+            } catch (e) {
+                ok = false;
+            }
+            document.body.removeChild(aux);
+            return ok;
+        }
+
+        function copySecretInput() {
+            var value = $.trim($('#evtMtoClaveNueva').val());
+            if (value === '') {
+                showAlert('warning', 'Primero escribe una clave para poder copiarla.');
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(value).then(function () {
+                    showAlert('success', 'Clave copiada al portapapeles.');
+                }).catch(function () {
+                    if (fallbackCopyText(value)) {
+                        showAlert('success', 'Clave copiada al portapapeles.');
+                    } else {
+                        showAlert('danger', 'No se pudo copiar la clave.');
+                    }
+                });
+                return;
+            }
+
+            if (fallbackCopyText(value)) {
+                showAlert('success', 'Clave copiada al portapapeles.');
+            } else {
+                showAlert('danger', 'No se pudo copiar la clave.');
+            }
+        }
+
+        function toggleSecretInput() {
+            var input = document.getElementById('evtMtoClaveNueva');
+            var icon = document.getElementById('evtMtoEyeIcon');
+            if (!input || !icon) {
+                return;
+            }
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
         function renderState(state) {
             currentState = state || {};
             var isActive = Number(currentState.sistema_activo) === 1;
@@ -231,8 +328,10 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             $('#evtMtoTitulo').val(currentState.titulo || '');
             $('#evtMtoMensaje').val(currentState.mensaje || '');
             $('#evtMtoClaveNueva').val('');
+            $('#evtMtoClaveNueva').attr('type', 'password');
+            $('#evtMtoEyeIcon').removeClass('fa-eye-slash').addClass('fa-eye');
 
-            $('#evtMtoEstadoTexto').text(isActive ? 'Sistema activo. Los usuarios pueden iniciar sesion.' : 'Sistema en mantenimiento. Login bloqueado sin clave secreta.');
+            $('#evtMtoEstadoTexto').text(isActive ? 'Sistema activo. Los usuarios pueden iniciar sesión.' : 'Sistema en mantenimiento. Login bloqueado sin clave secreta.');
             $('#evtMtoEstadoBadge')
                 .removeClass('badge-success badge-danger')
                 .addClass(isActive ? 'badge-success' : 'badge-danger')
@@ -261,7 +360,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 }
             }).done(function (res) {
                 if (!res || !res.success) {
-                    showAlert('danger', (res && res.msg) ? res.msg : 'No se pudo cargar la configuracion.');
+                    showAlert('danger', (res && res.msg) ? res.msg : 'No se pudo cargar la configuración.');
                     return;
                 }
                 renderState(res.data || {});
@@ -270,63 +369,76 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                     $('#modalMantenimiento').modal('show');
                 }
             }).fail(function () {
-                showAlert('danger', 'Error de comunicacion con el servidor.');
+                showAlert('danger', 'Error de comunicación con el servidor.');
             });
         }
 
-        function saveConfig() {
+        function buildPayload() {
             if (!currentState) {
                 showAlert('warning', 'Primero cargue el estado del sistema.');
-                return;
+                return null;
             }
 
             var nextActive = $('#evtMtoSwitchActivo').is(':checked') ? 1 : 0;
-            var prevActive = Number(currentState.sistema_activo) === 1 ? 1 : 0;
             var keyValue = $.trim($('#evtMtoClaveNueva').val());
 
             if (nextActive === 0 && !currentState.has_secret && keyValue === '') {
                 showAlert('danger', 'Para apagar el sistema debe configurar primero una clave secreta.');
-                return;
+                return null;
             }
 
-            if (nextActive !== prevActive) {
-                var confirmMsg = nextActive === 0
-                    ? 'Estas seguro de APAGAR el sistema y activar mantenimiento?'
-                    : 'Estas seguro de PRENDER el sistema y desactivar mantenimiento?';
-                if (!window.confirm(confirmMsg)) {
-                    return;
-                }
-            } else {
-                if (!window.confirm('Estas seguro de guardar los cambios?')) {
-                    return;
-                }
-            }
+            return {
+                action: 'save_config',
+                csrf_token: csrfToken,
+                sistema_activo: nextActive,
+                clave_nueva: keyValue,
+                titulo: $('#evtMtoTitulo').val(),
+                mensaje: $('#evtMtoMensaje').val()
+            };
+        }
 
+        function openConfirmForSave(payload) {
+            var prevActive = Number(currentState.sistema_activo) === 1 ? 1 : 0;
+            var nextActive = Number(payload.sistema_activo) === 1 ? 1 : 0;
+            var text = '¿Estás seguro de guardar los cambios?';
+            if (prevActive !== nextActive) {
+                text = nextActive === 0
+                    ? '¿Estás seguro de apagar el sistema y activar mantenimiento?'
+                    : '¿Estás seguro de prender el sistema y desactivar mantenimiento?';
+            }
+            $('#evtMtoConfirmText').text(text);
+            $('#modalEvtMtoConfirm').modal('show');
+        }
+
+        function executeSave(payload) {
             setSaving(true);
             $.ajax({
                 url: apiUrl,
                 method: 'POST',
                 dataType: 'json',
-                data: {
-                    action: 'save_config',
-                    csrf_token: csrfToken,
-                    sistema_activo: nextActive,
-                    clave_nueva: keyValue,
-                    titulo: $('#evtMtoTitulo').val(),
-                    mensaje: $('#evtMtoMensaje').val()
-                }
+                data: payload
             }).done(function (res) {
                 if (!res || !res.success) {
                     showAlert('danger', (res && res.msg) ? res.msg : 'No se pudo guardar.');
                     return;
                 }
                 renderState(res.data || {});
-                showAlert('success', res.msg || 'Configuracion guardada.');
+                showAlert('success', res.msg || 'Configuración guardada.');
             }).fail(function () {
-                showAlert('danger', 'Error de comunicacion con el servidor.');
+                showAlert('danger', 'Error de comunicación con el servidor.');
             }).always(function () {
                 setSaving(false);
+                pendingPayload = null;
             });
+        }
+
+        function requestSave() {
+            var payload = buildPayload();
+            if (!payload) {
+                return;
+            }
+            pendingPayload = payload;
+            openConfirmForSave(payload);
         }
 
         $(function () {
@@ -334,9 +446,20 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             $('#btnOpenMantenimiento').on('click', function () {
                 loadState(true);
             });
-            $('#btnGuardarMantenimiento').on('click', saveConfig);
+            $('#btnGuardarMantenimiento').on('click', requestSave);
+            $('#btnEvtMtoConfirmAction').on('click', function () {
+                if (!pendingPayload) {
+                    $('#modalEvtMtoConfirm').modal('hide');
+                    return;
+                }
+                $('#modalEvtMtoConfirm').modal('hide');
+                executeSave(pendingPayload);
+            });
+            $('#btnEvtMtoToggle').on('click', toggleSecretInput);
+            $('#btnEvtMtoCopy').on('click', copySecretInput);
         });
     })();
 </script>
 </body>
 </html>
+

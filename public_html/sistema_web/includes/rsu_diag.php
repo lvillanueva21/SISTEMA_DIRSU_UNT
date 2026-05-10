@@ -1,6 +1,6 @@
 <?php
 /**
- * Diagnostico de errores fatales para soporte.
+ * Diagnóstico de errores fatales para soporte.
  * Muestra una pantalla HTML con modal copiable cuando ocurre un fatal.
  */
 
@@ -58,7 +58,6 @@ if (!defined('RSU_DIAG_LOADED')) {
         }
 
         if (!headers_sent()) {
-            // Forzar salida visible en lugar de pagina 500 generica del servidor.
             http_response_code(200);
             header('Content-Type: text/html; charset=UTF-8');
         }
@@ -135,3 +134,4 @@ if (!defined('RSU_DIAG_LOADED')) {
         register_shutdown_function('rsu_diag_shutdown_handler');
     }
 }
+

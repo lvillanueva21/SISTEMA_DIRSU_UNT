@@ -32,9 +32,9 @@ if ($evtImagen === '') {
 }
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
-    <title>Iniciar Sesi&oacute;n - Sistema DIRSU</title>
+    <title>Iniciar sesión - Sistema DIRSU</title>
     <link href="imagenes/dirsu_128_128.ico" rel="icon">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -54,6 +54,7 @@ if ($evtImagen === '') {
         }
         .modal-content.rounded-lg { border-radius: .75rem; }
         #mtoUnlockFeedback { min-height: 20px; }
+        .btn-icon { min-width: 40px; }
     </style>
 </head>
 <body>
@@ -66,15 +67,15 @@ if ($evtImagen === '') {
                     <div class="login-wrap p-4 p-md-5">
                         <div class="d-flex">
                             <div class="w-100">
-                                <h3 class="text-center mb-4">Iniciar sesi&oacute;n</h3>
+                                <h3 class="text-center mb-4">Iniciar sesión</h3>
                             </div>
                         </div>
 
                         <?php
                         if (isset($_GET['error']) && $_GET['error'] == 1) {
-                            echo "<p style='color:red'>Usuario y/o contrase&ntilde;a incorrectos ...</p>";
+                            echo "<p style='color:red'>Usuario y/o contraseña incorrectos ...</p>";
                         } elseif (isset($_GET['error']) && $_GET['error'] == 5) {
-                            echo "<p style='color:#b36b00'>Este usuario est&aacute; desactivado. Solicita activaci&oacute;n al &aacute;rea DIRSU.</p>";
+                            echo "<p style='color:#b36b00'>Este usuario está desactivado. Solicita activación al área DIRSU.</p>";
                         } elseif (isset($_GET['error']) && $_GET['error'] == 6) {
                             echo "<p style='color:#b36b00'>El sistema se encuentra en mantenimiento. Ingrese la clave secreta para continuar.</p>";
                         }
@@ -83,15 +84,15 @@ if ($evtImagen === '') {
                         <form id="formAuthentication" class="signin-form" action="./componentes/sesion/validarSesion.php" method="POST">
                             <div class="form-group">
                                 <label for="usuario" class="form-label fs-6">Usuario:
-                                    <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="Si eres coordinador de proyecto, tu usuario es tu C&Oacute;DIGO DOCENTE">
+                                    <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="Si eres coordinador de proyecto, tu usuario es tu CÓDIGO DOCENTE">
                                         <i class="fa fa-info-circle"></i>
                                     </button>
                                 </label>
                                 <input type="text" class="form-control" id="usuario" name="usuario" required <?php echo $evtLoginBlocked ? 'disabled' : ''; ?>>
                             </div>
                             <div class="form-group">
-                                <label for="clave" class="form-label fs-6">Contrase&ntilde;a:
-                                    <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="Si olvidaste tu contrase&ntilde;a solicita una nueva en dirsu@unitru.edu.pe">
+                                <label for="clave" class="form-label fs-6">Contraseña:
+                                    <button type="button" class="btn btn-link p-0" data-toggle="tooltip" data-placement="right" title="Si olvidaste tu contraseña solicita una nueva en dirsu@unitru.edu.pe">
                                         <i class="fa fa-info-circle"></i>
                                     </button>
                                 </label>
@@ -110,9 +111,9 @@ if ($evtImagen === '') {
 
                         <div class="form-group d-md-flex"></div>
                         <div class="d-flex justify-content-center align-items-center">
-                            <span class="mr-2">&iquest;No tienes una cuenta?</span>
+                            <span class="mr-2">¿No tienes una cuenta?</span>
                             <button type="button" class="btn btn-link btn-sm d-inline-flex align-items-center text-decoration-none p-0" data-toggle="modal" data-target="#registroModal">
-                                <i class="fa fa-book mr-1"></i> Ver gu&iacute;a
+                                <i class="fa fa-book mr-1"></i> Ver guía
                             </button>
                         </div>
                     </div>
@@ -139,6 +140,76 @@ if ($evtImagen === '') {
         function setUnlockLoading(loading) {
             $('#btnUnlockMto').prop('disabled', !!loading);
             $('#mtoUnlockKey').prop('disabled', !!loading);
+            $('#btnMtoUnlockToggle').prop('disabled', !!loading);
+            $('#btnMtoUnlockCopy').prop('disabled', !!loading);
+        }
+
+        function setMtoUnlockFeedback(type, message) {
+            var $fb = $('#mtoUnlockFeedback');
+            $fb.removeClass('text-success text-danger text-info').addClass(type).text(message);
+        }
+
+        function toggleMtoUnlockPassword() {
+            var input = document.getElementById('mtoUnlockKey');
+            var icon = document.getElementById('mtoUnlockEyeIcon');
+            if (!input || !icon) {
+                return;
+            }
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function fallbackCopyText(text) {
+            var aux = document.createElement('textarea');
+            aux.value = text;
+            aux.setAttribute('readonly', '');
+            aux.style.position = 'absolute';
+            aux.style.left = '-9999px';
+            document.body.appendChild(aux);
+            aux.select();
+            aux.setSelectionRange(0, 99999);
+            var ok = false;
+            try {
+                ok = document.execCommand('copy');
+            } catch (e) {
+                ok = false;
+            }
+            document.body.removeChild(aux);
+            return ok;
+        }
+
+        function copyMtoUnlockKey() {
+            var key = $.trim($('#mtoUnlockKey').val());
+            if (key === '') {
+                setMtoUnlockFeedback('text-danger', 'Primero escribe una clave para poder copiarla.');
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(key).then(function () {
+                    setMtoUnlockFeedback('text-success', 'Clave copiada al portapapeles.');
+                }).catch(function () {
+                    if (fallbackCopyText(key)) {
+                        setMtoUnlockFeedback('text-success', 'Clave copiada al portapapeles.');
+                    } else {
+                        setMtoUnlockFeedback('text-danger', 'No se pudo copiar la clave.');
+                    }
+                });
+                return;
+            }
+
+            if (fallbackCopyText(key)) {
+                setMtoUnlockFeedback('text-success', 'Clave copiada al portapapeles.');
+            } else {
+                setMtoUnlockFeedback('text-danger', 'No se pudo copiar la clave.');
+            }
         }
 
         document.getElementById('togglePassword').addEventListener('click', function () {
@@ -157,10 +228,10 @@ if ($evtImagen === '') {
 
         function unlockLogin() {
             var key = $.trim($('#mtoUnlockKey').val());
-            $('#mtoUnlockFeedback').removeClass('text-success text-danger').text('');
+            setMtoUnlockFeedback('', '');
 
             if (key === '') {
-                $('#mtoUnlockFeedback').addClass('text-danger').text('Ingrese la clave secreta.');
+                setMtoUnlockFeedback('text-danger', 'Ingrese la clave secreta.');
                 return;
             }
 
@@ -175,16 +246,16 @@ if ($evtImagen === '') {
                 }
             }).done(function (res) {
                 if (!res || !res.success) {
-                    $('#mtoUnlockFeedback').addClass('text-danger').text((res && res.msg) ? res.msg : 'No se pudo validar la clave.');
+                    setMtoUnlockFeedback('text-danger', (res && res.msg) ? res.msg : 'No se pudo validar la clave.');
                     $('#mtoUnlockKey').val('').trigger('focus');
                     return;
                 }
 
-                $('#mtoUnlockFeedback').addClass('text-success').text('Clave valida. Ya puede iniciar sesion.');
+                setMtoUnlockFeedback('text-success', 'Clave válida. Ya puede iniciar sesión.');
                 setLoginLock(false);
                 $('#mantenimientoModal').modal('hide');
             }).fail(function () {
-                $('#mtoUnlockFeedback').addClass('text-danger').text('Error de comunicacion con el servidor.');
+                setMtoUnlockFeedback('text-danger', 'Error de comunicación con el servidor.');
             }).always(function () {
                 setUnlockLoading(false);
             });
@@ -199,6 +270,8 @@ if ($evtImagen === '') {
             }
 
             $('#btnUnlockMto').on('click', unlockLogin);
+            $('#btnMtoUnlockToggle').on('click', toggleMtoUnlockPassword);
+            $('#btnMtoUnlockCopy').on('click', copyMtoUnlockKey);
             $('#mtoUnlockKey').on('keypress', function (e) {
                 if (e.which === 13) {
                     e.preventDefault();
@@ -213,24 +286,24 @@ if ($evtImagen === '') {
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="registroModalLabel"><img src="imagenes/dirsu_128_128.ico" alt="Logo DIRSU" style="width: 24px; height: 24px;" class="mr-2"> Guia para acceder al Sistema DIRSU</h5>
+                <h5 class="modal-title" id="registroModalLabel"><img src="imagenes/dirsu_128_128.ico" alt="Logo DIRSU" style="width: 24px; height: 24px;" class="mr-2"> Guía para acceder al Sistema DIRSU</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body text-justify">
                 <p>
-                    <strong>Ya tienes usuario, pero olvidaste tu contrase&ntilde;a?</strong><br>
+                    <strong>¿Ya tienes usuario, pero olvidaste tu contraseña?</strong><br>
                     Solicita una nueva escribiendo a
                     <span id="copiarCorreo" class="text-primary font-weight-bold" style="cursor: pointer;" title="Haz clic para copiar">dirsu@unitru.edu.pe</span>,
-                    indicando tu <em>c&oacute;digo de docente</em> y <em>nombre completo</em>.
+                    indicando tu <em>código de docente</em> y <em>nombre completo</em>.
                 </p>
                 <hr>
                 <p>
-                    <strong>&iquest;A&uacute;n no tienes usuario y deseas registrar tu primer proyecto?</strong><br>
-                    La creaci&oacute;n de usuarios se realiza en coordinaci&oacute;n con los <em>presidentes de comit&eacute; de facultad</em> durante fechas establecidas cada semestre por la DIRSU.<br>
-                    Las facultades env&iacute;an a DIRSU los <em>c&oacute;digos de los docentes coordinadores</em> y nosotros generamos las credenciales.<br>
-                    Cuando inicie la admisi&oacute;n de nuevos proyectos, se notificar&aacute; a las facultades por correo.
+                    <strong>¿Aún no tienes usuario y deseas registrar tu primer proyecto?</strong><br>
+                    La creación de usuarios se realiza en coordinación con los <em>presidentes de comité de facultad</em> durante fechas establecidas cada semestre por la DIRSU.<br>
+                    Las facultades envían a DIRSU los <em>códigos de los docentes coordinadores</em> y nosotros generamos las credenciales.<br>
+                    Cuando inicie la admisión de nuevos proyectos, se notificará a las facultades por correo.
                 </p>
             </div>
             <div class="modal-footer">
@@ -261,10 +334,16 @@ if ($evtImagen === '') {
                             <div class="input-group">
                                 <input type="password" id="mtoUnlockKey" class="form-control" placeholder="Ingrese la clave para continuar" autocomplete="off">
                                 <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary btn-icon" id="btnMtoUnlockToggle" type="button" title="Mostrar u ocultar clave">
+                                        <i class="fa fa-eye" id="mtoUnlockEyeIcon"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary btn-icon" id="btnMtoUnlockCopy" type="button" title="Copiar clave escrita">
+                                        <i class="fa fa-copy"></i>
+                                    </button>
                                     <button class="btn btn-primary" id="btnUnlockMto" type="button">Desbloquear</button>
                                 </div>
                             </div>
-                            <small class="form-text text-muted">El desbloqueo dura para esta sesion actual del navegador.</small>
+                            <small class="form-text text-muted">El desbloqueo dura para esta sesión actual del navegador.</small>
                             <div id="mtoUnlockFeedback" class="small mt-2"></div>
                         </div>
                     </div>
@@ -295,3 +374,4 @@ if ($evtImagen === '') {
 </script>
 </body>
 </html>
+

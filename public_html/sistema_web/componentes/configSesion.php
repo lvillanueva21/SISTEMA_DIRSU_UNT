@@ -65,7 +65,7 @@ if (function_exists('evt_mto_db_connect')) {
 }
 
 if (!isset($conexion) || !($conexion instanceof mysqli)) {
-    echo "No se realizo la conexion a la base de datos.";
+    echo "No se pudo conectar con el sistema en este momento.";
     exit();
 }
 
