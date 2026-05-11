@@ -1,0 +1,215 @@
+.opesp-page {
+  min-height: calc(100vh - 165px);
+}
+
+.opesp-split-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: calc(100vh - 255px);
+  min-height: 540px;
+}
+
+.opesp-card {
+  flex: 1 1 0;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.opesp-scroll-body {
+  overflow: auto;
+  min-height: 0;
+}
+
+.opesp-table-wrap {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.opesp-row {
+  cursor: pointer;
+}
+
+.opesp-detail-row td {
+  background-color: #f9f9f9;
+}
+
+.opesp-badge-code {
+  background: #111 !important;
+  color: #fff !important;
+}
+
+.opesp-badge-code-pending {
+  background: #fff !important;
+  color: #c82333 !important;
+  border: 1px solid #c82333;
+}
+
+.opesp-dup-badge {
+  white-space: normal;
+  text-align: left;
+}
+
+.opesp-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opesp-btn-formulario {
+  width: 100%;
+  text-align: left;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.opesp-btn-formulario i {
+  margin-right: 6px;
+}
+
+.opesp-btn-proyecto-base {
+  background-color: #007bff !important;
+  border-color: #007bff !important;
+  color: #fff !important;
+}
+
+.opesp-btn-proyecto-base:hover {
+  background-color: #0069d9 !important;
+  border-color: #0062cc !important;
+  color: #fff !important;
+}
+
+.opesp-btn-semestral-legacy {
+  background-color: #3d9970 !important;
+  border-color: #3d9970 !important;
+  color: #fff !important;
+}
+
+.opesp-btn-semestral-legacy:hover {
+  background-color: #33865f !important;
+  border-color: #2d7654 !important;
+  color: #fff !important;
+}
+
+.opesp-btn-form-semestral {
+  background-color: #28a745;
+  border-color: #28a745;
+  color: #fff;
+}
+
+.opesp-btn-form-semestral:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+  color: #fff;
+}
+
+.opesp-btn-form-proyecto {
+  background-color: #111;
+  border-color: #111;
+  color: #fff;
+}
+
+.opesp-btn-form-proyecto:hover {
+  background-color: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.opesp-btn-form-otros {
+  background-color: #6f42c1;
+  border-color: #6f42c1;
+  color: #fff;
+}
+
+.opesp-btn-form-otros:hover {
+  background-color: #5a32a3;
+  border-color: #4e2b8f;
+  color: #fff;
+}
+
+.opesp-btn-formulario.active {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.35);
+}
+
+.opesp-informe-detalle {
+  height: 100%;
+  min-height: 320px;
+}
+
+.opesp-informe-detalle .contenedor-scroll,
+.opesp-informe-detalle .rsu-split-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  gap: 1rem !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.opesp-informe-detalle .form-body,
+.opesp-informe-detalle .modal-body {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.opesp-informe-detalle .navegacion-lateral,
+.opesp-informe-detalle .rsu-left {
+  position: static !important;
+  top: auto !important;
+  min-width: 180px !important;
+  max-width: 260px !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 230px !important;
+  overflow-y: visible !important;
+  overflow-x: hidden !important;
+  align-self: stretch !important;
+}
+
+.opesp-informe-detalle .navegacion-lateral a,
+.opesp-informe-detalle .rsu-left .item-link {
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+.opesp-informe-detalle .flex-grow-1,
+.opesp-informe-detalle .rsu-right {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 1 1 auto !important;
+  overflow: visible !important;
+}
+
+@media (max-width: 991.98px) {
+  .opesp-split-layout {
+    height: auto;
+    min-height: 0;
+  }
+
+  .opesp-card {
+    min-height: 280px;
+  }
+
+  .opesp-informe-detalle .contenedor-scroll,
+  .opesp-informe-detalle .rsu-split-row {
+    flex-direction: column !important;
+  }
+
+  .opesp-informe-detalle .navegacion-lateral,
+  .opesp-informe-detalle .rsu-left {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+}

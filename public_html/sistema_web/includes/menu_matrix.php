@@ -291,10 +291,10 @@ if (!function_exists('rsu_get_menu_matrix')) {
                                 'active_on' => array('control_proyectos.php')
                             ),
                             array(
-                                'label' => 'Panel de Control',
+                                'label' => 'Op. Especiales',
                                 'icon' => 'fas fa-users-cog',
-                                'href' => 'panel.php',
-                                'active_on' => array('panel.php')
+                                'href' => 'op_especiales.php',
+                                'active_on' => array('op_especiales.php')
                             ),
                             array(
                                 'label' => 'Control de eventos',
