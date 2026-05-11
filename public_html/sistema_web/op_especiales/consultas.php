@@ -300,6 +300,306 @@ if (!function_exists('opesp_obtener_respuestas_por_proyectos')) {
     }
 }
 
+if (!function_exists('opesp_normalizar_texto')) {
+    function opesp_normalizar_texto($valor)
+    {
+        $txt = trim((string)$valor);
+        if ($txt === '') {
+            return '';
+        }
+
+        $map = array(
+            'á' => 'a', 'à' => 'a', 'ä' => 'a', 'â' => 'a',
+            'Á' => 'A', 'À' => 'A', 'Ä' => 'A', 'Â' => 'A',
+            'é' => 'e', 'è' => 'e', 'ë' => 'e', 'ê' => 'e',
+            'É' => 'E', 'È' => 'E', 'Ë' => 'E', 'Ê' => 'E',
+            'í' => 'i', 'ì' => 'i', 'ï' => 'i', 'î' => 'i',
+            'Í' => 'I', 'Ì' => 'I', 'Ï' => 'I', 'Î' => 'I',
+            'ó' => 'o', 'ò' => 'o', 'ö' => 'o', 'ô' => 'o',
+            'Ó' => 'O', 'Ò' => 'O', 'Ö' => 'O', 'Ô' => 'O',
+            'ú' => 'u', 'ù' => 'u', 'ü' => 'u', 'û' => 'u',
+            'Ú' => 'U', 'Ù' => 'U', 'Ü' => 'U', 'Û' => 'U',
+            'ñ' => 'n', 'Ñ' => 'N'
+        );
+
+        $txt = strtr($txt, $map);
+        $txt = mb_strtoupper($txt, 'UTF-8');
+        $txt = preg_replace('/\s+/', '', $txt);
+        return $txt;
+    }
+}
+
+if (!function_exists('opesp_resolver_formularios_migracion_2024ii')) {
+    function opesp_resolver_formularios_migracion_2024ii($conexion)
+    {
+        $items = array();
+        $sql = "
+            SELECT
+                f.id AS id_formulario,
+                f.nombre AS nombre_formulario,
+                f.activo AS formulario_activo,
+                f.id_cronograma,
+                sc.id_periodo,
+                sc.tipo AS tipo_cronograma,
+                sc.activo AS cronograma_activo,
+                sc.apertura,
+                sc.cierre,
+                pr.nombre AS periodo_nombre
+            FROM sm_formularios f
+            INNER JOIN sm_cronogramas sc
+                ON sc.id = f.id_cronograma
+            INNER JOIN periodos pr
+                ON pr.id = sc.id_periodo
+            WHERE sc.tipo = 2
+              AND UPPER(REPLACE(TRIM(pr.nombre), ' ', '')) = '2024-II'
+            ORDER BY
+                f.activo DESC,
+                sc.activo DESC,
+                f.id DESC
+        ";
+
+        $rs = mysqli_query($conexion, $sql);
+        if ($rs === false) {
+            error_log('op_especiales: error resolviendo formularios migracion 2024-II: ' . mysqli_error($conexion));
+            return $items;
+        }
+
+        while ($row = mysqli_fetch_assoc($rs)) {
+            $items[] = array(
+                'id_formulario' => isset($row['id_formulario']) ? (int)$row['id_formulario'] : 0,
+                'nombre_formulario' => (string)($row['nombre_formulario'] ?? ''),
+                'formulario_activo' => isset($row['formulario_activo']) ? (int)$row['formulario_activo'] : 0,
+                'id_cronograma' => isset($row['id_cronograma']) ? (int)$row['id_cronograma'] : 0,
+                'id_periodo' => isset($row['id_periodo']) ? (int)$row['id_periodo'] : 0,
+                'tipo_cronograma' => isset($row['tipo_cronograma']) ? (int)$row['tipo_cronograma'] : 0,
+                'cronograma_activo' => isset($row['cronograma_activo']) ? (int)$row['cronograma_activo'] : 0,
+                'apertura' => (string)($row['apertura'] ?? ''),
+                'cierre' => (string)($row['cierre'] ?? ''),
+                'periodo_nombre' => (string)($row['periodo_nombre'] ?? ''),
+            );
+        }
+        mysqli_free_result($rs);
+
+        return $items;
+    }
+}
+
+if (!function_exists('opesp_obtener_estado_migracion_por_proyectos')) {
+    function opesp_obtener_estado_migracion_por_proyectos($conexion, $ids_proyectos)
+    {
+        $mapa = array();
+        $ids = array();
+        foreach ((array)$ids_proyectos as $id) {
+            $id = (int)$id;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        if (empty($ids)) {
+            return $mapa;
+        }
+
+        $ids_sql = implode(',', $ids);
+        foreach ($ids as $id) {
+            $mapa[$id] = array(
+                'tiene_legacy' => 0,
+                'cant_legacy' => 0,
+                'cant_coord_reales' => 0,
+                'tiene_coordinador_real' => 0,
+                'puede_migrar' => 0,
+                'migrado_2024ii' => 0,
+            );
+        }
+
+        $sqlLegacy = "
+            SELECT id_py, COUNT(*) AS cant
+            FROM proyectos_finales
+            WHERE id_py IN ($ids_sql)
+            GROUP BY id_py
+        ";
+        $rsLegacy = mysqli_query($conexion, $sqlLegacy);
+        if ($rsLegacy !== false) {
+            while ($row = mysqli_fetch_assoc($rsLegacy)) {
+                $id_py = isset($row['id_py']) ? (int)$row['id_py'] : 0;
+                if ($id_py > 0 && isset($mapa[$id_py])) {
+                    $cant = isset($row['cant']) ? (int)$row['cant'] : 0;
+                    $mapa[$id_py]['cant_legacy'] = $cant;
+                    $mapa[$id_py]['tiene_legacy'] = ($cant > 0) ? 1 : 0;
+                }
+            }
+            mysqli_free_result($rsLegacy);
+        } else {
+            error_log('op_especiales: error listando legacy por proyecto: ' . mysqli_error($conexion));
+        }
+
+        $sqlCoord = "
+            SELECT
+                up.id_proyecto AS id_py,
+                COUNT(DISTINCT u.id) AS cant_coord
+            FROM usuarios_proyectos up
+            INNER JOIN usuarios u
+                ON u.id = up.id_usuario
+               AND u.id_rol = 2
+            WHERE up.activo = 1
+              AND up.id_proyecto IN ($ids_sql)
+            GROUP BY up.id_proyecto
+        ";
+        $rsCoord = mysqli_query($conexion, $sqlCoord);
+        if ($rsCoord !== false) {
+            while ($row = mysqli_fetch_assoc($rsCoord)) {
+                $id_py = isset($row['id_py']) ? (int)$row['id_py'] : 0;
+                if ($id_py > 0 && isset($mapa[$id_py])) {
+                    $cant = isset($row['cant_coord']) ? (int)$row['cant_coord'] : 0;
+                    $mapa[$id_py]['cant_coord_reales'] = $cant;
+                    $mapa[$id_py]['tiene_coordinador_real'] = ($cant > 0) ? 1 : 0;
+                }
+            }
+            mysqli_free_result($rsCoord);
+        } else {
+            error_log('op_especiales: error listando coordinadores reales por proyecto: ' . mysqli_error($conexion));
+        }
+
+        $forms = opesp_resolver_formularios_migracion_2024ii($conexion);
+        $form_ids = array();
+        foreach ($forms as $f) {
+            $fid = isset($f['id_formulario']) ? (int)$f['id_formulario'] : 0;
+            if ($fid > 0) {
+                $form_ids[$fid] = $fid;
+            }
+        }
+        if (!empty($form_ids)) {
+            $forms_sql = implode(',', $form_ids);
+            $sqlMig = "
+                SELECT
+                    r.id_py
+                FROM sm_respuestas r
+                INNER JOIN eva_evaluaciones e
+                    ON e.id_respuesta = r.id
+                INNER JOIN sm_proyecto_semestres s
+                    ON s.id = r.id_semestre
+                WHERE r.id_py IN ($ids_sql)
+                  AND r.id_formulario IN ($forms_sql)
+                  AND s.anio = 2024
+                  AND s.periodo = 'II'
+                  AND s.tipo = 'semestral'
+                  AND e.situacion = 'aprobado'
+                GROUP BY r.id_py
+            ";
+            $rsMig = mysqli_query($conexion, $sqlMig);
+            if ($rsMig !== false) {
+                while ($row = mysqli_fetch_assoc($rsMig)) {
+                    $id_py = isset($row['id_py']) ? (int)$row['id_py'] : 0;
+                    if ($id_py > 0 && isset($mapa[$id_py])) {
+                        $mapa[$id_py]['migrado_2024ii'] = 1;
+                    }
+                }
+                mysqli_free_result($rsMig);
+            } else {
+                error_log('op_especiales: error validando migrados 2024-II: ' . mysqli_error($conexion));
+            }
+        }
+
+        foreach ($mapa as $id_py => $estado) {
+            $mapa[$id_py]['puede_migrar'] = ($estado['tiene_legacy'] && $estado['tiene_coordinador_real']) ? 1 : 0;
+        }
+
+        return $mapa;
+    }
+}
+
+if (!function_exists('opesp_obtener_resumen_global_migracion')) {
+    function opesp_obtener_resumen_global_migracion($conexion)
+    {
+        $summary = array(
+            'total_migrables' => 0,
+            'total_migrados' => 0,
+            'total_pendientes' => 0,
+        );
+
+        $sqlTotal = "
+            SELECT COUNT(*) AS total
+            FROM proyectos p
+            WHERE EXISTS (
+                SELECT 1
+                FROM proyectos_finales pf
+                WHERE pf.id_py = p.id
+            )
+            AND EXISTS (
+                SELECT 1
+                FROM usuarios_proyectos up
+                INNER JOIN usuarios u
+                    ON u.id = up.id_usuario
+                   AND u.id_rol = 2
+                WHERE up.id_proyecto = p.id
+                  AND up.activo = 1
+            )
+        ";
+        $rsTotal = mysqli_query($conexion, $sqlTotal);
+        if ($rsTotal !== false) {
+            $rowTotal = mysqli_fetch_assoc($rsTotal);
+            $summary['total_migrables'] = isset($rowTotal['total']) ? (int)$rowTotal['total'] : 0;
+            mysqli_free_result($rsTotal);
+        } else {
+            error_log('op_especiales: error calculando total_migrables global: ' . mysqli_error($conexion));
+        }
+
+        $forms = opesp_resolver_formularios_migracion_2024ii($conexion);
+        $form_ids = array();
+        foreach ($forms as $f) {
+            $fid = isset($f['id_formulario']) ? (int)$f['id_formulario'] : 0;
+            if ($fid > 0) {
+                $form_ids[$fid] = $fid;
+            }
+        }
+
+        if (!empty($form_ids)) {
+            $ids_sql = implode(',', $form_ids);
+            $sqlMigrados = "
+                SELECT COUNT(DISTINCT r.id_py) AS total
+                FROM sm_respuestas r
+                INNER JOIN eva_evaluaciones e
+                    ON e.id_respuesta = r.id
+                INNER JOIN sm_proyecto_semestres s
+                    ON s.id = r.id_semestre
+                WHERE r.id_formulario IN ($ids_sql)
+                  AND s.anio = 2024
+                  AND s.periodo = 'II'
+                  AND s.tipo = 'semestral'
+                  AND e.situacion = 'aprobado'
+                  AND EXISTS (
+                      SELECT 1
+                      FROM proyectos_finales pf
+                      WHERE pf.id_py = r.id_py
+                  )
+                  AND EXISTS (
+                      SELECT 1
+                      FROM usuarios_proyectos up
+                      INNER JOIN usuarios u
+                          ON u.id = up.id_usuario
+                         AND u.id_rol = 2
+                      WHERE up.id_proyecto = r.id_py
+                        AND up.activo = 1
+                  )
+            ";
+            $rsMigrados = mysqli_query($conexion, $sqlMigrados);
+            if ($rsMigrados !== false) {
+                $rowMigrados = mysqli_fetch_assoc($rsMigrados);
+                $summary['total_migrados'] = isset($rowMigrados['total']) ? (int)$rowMigrados['total'] : 0;
+                mysqli_free_result($rsMigrados);
+            } else {
+                error_log('op_especiales: error calculando total_migrados global: ' . mysqli_error($conexion));
+            }
+        }
+
+        $summary['total_pendientes'] = $summary['total_migrables'] - $summary['total_migrados'];
+        if ($summary['total_pendientes'] < 0) {
+            $summary['total_pendientes'] = 0;
+        }
+
+        return $summary;
+    }
+}
+
 if (!function_exists('opesp_obtener_proyectos')) {
     function opesp_obtener_proyectos($conexion, $pagina = 1, $por_pagina = 20)
     {
@@ -326,6 +626,8 @@ if (!function_exists('opesp_obtener_proyectos')) {
                 COALESCE(f.nombre, 'Sin Facultad') AS facultad,
                 COALESCE(d.nombre, 'Sin Departamento Academico') AS departamento,
                 COALESCE(NULLIF(TRIM(ca.usuario), ''), 'Sin codigo docente') AS cod_docente,
+                COALESCE(NULLIF(TRIM(p.fecha_inicio), ''), '') AS fecha_inicio,
+                COALESCE(NULLIF(TRIM(p.fecha_fin), ''), '') AS fecha_fin,
                 COALESCE(dup.cant_coord_activos, 0) AS cant_coord_activos,
                 CASE WHEN COALESCE(dup.cant_coord_activos, 0) > 1 THEN 1 ELSE 0 END AS flag_posible_duplicidad
             " . opesp_from_sql() . "
@@ -365,22 +667,54 @@ if (!function_exists('opesp_obtener_proyectos')) {
                 'facultad' => (string)$row['facultad'],
                 'departamento' => (string)$row['departamento'],
                 'cod_docente' => (string)$row['cod_docente'],
+                'fecha_inicio' => (string)$row['fecha_inicio'],
+                'fecha_fin' => (string)$row['fecha_fin'],
                 'cant_coord_activos' => isset($row['cant_coord_activos']) ? (int)$row['cant_coord_activos'] : 0,
                 'flag_posible_duplicidad' => isset($row['flag_posible_duplicidad']) ? (int)$row['flag_posible_duplicidad'] : 0,
             );
         }
         mysqli_free_result($rs);
 
-        $respuestas = opesp_obtener_respuestas_por_proyectos($conexion, array_values($ids));
+        $ids_lista = array_values($ids);
+        $respuestas = opesp_obtener_respuestas_por_proyectos($conexion, $ids_lista);
+        $estado_migracion = opesp_obtener_estado_migracion_por_proyectos($conexion, $ids_lista);
+
+        foreach ($rows as $idx => $row_data) {
+            $id_py = isset($row_data['id_py']) ? (int)$row_data['id_py'] : 0;
+            $estado = isset($estado_migracion[$id_py]) && is_array($estado_migracion[$id_py]) ? $estado_migracion[$id_py] : array();
+
+            $tiene_legacy = isset($estado['tiene_legacy']) ? (int)$estado['tiene_legacy'] : 0;
+            $cant_legacy = isset($estado['cant_legacy']) ? (int)$estado['cant_legacy'] : 0;
+            $tiene_coord = isset($estado['tiene_coordinador_real']) ? (int)$estado['tiene_coordinador_real'] : 0;
+            $cant_coord = isset($estado['cant_coord_reales']) ? (int)$estado['cant_coord_reales'] : 0;
+            $puede_migrar = isset($estado['puede_migrar']) ? (int)$estado['puede_migrar'] : 0;
+            $migrado = isset($estado['migrado_2024ii']) ? (int)$estado['migrado_2024ii'] : 0;
+
+            $rows[$idx]['tiene_legacy'] = $tiene_legacy;
+            $rows[$idx]['cant_legacy'] = $cant_legacy;
+            $rows[$idx]['tiene_coordinador_real'] = $tiene_coord;
+            $rows[$idx]['cant_coord_reales'] = $cant_coord;
+            $rows[$idx]['puede_migrar'] = $puede_migrar;
+            $rows[$idx]['migrado_2024ii'] = $migrado;
+        }
+
+        $summary_global = opesp_obtener_resumen_global_migracion($conexion);
+        $total_migrables = isset($summary_global['total_migrables']) ? (int)$summary_global['total_migrables'] : 0;
+        $total_migrados = isset($summary_global['total_migrados']) ? (int)$summary_global['total_migrados'] : 0;
+        $total_pendientes = isset($summary_global['total_pendientes']) ? (int)$summary_global['total_pendientes'] : 0;
 
         return array(
             'rows' => $rows,
             'respuestas_por_proyecto' => $respuestas,
+            'forms_migracion_2024ii' => opesp_resolver_formularios_migracion_2024ii($conexion),
             'supports_period_start' => $supports_period_start,
             'total_items' => $total_items,
             'total_pages' => $total_pages,
             'pagina' => $pagina,
             'por_pagina' => $por_pagina,
+            'total_migrables' => $total_migrables,
+            'total_migrados' => $total_migrados,
+            'total_pendientes' => $total_pendientes,
         );
     }
 }
