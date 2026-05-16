@@ -1,68 +1,162 @@
 <?php
-error_reporting(0);
+declare(strict_types=1);
 
-// Ambil IP dan User-Agent
-$visitor_ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ??
-              $_SERVER['HTTP_INCAP_CLIENT_IP'] ??
-              $_SERVER['HTTP_TRUE_CLIENT_IP'] ??
-              $_SERVER['HTTP_REMOTEIP'] ??
-              $_SERVER['HTTP_X_REAL_IP'] ??
-              $_SERVER['REMOTE_ADDR'];
+// ====== RUTAS BASE ======
+$modulesDir = __DIR__ . '/modules';
 
-$agent = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
+// ====== MAPA DE RUTAS (?p=...) ======
+$routes = [
+    // Home
+    'inicio' => [
+        'title' => 'Inicio',
+        'active' => 'home',
+        'module' => 'home.php',
+        'header' => false,
+    ],
 
-// Dapatkan path URL
-$path = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+    // Areas
+    'areas_proyectos' => [
+        'title' => 'Areas - Proyectos',
+        'active' => 'areas',
+        'module' => 'areas/proyectos.php',
+        'header' => true,
+        'headerTitle' => 'Proyectos',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Areas', null], ['Proyectos', null]],
+    ],
+    'areas_ambiental' => [
+        'title' => 'Areas - Ambiental',
+        'active' => 'areas',
+        'module' => 'areas/ambiental.php',
+        'header' => true,
+        'headerTitle' => 'Ambiental',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Areas', null], ['Ambiental', null]],
+    ],
 
-// Daftar file cloaking (HARUS berisi HTML valid di dalam .txt)
-$cloaked_links = [
-    '' => __DIR__ . '/license.txt',
-    '/pagina_web/areas/ambiental.php' => __DIR__ . '/readme.txt'
+    // Voluntariado UNT
+    'vol_cdn' => [
+        'title' => 'Voluntariado UNT - CDN',
+        'active' => 'voluntariado',
+        'module' => 'voluntariado/cdn.php',
+        'header' => true,
+        'headerTitle' => 'CDN',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Voluntariado UNT', null], ['CDN', null]],
+    ],
+    'vol_cvgen' => [
+        'title' => 'Voluntariado UNT - CVGEN',
+        'active' => 'voluntariado',
+        'module' => 'voluntariado/cvgen.php',
+        'header' => true,
+        'headerTitle' => 'CVGEN',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Voluntariado UNT', null], ['CVGEN', null]],
+    ],
+    'vol_grd' => [
+        'title' => 'Voluntariado UNT - GRD',
+        'active' => 'voluntariado',
+        'module' => 'voluntariado/grd.php',
+        'header' => true,
+        'headerTitle' => 'GRD',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Voluntariado UNT', null], ['GRD', null]],
+    ],
+    'vol_promam' => [
+        'title' => 'Voluntariado UNT - PROMAM',
+        'active' => 'voluntariado',
+        'module' => 'voluntariado/promam.php',
+        'header' => true,
+        'headerTitle' => 'PROMAM',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Voluntariado UNT', null], ['PROMAM', null]],
+    ],
+    'vol_sbc' => [
+        'title' => 'Voluntariado UNT - SBC',
+        'active' => 'voluntariado',
+        'module' => 'voluntariado/sbc.php',
+        'header' => true,
+        'headerTitle' => 'SBC',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Voluntariado UNT', null], ['SBC', null]],
+    ],
+    'vol_unippets' => [
+        'title' => 'Voluntariado UNT - UNIPPETS',
+        'active' => 'voluntariado',
+        'module' => 'voluntariado/unippets.php',
+        'header' => true,
+        'headerTitle' => 'UNIPPETS',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['Voluntariado UNT', null], ['UNIPPETS', null]],
+    ],
+
+    // CECUNT
+    'cec_teatro' => [
+        'title' => 'CECUNT - Teatro Universitario',
+        'active' => 'cecunt',
+        'module' => 'cecunt/teatro.php',
+        'header' => true,
+        'headerTitle' => 'Teatro Universitario',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['CECUNT', null], ['Teatro Universitario', null]],
+    ],
+    'cec_orfeon' => [
+        'title' => 'CECUNT - Orfeon Universitario',
+        'active' => 'cecunt',
+        'module' => 'cecunt/orfeon.php',
+        'header' => true,
+        'headerTitle' => 'Orfeon Universitario',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['CECUNT', null], ['Orfeon Universitario', null]],
+    ],
+    'cec_danza' => [
+        'title' => 'CECUNT - Grupo de Danza',
+        'active' => 'cecunt',
+        'module' => 'cecunt/danza.php',
+        'header' => true,
+        'headerTitle' => 'Grupo de Danza',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['CECUNT', null], ['Grupo de Danza', null]],
+    ],
+    'cec_banda' => [
+        'title' => 'CECUNT - Banda de Musica',
+        'active' => 'cecunt',
+        'module' => 'cecunt/banda.php',
+        'header' => true,
+        'headerTitle' => 'Banda de Musica',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['CECUNT', null], ['Banda de Musica', null]],
+    ],
+    'cec_musica' => [
+        'title' => 'CECUNT - Grupo de Musica',
+        'active' => 'cecunt',
+        'module' => 'cecunt/musica.php',
+        'header' => true,
+        'headerTitle' => 'Grupo de Musica',
+        'crumbs' => [['Inicio','index.php?p=inicio'], ['CECUNT', null], ['Grupo de Musica', null]],
+    ],
 ];
 
-// Deteksi User-Agent bot (termasuk Googlebot, Ahrefs, dll)
-$bot_signatures = ['google', 'bot', 'crawl', 'spider', 'slurp', 'ahrefs', 'bing'];
-$is_bot = false;
-foreach ($bot_signatures as $sig) {
-    if (strpos($agent, $sig) !== false) {
-        $is_bot = true;
-        break;
-    }
+// Default route
+$p = $_GET['p'] ?? 'inicio';
+$p = is_string($p) ? $p : 'inicio';
+$pageKey = $p;
+
+$route = $routes[$p] ?? $routes['inicio'];
+
+// Variables consumidas por includes/header.php y includes/navbar.php
+$pageTitle  = $route['title'];
+$activePage = $route['active'];
+
+// Page header
+$showPageHeader  = (bool)($route['header'] ?? false);
+$pageHeaderTitle = $route['headerTitle'] ?? '';
+$pageHeaderCrumbs = $route['crumbs'] ?? [];
+$pageHeaderConfigurable = ($showPageHeader && isset($routes[$p]) && $p !== 'inicio');
+
+// Resolver modulo
+$moduleRel = $route['module'];
+$modulePath = $modulesDir . '/' . $moduleRel;
+
+// Seguridad basica
+if (str_contains($moduleRel, '..') || !is_file($modulePath)) {
+    http_response_code(404);
+    $pageTitle = '404';
+    $activePage = '';
+    $showPageHeader = true;
+    $pageHeaderTitle = 'Pagina no encontrada';
+    $pageHeaderCrumbs = [['Inicio','index.php?p=inicio'], ['404', null]];
+    $pageHeaderConfigurable = false;
+    $modulePath = $modulesDir . '/404.php';
 }
 
-// Jika ini bot dan ada file untuk halaman itu
-if ($is_bot && isset($cloaked_links[$path])) {
-    $html_file = $cloaked_links[$path];
-    if (file_exists($html_file)) {
-        header("Content-Type: text/html; charset=UTF-8");
-        readfile($html_file);
-        exit;
-    }
-}
-
-// Jika bukan bot atau tidak cocok, lanjut render website
-require __DIR__.'/inc/app_boot.php';
-$page_title = 'DIRSU - Dirección de Responsabilidad Social y Extensión Cultural Universitaria';
-include APP_ROOT.'/inc/head.php';
-
-include APP_ROOT.'/inc/topbar.php';
-include APP_ROOT.'/inc/navbar.php';
-
-include APP_ROOT.'/partials/carousel.php';
-include APP_ROOT.'/partials/home_top_feature.php';
-include APP_ROOT.'/partials/home_about.php';
-include APP_ROOT.'/partials/home_facts.php';
-include APP_ROOT.'/partials/home_features.php';
-include APP_ROOT.'/partials/home_services.php';
-include APP_ROOT.'/partials/home_convocatoria.php';
-include APP_ROOT.'/partials/home_dirsu_brief.php';
-
-/*
-// Opsional: Aktifkan jika file partials-nya tersedia
-include APP_ROOT.'/partials/home_projects.php';
-include APP_ROOT.'/partials/home_team.php';
-*/
-
-include APP_ROOT.'/inc/footer.php';
-include APP_ROOT.'/inc/scripts.php';
-?>
+// Render base
+require __DIR__ . '/includes/base.php';

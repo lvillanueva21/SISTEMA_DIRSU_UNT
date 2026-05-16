@@ -1,0 +1,10 @@
+# Bloquear acceso directo a todo lo que esté en /includes
+Options -Indexes
+
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+  Deny from all
+</IfModule>

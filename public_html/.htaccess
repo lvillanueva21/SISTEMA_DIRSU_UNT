@@ -1,0 +1,10 @@
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Canonical: /web -> / and /web/* -> /*
+# Relative targets keep compatibility when app is served from subpath (e.g. /rsu/).
+RewriteRule ^web/?$ ./ [R=301,L,QSA]
+RewriteRule ^web/(.+)$ $1 [R=301,L,NE,QSA]
+</IfModule>
