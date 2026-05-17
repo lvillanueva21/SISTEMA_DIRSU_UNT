@@ -1,70 +1,80 @@
 <?php
-// sistema_web/inicio/card_fecha_limite.php (versión PRG)
+// sistema_web/inicio/card_fecha_limite.php
 if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 date_default_timezone_set('America/Lima');
 
-$idRol   = isset($_SESSION['id_rol']) ? (int)$_SESSION['id_rol'] : null;
-$usuario = $_SESSION['usuario'] ?? '';
-
 if (!isset($conexion)) { include_once __DIR__ . '/../componentes/db.php'; }
 
-// CSRF mínimo
-if (empty($_SESSION['csrf_deadline'])) {
-  $_SESSION['csrf_deadline'] = bin2hex(random_bytes(16));
-}
-$CSRF = $_SESSION['csrf_deadline'];
-
-// Mensaje flash desde el endpoint
-$alert = null;
-if (isset($_SESSION['dl_msg'])) {
-  $alert = ['type' => ($_SESSION['dl_msg_type'] ?? 'success'), 'msg' => $_SESSION['dl_msg']];
-  unset($_SESSION['dl_msg'], $_SESSION['dl_msg_type']);
-}
-
-// Leer registro actual (y detectar si está configurado)
 $tzLima = new DateTimeZone('America/Lima');
-$hadRow = false;
-$row    = null;
+$defaultTitle = 'Fecha limite';
+$defaultFriendlyMessage = 'Sin fechas limites por el momento.';
+$defaultDeadline = (new DateTime('+7 days', $tzLima))->setTime(23, 59, 0)->format('Y-m-d H:i:s');
 
-$res = $conexion->query("SELECT titulo, mensaje, deadline, updated_by, updated_at FROM inicio_fecha_limite WHERE id=1 LIMIT 1");
-if ($res && $res->num_rows) {
-  $row = $res->fetch_assoc();
-  $hadRow = true;
+$deadlineVisible = false;
+$cfg = array(
+  'titulo' => $defaultTitle,
+  'mensaje' => $defaultFriendlyMessage,
+  'deadline' => $defaultDeadline,
+  'updated_by' => null,
+  'updated_at' => null
+);
+
+if (isset($conexion) && ($conexion instanceof mysqli)) {
+  $resEvt = $conexion->query("SELECT estado FROM evt_eventos WHERE codigo='inicio_fecha_limite_visible' LIMIT 1");
+  if ($resEvt && $resEvt->num_rows > 0) {
+    $evtRow = $resEvt->fetch_assoc();
+    $deadlineVisible = (isset($evtRow['estado']) && (int)$evtRow['estado'] === 1);
+  }
+
+  $resCfg = $conexion->query("SELECT titulo, mensaje, deadline, updated_by, updated_at FROM inicio_fecha_limite WHERE id=1 LIMIT 1");
+  if ($resCfg && $resCfg->num_rows > 0) {
+    $row = $resCfg->fetch_assoc();
+    if (isset($row['titulo']) && trim((string)$row['titulo']) !== '') {
+      $cfg['titulo'] = (string)$row['titulo'];
+    }
+    if (isset($row['mensaje']) && trim((string)$row['mensaje']) !== '') {
+      $cfg['mensaje'] = (string)$row['mensaje'];
+    }
+    if (isset($row['deadline']) && trim((string)$row['deadline']) !== '') {
+      $cfg['deadline'] = (string)$row['deadline'];
+    }
+    $cfg['updated_by'] = isset($row['updated_by']) ? $row['updated_by'] : null;
+    $cfg['updated_at'] = isset($row['updated_at']) ? $row['updated_at'] : null;
+  }
 }
-if (!$hadRow) {
-  // Defaults: mensaje por defecto SOLO para admin (rol=1)
-  $defaultMsg = ((int)$idRol === 1) ? 'Configura aquí tu primera fecha límite.' : '';
-  $dtDef = new DateTime('+7 days', $tzLima);
-  $row = [
-    'titulo'     => 'Fecha Límite',
-    'mensaje'    => $defaultMsg,
-    'deadline'   => $dtDef->format('Y-m-d H:i:s'),
-    'updated_by' => null,
-    'updated_at' => null,
-  ];
+
+$deadlineDate = DateTime::createFromFormat('Y-m-d H:i:s', $cfg['deadline'], $tzLima);
+if (!$deadlineDate) {
+  $deadlineDate = DateTime::createFromFormat('Y-m-d H:i', $cfg['deadline'], $tzLima);
+}
+if (!$deadlineDate) {
+  $deadlineVisible = false;
 }
 
-// Formateos
-$dl        = new DateTime($row['deadline'], $tzLima);
-$dlISO     = $dl->format('Y-m-d\TH:i:sP');   // ISO con offset -05:00
-$dlText    = $dl->format('d/m/Y H:i');       // para mostrar
-$dlDateVal = $dl->format('Y-m-d');           // para <input type="date">
-$dlTimeVal = $dl->format('H:i:s');           // para <input type="time">
-$nowLima   = new DateTime('now', $tzLima);
-$expired   = ($dl <= $nowLima);
+$nowLima = new DateTime('now', $tzLima);
+$expired = false;
+$dlISO = '';
+$dlText = '-';
+if ($deadlineDate) {
+  $expired = ($deadlineDate <= $nowLima);
+  $dlISO = $deadlineDate->format('Y-m-d\TH:i:sP');
+  $dlText = $deadlineDate->format('d/m/Y H:i');
+}
 
-// Estado visual
-$statusClass = $expired ? 'badge-dark' : 'badge-light text-danger';
-$statusText  = $expired ? 'Cerrado'    : 'Activo';
+$titleToShow = trim((string)$cfg['titulo']) !== '' ? (string)$cfg['titulo'] : $defaultTitle;
+$messageToShow = trim((string)$cfg['mensaje']) !== '' ? (string)$cfg['mensaje'] : $defaultFriendlyMessage;
+$friendlyOffMessage = 'Sin fechas limites por el momento.';
 
-// Si NO está configurado en BD y no es admin: no mostrar contador, y estado “No configurada”
-$notConfigured = !$hadRow;
-$hideCountdown = false;
-if ($notConfigured && (int)$idRol !== 1) {
-  $statusClass = 'badge-secondary';
-  $statusText  = 'No configurada';
-  $hideCountdown = true;
-  $dlText = '—';
+$statusClass = 'badge-secondary';
+$statusText = 'Sin fechas';
+if ($deadlineVisible) {
+  if ($expired) {
+    $statusClass = 'badge-dark';
+    $statusText = 'Cerrado';
+  } else {
+    $statusClass = 'badge-light text-danger';
+    $statusText = 'Activo';
+  }
 }
 ?>
 <style>
@@ -81,22 +91,18 @@ if ($notConfigured && (int)$idRol !== 1) {
   <div class="card-header py-2 d-flex align-items-center justify-content-between" style="background:#dc3545;color:#fff;">
     <div class="d-flex align-items-center">
       <i class="fas fa-hourglass-half mr-2"></i>
-      <h6 class="m-0">Fecha Límite</h6>
+      <h6 class="m-0">Fecha limite</h6>
     </div>
     <span id="dl-status" class="badge <?= htmlspecialchars($statusClass) ?>"><?= htmlspecialchars($statusText) ?></span>
   </div>
 
   <div class="card-body" style="padding:12px;">
-    <?php if ($alert): ?>
-      <div class="alert alert-<?= $alert['type']==='danger'?'danger':'success' ?> py-2 mb-2"><?= htmlspecialchars($alert['msg']) ?></div>
+    <?php if ($deadlineVisible && $deadlineDate): ?>
+      <h6 class="mb-1"><?= htmlspecialchars($titleToShow) ?></h6>
+      <p class="text-muted mb-2" style="font-size:.9rem;"><?= nl2br(htmlspecialchars($messageToShow)) ?></p>
     <?php endif; ?>
 
-    <h6 class="mb-1"><?= htmlspecialchars($row['titulo'] ?: 'Fecha Límite') ?></h6>
-    <?php if (trim($row['mensaje']) !== ''): ?>
-      <p class="text-muted mb-2" style="font-size:.9rem;"><?= nl2br(htmlspecialchars($row['mensaje'])) ?></p>
-    <?php endif; ?>
-
-    <?php if (!$hideCountdown || (int)$idRol === 1): ?>
+    <?php if ($deadlineVisible && $deadlineDate): ?>
       <div class="meta">
         <span class="chip">
           <i class="far fa-calendar-alt mr-2"></i>
@@ -105,83 +111,36 @@ if ($notConfigured && (int)$idRol !== 1) {
         </span>
         <span class="text-muted small">(Hora de Lima)</span>
       </div>
-    <?php endif; ?>
 
-    <div id="dl-countdown" class="counter-grid" <?= ($expired || $hideCountdown) ? 'style="display:none;"' : '' ?>>
-      <div class="tile"><div id="dl-days" class="num">0</div><div class="lab">Días</div></div>
-      <div class="tile"><div id="dl-hours" class="num">0</div><div class="lab">Horas</div></div>
-      <div class="tile"><div id="dl-minutes" class="num">0</div><div class="lab">Minutos</div></div>
-      <div class="tile"><div id="dl-seconds" class="num">0</div><div class="lab">Segundos</div></div>
-    </div>
+      <div id="dl-countdown" class="counter-grid" <?= $expired ? 'style="display:none;"' : '' ?>>
+        <div class="tile"><div id="dl-days" class="num">0</div><div class="lab">Dias</div></div>
+        <div class="tile"><div id="dl-hours" class="num">0</div><div class="lab">Horas</div></div>
+        <div class="tile"><div id="dl-minutes" class="num">0</div><div class="lab">Minutos</div></div>
+        <div class="tile"><div id="dl-seconds" class="num">0</div><div class="lab">Segundos</div></div>
+      </div>
 
-    <div id="dl-ended" class="alert alert-danger mb-0" <?= ($expired && !$hideCountdown) ? '' : 'style="display:none;"' ?>>
-      <i class="fas fa-exclamation-triangle mr-1"></i> Fecha vencida
-    </div>
-
-    <?php if ($hideCountdown && (int)$idRol !== 1): ?>
-      <div class="alert alert-light border mb-0">Aún no hay una fecha límite configurada.</div>
-    <?php endif; ?>
-
-    <?php if ((int)$idRol === 1): ?>
-      <hr>
-      <form method="post" action="/sistema_web/inicio/guardar_fecha_limite.php" class="mt-2" autocomplete="off" novalidate>
-        <input type="hidden" name="dl_action" value="save_deadline">
-        <input type="hidden" name="csrf" value="<?= htmlspecialchars($CSRF) ?>">
-        <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/sistema_web/direccion_rsu/inicio.php') ?>">
-
-        <div class="form-group mb-2">
-          <label class="mb-0">Título</label>
-          <input type="text" name="titulo" class="form-control form-control-sm" required maxlength="120"
-                 value="<?= htmlspecialchars($row['titulo'] ?? '') ?>">
-        </div>
-
-        <div class="form-group mb-2">
-          <label class="mb-0">Mensaje</label>
-          <textarea name="mensaje" class="form-control form-control-sm" rows="2" maxlength="300"><?= htmlspecialchars($row['mensaje'] ?? '') ?></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group col-6">
-            <label class="mb-0">Fecha (AAAA-MM-DD)</label>
-            <input type="date" name="fecha" class="form-control form-control-sm" required
-                   value="<?= htmlspecialchars($dlDateVal) ?>">
-          </div>
-          <div class="form-group col-6">
-            <label class="mb-0">Hora (HH:MM:SS)</label>
-            <input type="time" name="hora" step="1" class="form-control form-control-sm" required
-                   value="<?= htmlspecialchars($dlTimeVal) ?>">
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-danger btn-sm">
-          <i class="fas fa-save mr-1"></i> Guardar
-        </button>
-      </form>
-      <?php if ($row['updated_at']): ?>
-        <div class="text-muted small mt-2">
-          Última edición: <?= htmlspecialchars($row['updated_at']) ?><?= $row['updated_by'] ? ' por '.htmlspecialchars($row['updated_by']) : '' ?>
-        </div>
-      <?php endif; ?>
+      <div id="dl-ended" class="alert alert-danger mb-0" <?= $expired ? '' : 'style="display:none;"' ?>>
+        <i class="fas fa-exclamation-triangle mr-1"></i> Fecha vencida
+      </div>
+    <?php else: ?>
+      <div class="alert alert-light border mb-0"><?= htmlspecialchars($friendlyOffMessage) ?></div>
     <?php endif; ?>
   </div>
 </div>
 
+<?php if ($deadlineVisible && $deadlineDate): ?>
 <script>
 (function(){
-  var configured = <?= $hadRow ? 'true' : 'false' ?>;
-  var isAdmin    = <?= ((int)$idRol === 1) ? 'true' : 'false' ?>;
-  if (!configured && !isAdmin) { return; }
-
   var iso = '<?= htmlspecialchars($dlISO, ENT_QUOTES) ?>';
   var deadline = new Date(iso).getTime();
 
-  var statusEl   = document.getElementById('dl-status');
-  var cdEl       = document.getElementById('dl-countdown');
-  var endedEl    = document.getElementById('dl-ended');
-  var daysEl     = document.getElementById('dl-days');
-  var hoursEl    = document.getElementById('dl-hours');
-  var minutesEl  = document.getElementById('dl-minutes');
-  var secondsEl  = document.getElementById('dl-seconds');
+  var statusEl = document.getElementById('dl-status');
+  var cdEl = document.getElementById('dl-countdown');
+  var endedEl = document.getElementById('dl-ended');
+  var daysEl = document.getElementById('dl-days');
+  var hoursEl = document.getElementById('dl-hours');
+  var minutesEl = document.getElementById('dl-minutes');
+  var secondsEl = document.getElementById('dl-seconds');
 
   function setText(el, v){ if(el) el.textContent = v; }
 
@@ -191,8 +150,8 @@ if ($notConfigured && (int)$idRol !== 1) {
 
     if (diff <= 0){
       if (statusEl){ statusEl.className = 'badge badge-dark'; statusEl.textContent = 'Cerrado'; }
-      if (cdEl)     cdEl.style.display = 'none';
-      if (endedEl)  endedEl.style.display = '';
+      if (cdEl) cdEl.style.display = 'none';
+      if (endedEl) endedEl.style.display = '';
       return;
     }
 
@@ -202,8 +161,8 @@ if ($notConfigured && (int)$idRol !== 1) {
     var s = Math.floor((diff % (1000 * 60)) / 1000);
 
     if (statusEl){ statusEl.className = 'badge badge-light text-danger'; statusEl.textContent = 'Activo'; }
-    if (cdEl)     cdEl.style.display = '';
-    if (endedEl)  endedEl.style.display = 'none';
+    if (cdEl) cdEl.style.display = '';
+    if (endedEl) endedEl.style.display = 'none';
 
     setText(daysEl, d);
     setText(hoursEl, h);
@@ -216,3 +175,4 @@ if ($notConfigured && (int)$idRol !== 1) {
   window.__dlInterval = setInterval(tick, 1000);
 })();
 </script>
+<?php endif; ?>

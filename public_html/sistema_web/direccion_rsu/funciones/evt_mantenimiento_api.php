@@ -41,6 +41,23 @@ function evt_mto_api_ensure_db_manager_event(mysqli $conexion, $userId = null)
     return $ok;
 }
 
+function evt_mto_api_ensure_inicio_deadline_event(mysqli $conexion, $userId = null)
+{
+    $uid = ($userId === null || (int)$userId <= 0) ? null : (int)$userId;
+
+    $sql = "INSERT INTO evt_eventos (codigo, nombre, estado, actualizado_por)
+            VALUES ('inicio_fecha_limite_visible', 'Mostrar fecha limite en inicio', 0, ?)
+            ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)";
+    $st = mysqli_prepare($conexion, $sql);
+    if (!$st) {
+        return false;
+    }
+    mysqli_stmt_bind_param($st, 'i', $uid);
+    $ok = mysqli_stmt_execute($st);
+    mysqli_stmt_close($st);
+    return $ok;
+}
+
 function evt_mto_api_get_db_manager_state(mysqli $conexion)
 {
     $state = array(
@@ -70,6 +87,102 @@ function evt_mto_api_get_db_manager_state(mysqli $conexion)
     $state['estado'] = (isset($row['estado']) && (int)$row['estado'] === 1) ? 1 : 0;
     $state['actualizado_en'] = isset($row['actualizado_en']) ? $row['actualizado_en'] : null;
     $state['actualizado_por'] = isset($row['actualizado_por']) ? $row['actualizado_por'] : null;
+
+    return $state;
+}
+
+function evt_mto_api_default_inicio_deadline_title()
+{
+    return 'Fecha limite';
+}
+
+function evt_mto_api_default_inicio_deadline_message()
+{
+    return 'Sin fechas limites por el momento.';
+}
+
+function evt_mto_api_default_inicio_deadline_datetime()
+{
+    $tz = new DateTimeZone('America/Lima');
+    $dt = new DateTime('now', $tz);
+    $dt->modify('+7 days');
+    $dt->setTime(23, 59, 0);
+    return $dt->format('Y-m-d H:i:s');
+}
+
+function evt_mto_api_parse_deadline_datetime($input, &$errorMessage = null)
+{
+    $value = trim((string)$input);
+    if ($value === '') {
+        $errorMessage = 'Debe indicar la fecha y hora limite.';
+        return false;
+    }
+
+    $value = str_replace('T', ' ', $value);
+    if (preg_match('/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/', $value)) {
+        $value .= ':00';
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/', $value)) {
+        $errorMessage = 'Formato de fecha limite invalido.';
+        return false;
+    }
+
+    $tz = new DateTimeZone('America/Lima');
+    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $value, $tz);
+    $errors = DateTime::getLastErrors();
+    $hasParseErrors = (is_array($errors) && (!empty($errors['warning_count']) || !empty($errors['error_count'])));
+    if (!$dt || $hasParseErrors) {
+        $errorMessage = 'Fecha limite invalida.';
+        return false;
+    }
+
+    return $dt->format('Y-m-d H:i:s');
+}
+
+function evt_mto_api_get_inicio_deadline_state(mysqli $conexion)
+{
+    $state = array(
+        'codigo' => 'inicio_fecha_limite_visible',
+        'visible' => 0,
+        'titulo' => evt_mto_api_default_inicio_deadline_title(),
+        'mensaje' => evt_mto_api_default_inicio_deadline_message(),
+        'deadline' => evt_mto_api_default_inicio_deadline_datetime(),
+        'updated_by' => null,
+        'updated_at' => null,
+        'event_updated_by' => null,
+        'event_updated_at' => null
+    );
+
+    $sqlEvt = "SELECT codigo, estado, actualizado_por, actualizado_en
+                 FROM evt_eventos
+                WHERE codigo = 'inicio_fecha_limite_visible'
+                LIMIT 1";
+    $resEvt = mysqli_query($conexion, $sqlEvt);
+    if ($resEvt && ($rowEvt = mysqli_fetch_assoc($resEvt))) {
+        $state['codigo'] = isset($rowEvt['codigo']) ? (string)$rowEvt['codigo'] : 'inicio_fecha_limite_visible';
+        $state['visible'] = (isset($rowEvt['estado']) && (int)$rowEvt['estado'] === 1) ? 1 : 0;
+        $state['event_updated_by'] = isset($rowEvt['actualizado_por']) ? $rowEvt['actualizado_por'] : null;
+        $state['event_updated_at'] = isset($rowEvt['actualizado_en']) ? $rowEvt['actualizado_en'] : null;
+    }
+
+    $sqlCfg = "SELECT titulo, mensaje, deadline, updated_by, updated_at
+                 FROM inicio_fecha_limite
+                WHERE id = 1
+                LIMIT 1";
+    $resCfg = mysqli_query($conexion, $sqlCfg);
+    if ($resCfg && ($rowCfg = mysqli_fetch_assoc($resCfg))) {
+        if (isset($rowCfg['titulo']) && trim((string)$rowCfg['titulo']) !== '') {
+            $state['titulo'] = (string)$rowCfg['titulo'];
+        }
+        if (isset($rowCfg['mensaje']) && trim((string)$rowCfg['mensaje']) !== '') {
+            $state['mensaje'] = (string)$rowCfg['mensaje'];
+        }
+        if (isset($rowCfg['deadline']) && trim((string)$rowCfg['deadline']) !== '') {
+            $state['deadline'] = (string)$rowCfg['deadline'];
+        }
+        $state['updated_by'] = isset($rowCfg['updated_by']) ? $rowCfg['updated_by'] : null;
+        $state['updated_at'] = isset($rowCfg['updated_at']) ? $rowCfg['updated_at'] : null;
+    }
 
     return $state;
 }
@@ -107,11 +220,16 @@ if (!evt_mto_api_ensure_db_manager_event($conexion, $userId > 0 ? $userId : null
     error_log('evt_mantenimiento_api: fallo al inicializar evento acceso_gestor_db');
     evt_mto_api_exit(false, 'No se pudo inicializar el control de acceso del gestor DB.', null, 500);
 }
+if (!evt_mto_api_ensure_inicio_deadline_event($conexion, $userId > 0 ? $userId : null)) {
+    error_log('evt_mantenimiento_api: fallo al inicializar evento inicio_fecha_limite_visible');
+    evt_mto_api_exit(false, 'No se pudo inicializar el control de fecha limite.', null, 500);
+}
 
 $action = isset($_POST['action']) ? trim((string)$_POST['action']) : '';
 if ($action === 'get_state') {
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     evt_mto_api_exit(true, 'Estado cargado.', $state);
 }
 
@@ -140,7 +258,94 @@ if ($action === 'save_db_manager_access') {
 
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     evt_mto_api_exit(true, 'Acceso a gestor DB actualizado correctamente.', $state);
+}
+
+if ($action === 'save_inicio_deadline') {
+    $visible = isset($_POST['visible']) ? (int)$_POST['visible'] : -1;
+    if ($visible !== 0 && $visible !== 1) {
+        evt_mto_api_exit(false, 'Estado de visibilidad invalido.', null, 422);
+    }
+
+    $titulo = evt_mto_trim_limit(isset($_POST['titulo']) ? $_POST['titulo'] : '', 120);
+    $mensaje = evt_mto_trim_limit(isset($_POST['mensaje']) ? $_POST['mensaje'] : '', 300);
+    $deadlineInput = isset($_POST['deadline']) ? $_POST['deadline'] : '';
+    $username = isset($_SESSION['usuario']) ? evt_mto_trim_limit($_SESSION['usuario'], 64) : '';
+
+    if ($titulo === '') {
+        $titulo = evt_mto_api_default_inicio_deadline_title();
+    }
+    if ($mensaje === '') {
+        $mensaje = evt_mto_api_default_inicio_deadline_message();
+    }
+
+    $deadline = evt_mto_api_default_inicio_deadline_datetime();
+    if (trim((string)$deadlineInput) !== '') {
+        $parseError = null;
+        $parsed = evt_mto_api_parse_deadline_datetime($deadlineInput, $parseError);
+        if ($parsed === false) {
+            evt_mto_api_exit(false, $parseError !== null ? $parseError : 'Fecha limite invalida.', null, 422);
+        }
+        $deadline = $parsed;
+    } elseif ($visible === 1) {
+        evt_mto_api_exit(false, 'Debe indicar la fecha y hora limite para habilitar el contador.', null, 422);
+    } else {
+        $currentDeadline = evt_mto_api_get_inicio_deadline_state($conexion);
+        if (!empty($currentDeadline['deadline'])) {
+            $deadline = (string)$currentDeadline['deadline'];
+        }
+    }
+
+    mysqli_begin_transaction($conexion);
+    try {
+        $sqlEvt = "UPDATE evt_eventos
+                      SET estado = ?,
+                          actualizado_por = ?,
+                          actualizado_en = NOW()
+                    WHERE codigo = 'inicio_fecha_limite_visible'
+                    LIMIT 1";
+        $stEvt = mysqli_prepare($conexion, $sqlEvt);
+        if (!$stEvt) {
+            throw new Exception('No se pudo preparar la actualizacion de visibilidad.');
+        }
+        mysqli_stmt_bind_param($stEvt, 'ii', $visible, $userId);
+        if (!mysqli_stmt_execute($stEvt)) {
+            mysqli_stmt_close($stEvt);
+            throw new Exception('No se pudo guardar la visibilidad.');
+        }
+        mysqli_stmt_close($stEvt);
+
+        $sqlCfg = "INSERT INTO inicio_fecha_limite (id, titulo, mensaje, deadline, updated_by, updated_at)
+                   VALUES (1, ?, ?, ?, ?, NOW())
+                   ON DUPLICATE KEY UPDATE
+                     titulo = VALUES(titulo),
+                     mensaje = VALUES(mensaje),
+                     deadline = VALUES(deadline),
+                     updated_by = VALUES(updated_by),
+                     updated_at = NOW()";
+        $stCfg = mysqli_prepare($conexion, $sqlCfg);
+        if (!$stCfg) {
+            throw new Exception('No se pudo preparar la actualizacion del contenido.');
+        }
+        mysqli_stmt_bind_param($stCfg, 'ssss', $titulo, $mensaje, $deadline, $username);
+        if (!mysqli_stmt_execute($stCfg)) {
+            mysqli_stmt_close($stCfg);
+            throw new Exception('No se pudo guardar el contenido.');
+        }
+        mysqli_stmt_close($stCfg);
+
+        mysqli_commit($conexion);
+    } catch (Exception $e) {
+        mysqli_rollback($conexion);
+        error_log('evt_mantenimiento_api save_inicio_deadline: ' . $e->getMessage());
+        evt_mto_api_exit(false, 'No se pudo guardar la configuracion de fecha limite.', null, 500);
+    }
+
+    $state = evt_mto_fetch_state();
+    $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    evt_mto_api_exit(true, 'Configuracion de fecha limite guardada correctamente.', $state);
 }
 
 if ($action !== 'save_config') {
@@ -233,6 +438,7 @@ try {
 
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     evt_mto_api_exit(true, 'Configuracion guardada correctamente.', $state);
 } catch (Exception $e) {
     mysqli_rollback($conexion);

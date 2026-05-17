@@ -121,6 +121,25 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                     </a>
                                 </div>
                             </div>
+                            <div class="col-12 col-md-6 col-lg-4 mt-3 mt-lg-0">
+                                <div class="p-3 evt-card-action h-100">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="mr-3">
+                                            <span class="btn btn-danger btn-sm disabled"><i class="fas fa-hourglass-half"></i></span>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">Fechas limite en Inicio</h5>
+                                            <small id="evtInicioDeadlineHint" class="text-muted">Configura visibilidad y mensaje del bloque.</small>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span id="evtInicioDeadlineBadge" class="badge badge-secondary">Oculto</span>
+                                    </div>
+                                    <button type="button" id="btnOpenInicioDeadline" class="btn btn-outline-danger btn-block mt-3">
+                                        Configurar bloque
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="alert alert-light border mt-4 mb-0">
                             Administra aqui los eventos criticos del sistema.
@@ -242,6 +261,59 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                 <button type="button" id="btnGuardarDbAccess" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalInicioDeadline" tabindex="-1" role="dialog" aria-labelledby="modalInicioDeadlineLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="modalInicioDeadlineLabel">
+                    <i class="fas fa-hourglass-half mr-2 text-danger"></i>Bloque de fechas limite en Inicio
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="evtInicioDeadlineAlert" class="alert d-none"></div>
+
+                <div class="custom-control custom-switch mb-3">
+                    <input type="checkbox" class="custom-control-input" id="evtInicioDeadlineVisible">
+                    <label class="custom-control-label" for="evtInicioDeadlineVisible">Mostrar contador de fecha limite en Inicio</label>
+                </div>
+
+                <div class="form-group">
+                    <label for="evtInicioDeadlineTitulo">Titulo del bloque</label>
+                    <input type="text" class="form-control" id="evtInicioDeadlineTitulo" maxlength="120">
+                </div>
+
+                <div class="form-group">
+                    <label for="evtInicioDeadlineMensaje">Mensaje</label>
+                    <textarea id="evtInicioDeadlineMensaje" class="form-control" rows="3" maxlength="300"></textarea>
+                    <small class="form-text text-muted">Si el contador esta oculto, este mensaje se mostrara en Inicio.</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-12 col-md-7">
+                        <label for="evtInicioDeadlineFechaHora">Fecha y hora limite (Lima)</label>
+                        <input type="datetime-local" class="form-control" id="evtInicioDeadlineFechaHora" step="60">
+                    </div>
+                    <div class="form-group col-12 col-md-5">
+                        <label for="evtInicioDeadlineEstado">Estado actual</label>
+                        <input type="text" class="form-control" id="evtInicioDeadlineEstado" readonly>
+                    </div>
+                </div>
+
+                <div class="text-muted small">
+                    Ultima actualizacion: <span id="evtInicioDeadlineUpdatedAt">-</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" id="btnGuardarInicioDeadline" class="btn btn-danger">Guardar</button>
             </div>
         </div>
     </div>
@@ -418,10 +490,42 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             $('#btnGotoDbManager').attr('aria-disabled', isEnabled ? 'false' : 'true');
         }
 
+        function toDatetimeLocal(dbValue) {
+            var value = String(dbValue || '').trim();
+            if (!value) {
+                return '';
+            }
+            return value.replace(' ', 'T').slice(0, 16);
+        }
+
+        function renderInicioDeadlineState(deadlineState) {
+            var state = deadlineState || {};
+            var isVisible = Number(state.visible) === 1;
+            var deadlineText = String(state.deadline || '').trim();
+
+            $('#evtInicioDeadlineVisible').prop('checked', isVisible);
+            $('#evtInicioDeadlineTitulo').val(state.titulo || '');
+            $('#evtInicioDeadlineMensaje').val(state.mensaje || '');
+            $('#evtInicioDeadlineFechaHora').val(toDatetimeLocal(deadlineText));
+            $('#evtInicioDeadlineEstado').val(isVisible ? 'Visible (contador activo)' : 'Oculto (mensaje amigable)');
+            $('#evtInicioDeadlineUpdatedAt').text(state.updated_at ? state.updated_at : (state.event_updated_at || '-'));
+
+            $('#evtInicioDeadlineBadge')
+                .removeClass('badge-success badge-secondary badge-warning')
+                .addClass(isVisible ? 'badge-success' : 'badge-secondary')
+                .text(isVisible ? 'Visible' : 'Oculto');
+            $('#evtInicioDeadlineHint').text(
+                isVisible
+                    ? 'El bloque mostrara el contador de fecha limite.'
+                    : 'El bloque mostrara el mensaje amigable.'
+            );
+        }
+
         function renderState(state) {
             currentState = state || {};
             renderMaintenanceState(currentState);
             renderDbAccessState(currentState.db_manager_access || {});
+            renderInicioDeadlineState(currentState.inicio_deadline || {});
         }
 
         function openConfirm(text, callback) {
@@ -443,20 +547,26 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 if (!res || !res.success) {
                     showAlert('#evtMtoAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo cargar la configuracion.');
                     showAlert('#evtDbAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo cargar la configuracion.');
+                    showAlert('#evtInicioDeadlineAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo cargar la configuracion.');
                     return;
                 }
                 renderState(res.data || {});
                 clearAlert('#evtMtoAlert');
                 clearAlert('#evtDbAlert');
+                clearAlert('#evtInicioDeadlineAlert');
                 if (targetModal === 'mto') {
                     $('#modalMantenimiento').modal('show');
                 }
                 if (targetModal === 'db') {
                     $('#modalDbAccess').modal('show');
                 }
+                if (targetModal === 'inicio_deadline') {
+                    $('#modalInicioDeadline').modal('show');
+                }
             }).fail(function () {
                 showAlert('#evtMtoAlert', 'danger', 'Error de comunicacion con el servidor.');
                 showAlert('#evtDbAlert', 'danger', 'Error de comunicacion con el servidor.');
+                showAlert('#evtInicioDeadlineAlert', 'danger', 'Error de comunicacion con el servidor.');
             });
         }
 
@@ -553,6 +663,50 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             });
         }
 
+        function saveInicioDeadline() {
+            var visible = $('#evtInicioDeadlineVisible').is(':checked') ? 1 : 0;
+            var fechaHora = $.trim($('#evtInicioDeadlineFechaHora').val());
+            var titulo = $('#evtInicioDeadlineTitulo').val();
+            var mensaje = $('#evtInicioDeadlineMensaje').val();
+
+            if (visible === 1 && fechaHora === '') {
+                showAlert('#evtInicioDeadlineAlert', 'warning', 'Debes indicar fecha y hora limite para habilitar el contador.');
+                return;
+            }
+
+            var confirmText = visible === 1
+                ? 'Confirmar mostrar el contador de fecha limite en Inicio?'
+                : 'Confirmar ocultar el contador y mostrar mensaje amigable en Inicio?';
+
+            openConfirm(confirmText, function () {
+                $('#btnGuardarInicioDeadline').prop('disabled', true);
+                $.ajax({
+                    url: apiUrl,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'save_inicio_deadline',
+                        csrf_token: csrfToken,
+                        visible: visible,
+                        titulo: titulo,
+                        mensaje: mensaje,
+                        deadline: fechaHora
+                    }
+                }).done(function (res) {
+                    if (!res || !res.success) {
+                        showAlert('#evtInicioDeadlineAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo guardar.');
+                        return;
+                    }
+                    renderState(res.data || {});
+                    showAlert('#evtInicioDeadlineAlert', 'success', res.msg || 'Configuracion guardada.');
+                }).fail(function () {
+                    showAlert('#evtInicioDeadlineAlert', 'danger', 'Error de comunicacion con el servidor.');
+                }).always(function () {
+                    $('#btnGuardarInicioDeadline').prop('disabled', false);
+                });
+            });
+        }
+
         $(function () {
             loadState('');
 
@@ -563,9 +717,13 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             $('#btnOpenDbAccess').on('click', function () {
                 loadState('db');
             });
+            $('#btnOpenInicioDeadline').on('click', function () {
+                loadState('inicio_deadline');
+            });
 
             $('#btnGuardarMantenimiento').on('click', saveMaintenance);
             $('#btnGuardarDbAccess').on('click', saveDbAccess);
+            $('#btnGuardarInicioDeadline').on('click', saveInicioDeadline);
 
             $('#btnEvtMtoConfirmAction').on('click', function () {
                 $('#modalEvtMtoConfirm').modal('hide');
