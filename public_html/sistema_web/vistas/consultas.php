@@ -2,6 +2,51 @@
 // consultas.php
 include('../componentes/configSesion.php'); // Valida sesion activa
 include('../componentes/db.php'); // Incluye la conexion a la base de datos
+require_once('../includes/evt_mantenimiento.php');
+
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+function consultas_exit_403($message)
+{
+  if (!headers_sent()) {
+    http_response_code(403);
+    header('Content-Type: text/html; charset=UTF-8');
+  }
+  echo '<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">';
+  echo '<title>Acceso restringido</title>';
+  echo '<style>body{font-family:Arial,sans-serif;background:#f4f6f9;padding:32px;} .card{max-width:780px;margin:0 auto;background:#fff;border-radius:8px;padding:22px;border:1px solid #ddd;} h2{margin-top:0;color:#b22;} p{line-height:1.5;}</style>';
+  echo '</head><body><div class=\"card\"><h2>Acceso restringido</h2><p>' . htmlspecialchars((string)$message, ENT_QUOTES, 'UTF-8') . '</p></div></body></html>';
+  exit;
+}
+
+if (!isset($_SESSION['usuario']) || !isset($_SESSION['id_rol']) || (int)$_SESSION['id_rol'] !== 1) {
+  consultas_exit_403('Solo administradores autorizados pueden ingresar al Gestor DB.');
+}
+
+if (!isset($conexion) || !($conexion instanceof mysqli)) {
+  consultas_exit_403('No se pudo conectar a la base de datos.');
+}
+@mysqli_set_charset($conexion, 'utf8mb4');
+
+$evtDbAccessEnabled = false;
+$evtDbAccessResult = mysqli_query($conexion, "SELECT estado FROM evt_eventos WHERE codigo='acceso_gestor_db' LIMIT 1");
+if ($evtDbAccessResult && $evtDbAccessRow = mysqli_fetch_assoc($evtDbAccessResult)) {
+  $evtDbAccessEnabled = ((int)$evtDbAccessRow['estado'] === 1);
+}
+if (!$evtDbAccessEnabled) {
+  consultas_exit_403('El acceso al Gestor DB esta deshabilitado desde Control de eventos.');
+}
+
+$consultasCsrf = evt_mto_get_csrf_token('consultas_csrf');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $postedCsrf = isset($_POST['csrf_token']) ? (string)$_POST['csrf_token'] : '';
+  if (!evt_mto_validate_csrf_token($postedCsrf, 'consultas_csrf')) {
+    consultas_exit_403('Token CSRF invalido. Recarga la pagina e intenta nuevamente.');
+  }
+}
 
 function toSqlValue($conexion, $value) {
   if (is_null($value)) {
@@ -514,6 +559,7 @@ $diagnosticText = implode("\n", $diagnosticTextLines);
         </div>
         <!-- Formulario para la consulta general -->
         <form action="consultas.php" method="POST" id="form-consulta">
+          <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($consultasCsrf, ENT_QUOTES, 'UTF-8'); ?>">
           <div class="mb-2">
             <label for="consulta_all" class="form-label">Consulta SQL:</label>
             <textarea name="consulta_all" id="consulta_all" class="form-control" rows="3" placeholder="Escribe tu consulta SQL..."><?php echo htmlspecialchars($consulta_all); ?></textarea>
@@ -528,6 +574,7 @@ $diagnosticText = implode("\n", $diagnosticTextLines);
         <div class="d-flex align-items-center mb-2">
           <h4 class="mb-0">Tablas</h4>
           <form method="post" id="form-refresh" class="ms-2">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($consultasCsrf, ENT_QUOTES, 'UTF-8'); ?>">
             <button type="submit" class="btn btn-outline-secondary btn-sm" title="Actualizar">
               <i class="bi bi-arrow-clockwise"></i>
             </button>
@@ -771,6 +818,7 @@ $diagnosticText = implode("\n", $diagnosticTextLines);
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="POST" action="consultas.php">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($consultasCsrf, ENT_QUOTES, 'UTF-8'); ?>">
         <input type="hidden" name="backup_action" value="download_backup">
         <div class="modal-header">
           <h5 class="modal-title" id="backupModalLabel">Generar copia de seguridad</h5>
