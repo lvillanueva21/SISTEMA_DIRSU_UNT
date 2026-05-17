@@ -125,9 +125,12 @@ if (!function_exists('opesp_order_sql')) {
 }
 
 if (!function_exists('opesp_total_filas')) {
-    function opesp_total_filas($conexion)
+    function opesp_total_filas($conexion, $where_extra = '')
     {
         $sql = "SELECT COUNT(*) AS total " . opesp_from_sql();
+        if (trim((string)$where_extra) !== '') {
+            $sql .= "\n" . $where_extra;
+        }
         $rs = mysqli_query($conexion, $sql);
         if ($rs === false) {
             error_log('op_especiales: error contando filas: ' . mysqli_error($conexion));
@@ -137,6 +140,15 @@ if (!function_exists('opesp_total_filas')) {
         $row = mysqli_fetch_assoc($rs);
         mysqli_free_result($rs);
         return isset($row['total']) ? (int)$row['total'] : 0;
+    }
+}
+
+if (!function_exists('opesp_normalizar_filtro_migracion')) {
+    function opesp_normalizar_filtro_migracion($valor)
+    {
+        $v = strtolower(trim((string)$valor));
+        $permitidos = array('todos', 'no_necesita', 'necesita', 'migrado');
+        return in_array($v, $permitidos, true) ? $v : 'todos';
     }
 }
 
@@ -384,6 +396,100 @@ if (!function_exists('opesp_resolver_formularios_migracion_2024ii')) {
     }
 }
 
+if (!function_exists('opesp_sql_condicion_migrado_2024ii')) {
+    function opesp_sql_condicion_migrado_2024ii($aliasProyecto, $form_ids)
+    {
+        $alias = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$aliasProyecto);
+        if ($alias === '') {
+            $alias = 'p';
+        }
+
+        $ids = array();
+        foreach ((array)$form_ids as $fid) {
+            $fid = (int)$fid;
+            if ($fid > 0) {
+                $ids[$fid] = $fid;
+            }
+        }
+        if (empty($ids)) {
+            return '0 = 1';
+        }
+
+        $ids_sql = implode(',', $ids);
+        return "
+            EXISTS (
+                SELECT 1
+                FROM sm_respuestas r
+                INNER JOIN eva_evaluaciones e
+                    ON e.id_respuesta = r.id
+                INNER JOIN sm_proyecto_semestres s
+                    ON s.id = r.id_semestre
+                WHERE r.id_py = {$alias}.id
+                  AND r.id_formulario IN ({$ids_sql})
+                  AND s.anio = 2024
+                  AND s.periodo = 'II'
+                  AND s.tipo = 'semestral'
+                  AND e.situacion = 'aprobado'
+            )
+        ";
+    }
+}
+
+if (!function_exists('opesp_sql_condicion_migrable_base')) {
+    function opesp_sql_condicion_migrable_base($aliasProyecto)
+    {
+        $alias = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$aliasProyecto);
+        if ($alias === '') {
+            $alias = 'p';
+        }
+
+        return "
+            EXISTS (
+                SELECT 1
+                FROM proyectos_finales pf
+                WHERE pf.id_py = {$alias}.id
+            )
+            AND EXISTS (
+                SELECT 1
+                FROM usuarios_proyectos up
+                INNER JOIN usuarios u
+                    ON u.id = up.id_usuario
+                   AND u.id_rol = 2
+                WHERE up.id_proyecto = {$alias}.id
+                  AND up.activo = 1
+            )
+        ";
+    }
+}
+
+if (!function_exists('opesp_where_filtro_estado_migracion')) {
+    function opesp_where_filtro_estado_migracion($filtro, $form_ids, $aliasProyecto = 'p')
+    {
+        $f = opesp_normalizar_filtro_migracion($filtro);
+        if ($f === 'todos') {
+            return '';
+        }
+
+        $condMigrable = opesp_sql_condicion_migrable_base($aliasProyecto);
+        $condMigrado = opesp_sql_condicion_migrado_2024ii($aliasProyecto, $form_ids);
+        $where = '';
+
+        if ($f === 'migrado') {
+            $where = $condMigrado;
+        } elseif ($f === 'necesita') {
+            $where = '(' . $condMigrable . ') AND NOT (' . $condMigrado . ')';
+        } elseif ($f === 'no_necesita') {
+            $where = 'NOT (' . $condMigrable . ') AND NOT (' . $condMigrado . ')';
+        }
+
+        if (trim($where) === '') {
+            return '';
+        }
+
+        return " AND (\n{$where}\n)";
+    }
+}
+
 if (!function_exists('opesp_obtener_estado_migracion_por_proyectos')) {
     function opesp_obtener_estado_migracion_por_proyectos($conexion, $ids_proyectos)
     {
@@ -601,14 +707,24 @@ if (!function_exists('opesp_obtener_resumen_global_migracion')) {
 }
 
 if (!function_exists('opesp_obtener_proyectos')) {
-    function opesp_obtener_proyectos($conexion, $pagina = 1, $por_pagina = 20)
+    function opesp_obtener_proyectos($conexion, $pagina = 1, $por_pagina = 20, $filtro_estado = 'todos')
     {
         $pagina = max(1, (int)$pagina);
         $por_pagina = max(1, (int)$por_pagina);
         $offset = ($pagina - 1) * $por_pagina;
+        $filtro_estado = opesp_normalizar_filtro_migracion($filtro_estado);
+        $forms_migracion_2024ii = opesp_resolver_formularios_migracion_2024ii($conexion);
+        $form_ids = array();
+        foreach ($forms_migracion_2024ii as $frow) {
+            $fid = isset($frow['id_formulario']) ? (int)$frow['id_formulario'] : 0;
+            if ($fid > 0) {
+                $form_ids[$fid] = $fid;
+            }
+        }
+        $where_filtro = opesp_where_filtro_estado_migracion($filtro_estado, array_values($form_ids), 'p');
 
         $supports_period_start = opesp_order_supports_period_start($conexion);
-        $total_items = opesp_total_filas($conexion);
+        $total_items = opesp_total_filas($conexion, $where_filtro);
         $total_pages = max(1, (int)ceil($total_items / $por_pagina));
 
         if ($pagina > $total_pages) {
@@ -631,6 +747,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
                 COALESCE(dup.cant_coord_activos, 0) AS cant_coord_activos,
                 CASE WHEN COALESCE(dup.cant_coord_activos, 0) > 1 THEN 1 ELSE 0 END AS flag_posible_duplicidad
             " . opesp_from_sql() . "
+            " . $where_filtro . "
             " . opesp_order_sql($supports_period_start) . "
             LIMIT $por_pagina OFFSET $offset
         ";
@@ -648,6 +765,8 @@ if (!function_exists('opesp_obtener_proyectos')) {
                 'total_pages' => $total_pages,
                 'pagina' => $pagina,
                 'por_pagina' => $por_pagina,
+                'forms_migracion_2024ii' => $forms_migracion_2024ii,
+                'filtro_estado' => $filtro_estado,
             );
         }
 
@@ -706,7 +825,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
         return array(
             'rows' => $rows,
             'respuestas_por_proyecto' => $respuestas,
-            'forms_migracion_2024ii' => opesp_resolver_formularios_migracion_2024ii($conexion),
+            'forms_migracion_2024ii' => $forms_migracion_2024ii,
             'supports_period_start' => $supports_period_start,
             'total_items' => $total_items,
             'total_pages' => $total_pages,
@@ -715,6 +834,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
             'total_migrables' => $total_migrables,
             'total_migrados' => $total_migrados,
             'total_pendientes' => $total_pendientes,
+            'filtro_estado' => $filtro_estado,
         );
     }
 }

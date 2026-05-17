@@ -49,12 +49,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  height: calc(100vh - 255px);
-  min-height: 540px;
+  height: auto;
+  min-height: 0;
 }
 
 .opesp-card {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   min-height: 0;
   margin-bottom: 0;
 }
@@ -64,11 +64,38 @@
   min-height: 0;
 }
 
+/* Let the top list card use natural page flow (no inner scrollbar). */
+.opesp-split-layout > .opesp-card:first-child .opesp-scroll-body {
+  overflow: visible;
+}
+
 .opesp-table-wrap {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 6px;
   background: #fff;
+}
+
+.opesp-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.opesp-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.opesp-filter-row label {
+  color: #495057;
+}
+
+.opesp-filter-row .form-control {
+  width: auto;
+  min-width: 230px;
 }
 
 .opesp-row {
@@ -352,6 +379,11 @@
 
   .opesp-migracion-layout {
     flex-direction: column;
+  }
+
+  .opesp-filter-row .form-control {
+    width: 100%;
+    min-width: 0;
   }
 
   .opesp-informe-detalle .contenedor-scroll,

@@ -9,6 +9,7 @@ $total_items = 0;
 $total_pages = 1;
 $por_pagina = 20;
 $pagina = isset($_GET['pagina']) ? max(1, (int)$_GET['pagina']) : 1;
+$filtro_estado = isset($_GET['estado_migracion']) ? (string)$_GET['estado_migracion'] : 'todos';
 $forms_migracion_2024ii = array();
 $total_migrables = 0;
 $total_migrados = 0;
@@ -22,7 +23,13 @@ $tipo_detalle = isset($_GET['tipo_resp']) ? trim((string)$_GET['tipo_resp']) : '
 if (!isset($conexion) || !($conexion instanceof mysqli)) {
     error_log('op_especiales: conexion mysqli no disponible.');
 } else {
-    $result = opesp_obtener_proyectos($conexion, $pagina, $por_pagina);
+    if (function_exists('opesp_normalizar_filtro_migracion')) {
+        $filtro_estado = opesp_normalizar_filtro_migracion($filtro_estado);
+    } else {
+        $filtro_estado = 'todos';
+    }
+
+    $result = opesp_obtener_proyectos($conexion, $pagina, $por_pagina, $filtro_estado);
     $items = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : array();
     $respuestas_por_proyecto = isset($result['respuestas_por_proyecto']) && is_array($result['respuestas_por_proyecto']) ? $result['respuestas_por_proyecto'] : array();
     $supports_period_start = isset($result['supports_period_start']) ? (bool)$result['supports_period_start'] : true;
@@ -34,6 +41,7 @@ if (!isset($conexion) || !($conexion instanceof mysqli)) {
     $total_migrables = isset($result['total_migrables']) ? (int)$result['total_migrables'] : 0;
     $total_migrados = isset($result['total_migrados']) ? (int)$result['total_migrados'] : 0;
     $total_pendientes = isset($result['total_pendientes']) ? (int)$result['total_pendientes'] : 0;
+    $filtro_estado = isset($result['filtro_estado']) ? (string)$result['filtro_estado'] : $filtro_estado;
 }
 
 $desde = ($total_items > 0) ? (($pagina - 1) * $por_pagina + 1) : 0;
@@ -110,6 +118,34 @@ function opesp_link_estado($p, $id_py = 0, $id_respuesta = 0, $id_periodo = 0, $
         <h3 class="card-title mb-0">Listado de proyectos</h3>
       </div>
       <div class="card-body p-2 opesp-scroll-body">
+        <form method="get" class="opesp-filter-row mb-2" id="opesp-filter-form">
+          <label for="opesp-estado-migracion" class="mb-0 font-weight-bold">Estado:</label>
+          <select
+            name="estado_migracion"
+            id="opesp-estado-migracion"
+            class="form-control form-control-sm">
+            <option value="todos" <?= ($filtro_estado === 'todos') ? 'selected' : '' ?>>Todos</option>
+            <option value="no_necesita" <?= ($filtro_estado === 'no_necesita') ? 'selected' : '' ?>>No necesita migración</option>
+            <option value="necesita" <?= ($filtro_estado === 'necesita') ? 'selected' : '' ?>>Necesita migración</option>
+            <option value="migrado" <?= ($filtro_estado === 'migrado') ? 'selected' : '' ?>>Ya se migró</option>
+          </select>
+          <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
+
+          <?php if ($id_py_detalle > 0): ?>
+            <input type="hidden" name="id_py" value="<?= opesp_h($id_py_detalle) ?>">
+          <?php endif; ?>
+          <?php if ($id_respuesta_detalle > 0): ?>
+            <input type="hidden" name="id_respuesta" value="<?= opesp_h($id_respuesta_detalle) ?>">
+          <?php endif; ?>
+          <?php if ($id_periodo_detalle > 0): ?>
+            <input type="hidden" name="id_periodo" value="<?= opesp_h($id_periodo_detalle) ?>">
+          <?php endif; ?>
+          <?php if ($tipo_detalle !== ''): ?>
+            <input type="hidden" name="tipo_resp" value="<?= opesp_h($tipo_detalle) ?>">
+          <?php endif; ?>
+          <input type="hidden" name="pagina" value="1">
+        </form>
+
         <div id="opesp-results-meta" class="alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-2" role="status" aria-live="polite">
           <div>
             <i class="fas fa-database"></i>
