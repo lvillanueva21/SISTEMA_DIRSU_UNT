@@ -16,9 +16,20 @@ if (!function_exists('opesp_order_supports_period_start')) {
     }
 }
 
-if (!function_exists('opesp_from_sql')) {
-    function opesp_from_sql()
+if (!function_exists('opesp_normalizar_vista_proyectos')) {
+    function opesp_normalizar_vista_proyectos($valor)
     {
+        $v = strtolower(trim((string)$valor));
+        return ($v === 'desactivados') ? 'desactivados' : 'activos';
+    }
+}
+
+if (!function_exists('opesp_from_sql')) {
+    function opesp_from_sql($vista_proyectos = 'activos')
+    {
+        $vista = opesp_normalizar_vista_proyectos($vista_proyectos);
+        $cond_rel = ($vista === 'desactivados') ? 'up.activo = 0' : 'up.activo = 1';
+
         return "
             FROM proyectos p
             LEFT JOIN (
@@ -33,7 +44,7 @@ if (!function_exists('opesp_from_sql')) {
                 INNER JOIN usuarios u
                     ON u.id = up.id_usuario
                    AND u.id_rol = 2
-                WHERE up.activo = 1
+                WHERE {$cond_rel}
             ) ca
                 ON ca.id_py = p.id
             LEFT JOIN departamentos d
@@ -80,7 +91,7 @@ if (!function_exists('opesp_from_sql')) {
                     INNER JOIN usuarios u
                         ON u.id = up.id_usuario
                        AND u.id_rol = 2
-                    WHERE up.activo = 1
+                    WHERE {$cond_rel}
                 ) t
                 GROUP BY t.id_py
             ) dup
@@ -125,9 +136,9 @@ if (!function_exists('opesp_order_sql')) {
 }
 
 if (!function_exists('opesp_total_filas')) {
-    function opesp_total_filas($conexion, $where_extra = '')
+    function opesp_total_filas($conexion, $where_extra = '', $vista_proyectos = 'activos')
     {
-        $sql = "SELECT COUNT(*) AS total " . opesp_from_sql();
+        $sql = "SELECT COUNT(*) AS total " . opesp_from_sql($vista_proyectos);
         if (trim((string)$where_extra) !== '') {
             $sql .= "\n" . $where_extra;
         }
@@ -490,6 +501,45 @@ if (!function_exists('opesp_where_filtro_estado_migracion')) {
     }
 }
 
+if (!function_exists('opesp_where_filtro_relacion_activa')) {
+    function opesp_where_filtro_relacion_activa($vista_proyectos, $aliasProyecto = 'p')
+    {
+        $vista = opesp_normalizar_vista_proyectos($vista_proyectos);
+        $alias = preg_replace('/[^a-zA-Z0-9_]/', '', (string)$aliasProyecto);
+        if ($alias === '') {
+            $alias = 'p';
+        }
+
+        $existsAny = "
+            EXISTS (
+                SELECT 1
+                FROM usuarios_proyectos up
+                INNER JOIN usuarios u
+                    ON u.id = up.id_usuario
+                   AND u.id_rol = 2
+                WHERE up.id_proyecto = {$alias}.id
+            )
+        ";
+        $existsActive = "
+            EXISTS (
+                SELECT 1
+                FROM usuarios_proyectos up
+                INNER JOIN usuarios u
+                    ON u.id = up.id_usuario
+                   AND u.id_rol = 2
+                WHERE up.id_proyecto = {$alias}.id
+                  AND up.activo = 1
+            )
+        ";
+
+        if ($vista === 'desactivados') {
+            return " AND (\n{$existsAny}\n) AND NOT (\n{$existsActive}\n)";
+        }
+
+        return " AND (\n{$existsActive}\n)";
+    }
+}
+
 if (!function_exists('opesp_obtener_estado_migracion_por_proyectos')) {
     function opesp_obtener_estado_migracion_por_proyectos($conexion, $ids_proyectos)
     {
@@ -614,8 +664,11 @@ if (!function_exists('opesp_obtener_estado_migracion_por_proyectos')) {
 }
 
 if (!function_exists('opesp_obtener_resumen_global_migracion')) {
-    function opesp_obtener_resumen_global_migracion($conexion)
+    function opesp_obtener_resumen_global_migracion($conexion, $vista_proyectos = 'activos')
     {
+        $vista = opesp_normalizar_vista_proyectos($vista_proyectos);
+        $where_rel = opesp_where_filtro_relacion_activa($vista, 'p');
+
         $summary = array(
             'total_migrables' => 0,
             'total_migrados' => 0,
@@ -630,15 +683,7 @@ if (!function_exists('opesp_obtener_resumen_global_migracion')) {
                 FROM proyectos_finales pf
                 WHERE pf.id_py = p.id
             )
-            AND EXISTS (
-                SELECT 1
-                FROM usuarios_proyectos up
-                INNER JOIN usuarios u
-                    ON u.id = up.id_usuario
-                   AND u.id_rol = 2
-                WHERE up.id_proyecto = p.id
-                  AND up.activo = 1
-            )
+            {$where_rel}
         ";
         $rsTotal = mysqli_query($conexion, $sqlTotal);
         if ($rsTotal !== false) {
@@ -677,14 +722,28 @@ if (!function_exists('opesp_obtener_resumen_global_migracion')) {
                       FROM proyectos_finales pf
                       WHERE pf.id_py = r.id_py
                   )
-                  AND EXISTS (
-                      SELECT 1
-                      FROM usuarios_proyectos up
-                      INNER JOIN usuarios u
-                          ON u.id = up.id_usuario
-                         AND u.id_rol = 2
-                      WHERE up.id_proyecto = r.id_py
-                        AND up.activo = 1
+                  AND (
+                      " . (($vista === 'desactivados')
+                          ? "EXISTS (
+                                SELECT 1
+                                FROM usuarios_proyectos upx
+                                INNER JOIN usuarios ux ON ux.id = upx.id_usuario AND ux.id_rol = 2
+                                WHERE upx.id_proyecto = r.id_py
+                            )
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM usuarios_proyectos upx
+                                INNER JOIN usuarios ux ON ux.id = upx.id_usuario AND ux.id_rol = 2
+                                WHERE upx.id_proyecto = r.id_py
+                                  AND upx.activo = 1
+                            )"
+                          : "EXISTS (
+                                SELECT 1
+                                FROM usuarios_proyectos upx
+                                INNER JOIN usuarios ux ON ux.id = upx.id_usuario AND ux.id_rol = 2
+                                WHERE upx.id_proyecto = r.id_py
+                                  AND upx.activo = 1
+                            )") . "
                   )
             ";
             $rsMigrados = mysqli_query($conexion, $sqlMigrados);
@@ -707,12 +766,13 @@ if (!function_exists('opesp_obtener_resumen_global_migracion')) {
 }
 
 if (!function_exists('opesp_obtener_proyectos')) {
-    function opesp_obtener_proyectos($conexion, $pagina = 1, $por_pagina = 20, $filtro_estado = 'todos')
+    function opesp_obtener_proyectos($conexion, $pagina = 1, $por_pagina = 20, $filtro_estado = 'todos', $vista_proyectos = 'activos')
     {
         $pagina = max(1, (int)$pagina);
         $por_pagina = max(1, (int)$por_pagina);
         $offset = ($pagina - 1) * $por_pagina;
         $filtro_estado = opesp_normalizar_filtro_migracion($filtro_estado);
+        $vista_proyectos = opesp_normalizar_vista_proyectos($vista_proyectos);
         $forms_migracion_2024ii = opesp_resolver_formularios_migracion_2024ii($conexion);
         $form_ids = array();
         foreach ($forms_migracion_2024ii as $frow) {
@@ -722,9 +782,11 @@ if (!function_exists('opesp_obtener_proyectos')) {
             }
         }
         $where_filtro = opesp_where_filtro_estado_migracion($filtro_estado, array_values($form_ids), 'p');
+        $where_relacion = opesp_where_filtro_relacion_activa($vista_proyectos, 'p');
+        $where_extra = trim($where_relacion . "\n" . $where_filtro);
 
         $supports_period_start = opesp_order_supports_period_start($conexion);
-        $total_items = opesp_total_filas($conexion, $where_filtro);
+        $total_items = opesp_total_filas($conexion, $where_extra, $vista_proyectos);
         $total_pages = max(1, (int)ceil($total_items / $por_pagina));
 
         if ($pagina > $total_pages) {
@@ -746,8 +808,8 @@ if (!function_exists('opesp_obtener_proyectos')) {
                 COALESCE(NULLIF(TRIM(p.fecha_fin), ''), '') AS fecha_fin,
                 COALESCE(dup.cant_coord_activos, 0) AS cant_coord_activos,
                 CASE WHEN COALESCE(dup.cant_coord_activos, 0) > 1 THEN 1 ELSE 0 END AS flag_posible_duplicidad
-            " . opesp_from_sql() . "
-            " . $where_filtro . "
+            " . opesp_from_sql($vista_proyectos) . "
+            " . $where_extra . "
             " . opesp_order_sql($supports_period_start) . "
             LIMIT $por_pagina OFFSET $offset
         ";
@@ -767,6 +829,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
                 'por_pagina' => $por_pagina,
                 'forms_migracion_2024ii' => $forms_migracion_2024ii,
                 'filtro_estado' => $filtro_estado,
+                'vista_proyectos' => $vista_proyectos,
             );
         }
 
@@ -817,7 +880,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
             $rows[$idx]['migrado_2024ii'] = $migrado;
         }
 
-        $summary_global = opesp_obtener_resumen_global_migracion($conexion);
+        $summary_global = opesp_obtener_resumen_global_migracion($conexion, $vista_proyectos);
         $total_migrables = isset($summary_global['total_migrables']) ? (int)$summary_global['total_migrables'] : 0;
         $total_migrados = isset($summary_global['total_migrados']) ? (int)$summary_global['total_migrados'] : 0;
         $total_pendientes = isset($summary_global['total_pendientes']) ? (int)$summary_global['total_pendientes'] : 0;
@@ -835,6 +898,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
             'total_migrados' => $total_migrados,
             'total_pendientes' => $total_pendientes,
             'filtro_estado' => $filtro_estado,
+            'vista_proyectos' => $vista_proyectos,
         );
     }
 }

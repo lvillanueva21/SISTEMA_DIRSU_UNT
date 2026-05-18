@@ -10,6 +10,7 @@ $total_pages = 1;
 $por_pagina = 20;
 $pagina = isset($_GET['pagina']) ? max(1, (int)$_GET['pagina']) : 1;
 $filtro_estado = isset($_GET['estado_migracion']) ? (string)$_GET['estado_migracion'] : 'todos';
+$vista_proyectos = isset($_GET['vista_proyectos']) ? (string)$_GET['vista_proyectos'] : 'activos';
 $forms_migracion_2024ii = array();
 $total_migrables = 0;
 $total_migrados = 0;
@@ -28,8 +29,13 @@ if (!isset($conexion) || !($conexion instanceof mysqli)) {
     } else {
         $filtro_estado = 'todos';
     }
+    if (function_exists('opesp_normalizar_vista_proyectos')) {
+        $vista_proyectos = opesp_normalizar_vista_proyectos($vista_proyectos);
+    } else {
+        $vista_proyectos = 'activos';
+    }
 
-    $result = opesp_obtener_proyectos($conexion, $pagina, $por_pagina, $filtro_estado);
+    $result = opesp_obtener_proyectos($conexion, $pagina, $por_pagina, $filtro_estado, $vista_proyectos);
     $items = isset($result['rows']) && is_array($result['rows']) ? $result['rows'] : array();
     $respuestas_por_proyecto = isset($result['respuestas_por_proyecto']) && is_array($result['respuestas_por_proyecto']) ? $result['respuestas_por_proyecto'] : array();
     $supports_period_start = isset($result['supports_period_start']) ? (bool)$result['supports_period_start'] : true;
@@ -42,6 +48,7 @@ if (!isset($conexion) || !($conexion instanceof mysqli)) {
     $total_migrados = isset($result['total_migrados']) ? (int)$result['total_migrados'] : 0;
     $total_pendientes = isset($result['total_pendientes']) ? (int)$result['total_pendientes'] : 0;
     $filtro_estado = isset($result['filtro_estado']) ? (string)$result['filtro_estado'] : $filtro_estado;
+    $vista_proyectos = isset($result['vista_proyectos']) ? (string)$result['vista_proyectos'] : $vista_proyectos;
 }
 
 $desde = ($total_items > 0) ? (($pagina - 1) * $por_pagina + 1) : 0;
@@ -74,6 +81,20 @@ function opesp_link_estado($p, $id_py = 0, $id_respuesta = 0, $id_periodo = 0, $
         $params['tipo_resp'] = (string)$tipo_resp;
     } else {
         unset($params['tipo_resp']);
+    }
+
+    return '?' . http_build_query($params);
+}
+
+function opesp_link_vista($vista_proyectos, $limpiar = false)
+{
+    $params = $_GET;
+    $params['pagina'] = 1;
+    $params['vista_proyectos'] = (function_exists('opesp_normalizar_vista_proyectos') ? opesp_normalizar_vista_proyectos($vista_proyectos) : 'activos');
+
+    if ($limpiar) {
+        $params['estado_migracion'] = 'todos';
+        unset($params['id_py'], $params['id_respuesta'], $params['id_periodo'], $params['tipo_resp']);
     }
 
     return '?' . http_build_query($params);
@@ -115,7 +136,7 @@ function opesp_link_estado($p, $id_py = 0, $id_respuesta = 0, $id_periodo = 0, $
   <div class="opesp-split-layout">
     <div class="card card-primary opesp-card">
       <div class="card-header py-2">
-        <h3 class="card-title mb-0">Listado de proyectos</h3>
+        <h3 class="card-title mb-0">Listado de proyectos <?= ($vista_proyectos === 'desactivados') ? 'desactivados' : 'activos' ?></h3>
       </div>
       <div class="card-body p-2 opesp-scroll-body">
         <form method="get" class="opesp-filter-row mb-2" id="opesp-filter-form">
@@ -129,7 +150,20 @@ function opesp_link_estado($p, $id_py = 0, $id_respuesta = 0, $id_periodo = 0, $
             <option value="necesita" <?= ($filtro_estado === 'necesita') ? 'selected' : '' ?>>Necesita migración</option>
             <option value="migrado" <?= ($filtro_estado === 'migrado') ? 'selected' : '' ?>>Ya se migró</option>
           </select>
+          <input type="hidden" name="vista_proyectos" value="<?= opesp_h($vista_proyectos) ?>">
           <button type="submit" class="btn btn-outline-primary btn-sm">Aplicar</button>
+          <?php if ($vista_proyectos === 'desactivados'): ?>
+            <a href="<?= opesp_h(opesp_link_vista('activos', false)) ?>" class="btn btn-success btn-sm" title="Volver a la lista normal">
+              <i class="fas fa-list"></i> Volver a lista normal
+            </a>
+          <?php else: ?>
+            <a href="<?= opesp_h(opesp_link_vista('desactivados', false)) ?>" class="btn btn-warning btn-sm" title="Mostrar proyectos desactivados">
+              <i class="fas fa-eye-slash"></i> Listar proyectos desactivados
+            </a>
+          <?php endif; ?>
+          <a href="<?= opesp_h(opesp_link_vista($vista_proyectos, true)) ?>" class="btn btn-danger btn-sm" title="Limpiar filtros">
+            <i class="fas fa-broom"></i>
+          </a>
 
           <?php if ($id_py_detalle > 0): ?>
             <input type="hidden" name="id_py" value="<?= opesp_h($id_py_detalle) ?>">
@@ -215,7 +249,7 @@ function opesp_link_estado($p, $id_py = 0, $id_respuesta = 0, $id_periodo = 0, $
                     <small class="text-muted">Codigo docente: <?= opesp_h($it['cod_docente']) ?></small>
                     <?php if ($is_duplicate): ?>
                       <br>
-                      <span class="badge badge-warning opesp-dup-badge">Posible duplicidad de coordinador activo</span>
+                      <span class="badge badge-warning opesp-dup-badge">Posible duplicidad de coordinador <?= ($vista_proyectos === 'desactivados') ? 'desactivado' : 'activo' ?></span>
                     <?php endif; ?>
                   </td>
                   <td>
@@ -255,6 +289,16 @@ function opesp_link_estado($p, $id_py = 0, $id_respuesta = 0, $id_periodo = 0, $
                         <i class="fas fa-calendar-alt"></i>
                         Semestral
                       </a>
+                      <button
+                        type="button"
+                        class="btn btn-sm opesp-btn-toggle-proyecto <?= ($vista_proyectos === 'desactivados') ? 'opesp-btn-activar-proyecto' : 'opesp-btn-desactivar-proyecto' ?>"
+                        data-action="toggle_proyecto"
+                        data-id-py="<?= opesp_h($id_py) ?>"
+                        data-next-state="<?= ($vista_proyectos === 'desactivados') ? '1' : '0' ?>"
+                        title="<?= ($vista_proyectos === 'desactivados') ? 'Activar proyecto' : 'Desactivar proyecto' ?>">
+                        <i class="fas <?= ($vista_proyectos === 'desactivados') ? 'fa-toggle-on' : 'fa-toggle-off' ?>"></i>
+                        <?= ($vista_proyectos === 'desactivados') ? 'Activar proyecto' : 'Desactivar proyecto' ?>
+                      </button>
 
                       <?php if (empty($acciones)): ?>
                         <span class="text-muted small">Sin respuestas de formulario</span>

@@ -139,6 +139,41 @@
   margin-right: 6px;
 }
 
+.opesp-btn-toggle-proyecto {
+  width: 100%;
+  text-align: left;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.opesp-btn-toggle-proyecto i {
+  margin-right: 6px;
+}
+
+.opesp-btn-desactivar-proyecto {
+  background-color: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: #fff !important;
+}
+
+.opesp-btn-desactivar-proyecto:hover {
+  background-color: #c82333 !important;
+  border-color: #bd2130 !important;
+  color: #fff !important;
+}
+
+.opesp-btn-activar-proyecto {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: #fff !important;
+}
+
+.opesp-btn-activar-proyecto:hover {
+  background-color: #218838 !important;
+  border-color: #1e7e34 !important;
+  color: #fff !important;
+}
+
 .opesp-btn-migracion {
   background-color: #17a2b8 !important;
   border-color: #17a2b8 !important;

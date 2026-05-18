@@ -276,6 +276,37 @@
     });
   }
 
+  function toggleProyectoActivo(idPy, nextState) {
+    var projectId = parseInt(idPy, 10);
+    var desired = parseInt(nextState, 10) === 1 ? 1 : 0;
+    if (!projectId || projectId <= 0) {
+      return;
+    }
+
+    var actionText = desired === 1 ? 'activar' : 'desactivar';
+    if (!window.confirm('Seguro que deseas ' + actionText + ' este proyecto?')) {
+      return;
+    }
+
+    var body = new URLSearchParams();
+    body.set('id_py', String(projectId));
+    body.set('activo', String(desired));
+
+    requestJson('../op_especiales/proyecto_estado_ajax.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: body.toString()
+    }).then(function (resp) {
+      if (!resp || resp.ok !== true) {
+        window.alert((resp && resp.message) ? resp.message : 'No se pudo actualizar el estado del proyecto.');
+        return;
+      }
+      window.location.reload();
+    }).catch(function () {
+      window.alert('No se pudo actualizar el estado del proyecto por un error de red.');
+    });
+  }
+
   function replaceSectionFromDoc(sectionId, remoteDoc) {
     var currentNode = document.getElementById(sectionId);
     var incomingNode = remoteDoc.getElementById(sectionId);
@@ -692,6 +723,13 @@
   }
 
   document.addEventListener('click', function (e) {
+    var toggleBtn = e.target.closest('[data-action="toggle_proyecto"]');
+    if (toggleBtn) {
+      e.preventDefault();
+      toggleProyectoActivo(toggleBtn.getAttribute('data-id-py'), toggleBtn.getAttribute('data-next-state'));
+      return;
+    }
+
     var actionBtn = e.target.closest('.opesp-btn-formulario');
     if (actionBtn) {
       e.preventDefault();
