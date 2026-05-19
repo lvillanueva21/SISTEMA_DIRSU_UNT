@@ -213,6 +213,8 @@ function opesp_link_vista($vista_proyectos, $limpiar = false)
                   $is_duplicate = opesp_is_truthy($it['flag_posible_duplicidad']);
                   $detail_class = 'opesp-fila-extra-' . (int)$i;
                   $id_py = (int)$it['id_py'];
+                  $legacy_id = (int)($it['legacy_id'] ?? 0);
+                  $cant_legacy = (int)($it['cant_legacy'] ?? 0);
                   $acciones = isset($respuestas_por_proyecto[$id_py]) && is_array($respuestas_por_proyecto[$id_py]) ? $respuestas_por_proyecto[$id_py] : array();
                 ?>
                 <tr class="opesp-row opesp-fila-toggle" data-id="<?= opesp_h((int)$i) ?>">
@@ -280,15 +282,29 @@ function opesp_link_vista($vista_proyectos, $limpiar = false)
                         <i class="fas fa-info-circle"></i>
                         Proyecto
                       </a>
-                      <a
-                        href="<?= opesp_h(opesp_link_estado($pagina, $id_py, 0, 0, 'semestral_legacy')) ?>"
-                        class="btn btn-sm opesp-btn-formulario opesp-btn-semestral-legacy"
-                        data-action="semestral_legacy"
+                      <?php if ($legacy_id > 0): ?>
+                        <a
+                          href="<?= opesp_h(opesp_link_estado($pagina, $id_py, 0, 0, 'semestral_legacy')) ?>"
+                          class="btn btn-sm opesp-btn-formulario opesp-btn-semestral-legacy"
+                          data-action="semestral_legacy"
+                          data-id-py="<?= opesp_h($id_py) ?>"
+                          title="Semestral">
+                          <i class="fas fa-calendar-alt"></i>
+                          Semestral
+                        </a>
+                      <?php endif; ?>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger"
+                        data-action="eliminar_semestral_legacy"
                         data-id-py="<?= opesp_h($id_py) ?>"
-                        title="Semestral">
-                        <i class="fas fa-calendar-alt"></i>
-                        Semestral
-                      </a>
+                        data-id-legacy="<?= opesp_h($legacy_id) ?>"
+                        data-cant-legacy="<?= opesp_h($cant_legacy) ?>"
+                        title="Eliminar registro legacy de proyectos_finales"
+                        <?= ($legacy_id > 0) ? '' : 'disabled' ?>>
+                        <i class="fas fa-trash-alt"></i>
+                        Eliminar Semestral Legacy
+                      </button>
                       <button
                         type="button"
                         class="btn btn-sm opesp-btn-toggle-proyecto <?= ($vista_proyectos === 'desactivados') ? 'opesp-btn-activar-proyecto' : 'opesp-btn-desactivar-proyecto' ?>"

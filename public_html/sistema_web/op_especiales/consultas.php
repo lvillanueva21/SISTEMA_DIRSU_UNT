@@ -560,6 +560,7 @@ if (!function_exists('opesp_obtener_estado_migracion_por_proyectos')) {
             $mapa[$id] = array(
                 'tiene_legacy' => 0,
                 'cant_legacy' => 0,
+                'legacy_id' => 0,
                 'cant_coord_reales' => 0,
                 'tiene_coordinador_real' => 0,
                 'puede_migrar' => 0,
@@ -568,7 +569,7 @@ if (!function_exists('opesp_obtener_estado_migracion_por_proyectos')) {
         }
 
         $sqlLegacy = "
-            SELECT id_py, COUNT(*) AS cant
+            SELECT id_py, COUNT(*) AS cant, MAX(id) AS legacy_id
             FROM proyectos_finales
             WHERE id_py IN ($ids_sql)
             GROUP BY id_py
@@ -579,7 +580,9 @@ if (!function_exists('opesp_obtener_estado_migracion_por_proyectos')) {
                 $id_py = isset($row['id_py']) ? (int)$row['id_py'] : 0;
                 if ($id_py > 0 && isset($mapa[$id_py])) {
                     $cant = isset($row['cant']) ? (int)$row['cant'] : 0;
+                    $legacy_id = isset($row['legacy_id']) ? (int)$row['legacy_id'] : 0;
                     $mapa[$id_py]['cant_legacy'] = $cant;
+                    $mapa[$id_py]['legacy_id'] = $legacy_id;
                     $mapa[$id_py]['tiene_legacy'] = ($cant > 0) ? 1 : 0;
                 }
             }
@@ -867,6 +870,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
 
             $tiene_legacy = isset($estado['tiene_legacy']) ? (int)$estado['tiene_legacy'] : 0;
             $cant_legacy = isset($estado['cant_legacy']) ? (int)$estado['cant_legacy'] : 0;
+            $legacy_id = isset($estado['legacy_id']) ? (int)$estado['legacy_id'] : 0;
             $tiene_coord = isset($estado['tiene_coordinador_real']) ? (int)$estado['tiene_coordinador_real'] : 0;
             $cant_coord = isset($estado['cant_coord_reales']) ? (int)$estado['cant_coord_reales'] : 0;
             $puede_migrar = isset($estado['puede_migrar']) ? (int)$estado['puede_migrar'] : 0;
@@ -874,6 +878,7 @@ if (!function_exists('opesp_obtener_proyectos')) {
 
             $rows[$idx]['tiene_legacy'] = $tiene_legacy;
             $rows[$idx]['cant_legacy'] = $cant_legacy;
+            $rows[$idx]['legacy_id'] = $legacy_id;
             $rows[$idx]['tiene_coordinador_real'] = $tiene_coord;
             $rows[$idx]['cant_coord_reales'] = $cant_coord;
             $rows[$idx]['puede_migrar'] = $puede_migrar;

@@ -307,6 +307,50 @@
     });
   }
 
+  function eliminarSemestralLegacy(idPy, idLegacy, cantLegacy) {
+    var projectId = parseInt(idPy, 10);
+    var legacyId = parseInt(idLegacy, 10);
+    var legacyCount = parseInt(cantLegacy, 10) || 0;
+
+    if (!projectId || projectId <= 0 || !legacyId || legacyId <= 0) {
+      window.alert('No hay un registro legacy valido para eliminar.');
+      return;
+    }
+
+    var warningExtra = '';
+    if (legacyCount > 1) {
+      warningExtra = '\nEste proyecto tiene ' + legacyCount + ' registros legacy. Se eliminara solo 1 (ID ' + legacyId + ').';
+    }
+
+    var confirmMsg = 'Estas seguro de eliminar fisicamente el Semestral Legacy?\n' +
+      'Proyecto ID: ' + projectId + '\n' +
+      'Registro proyectos_finales ID: ' + legacyId +
+      warningExtra;
+
+    if (!window.confirm(confirmMsg)) {
+      return;
+    }
+
+    var body = new URLSearchParams();
+    body.set('id_py', String(projectId));
+    body.set('id_legacy', String(legacyId));
+
+    requestJson('../op_especiales/eliminar_semestral_legacy_ajax.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: body.toString()
+    }).then(function (resp) {
+      if (!resp || resp.ok !== true) {
+        window.alert((resp && resp.message) ? resp.message : 'No se pudo eliminar el registro legacy.');
+        return;
+      }
+      window.alert('Registro legacy eliminado correctamente. ID eliminado: ' + String(legacyId));
+      window.location.reload();
+    }).catch(function () {
+      window.alert('No se pudo eliminar el registro legacy por un error de red.');
+    });
+  }
+
   function replaceSectionFromDoc(sectionId, remoteDoc) {
     var currentNode = document.getElementById(sectionId);
     var incomingNode = remoteDoc.getElementById(sectionId);
@@ -723,6 +767,17 @@
   }
 
   document.addEventListener('click', function (e) {
+    var deleteLegacyBtn = e.target.closest('[data-action="eliminar_semestral_legacy"]');
+    if (deleteLegacyBtn) {
+      e.preventDefault();
+      eliminarSemestralLegacy(
+        deleteLegacyBtn.getAttribute('data-id-py'),
+        deleteLegacyBtn.getAttribute('data-id-legacy'),
+        deleteLegacyBtn.getAttribute('data-cant-legacy')
+      );
+      return;
+    }
+
     var toggleBtn = e.target.closest('[data-action="toggle_proyecto"]');
     if (toggleBtn) {
       e.preventDefault();
