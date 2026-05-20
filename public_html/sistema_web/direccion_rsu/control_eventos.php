@@ -37,6 +37,15 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
         .btn-icon {
             min-width: 40px;
         }
+        .evt-sem-table td,
+        .evt-sem-table th {
+            vertical-align: top;
+            font-size: .9rem;
+        }
+        .evt-sem-scroll {
+            max-height: 180px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -137,6 +146,25 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                     </div>
                                     <button type="button" id="btnOpenInicioDeadline" class="btn btn-outline-danger btn-block mt-3">
                                         Configurar bloque
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4 mt-3">
+                                <div class="p-3 evt-card-action h-100">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="mr-3">
+                                            <span class="btn btn-success btn-sm disabled"><i class="fas fa-calendar-check"></i></span>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">Calculo de Semestres</h5>
+                                            <small class="text-muted">Controla semestres calculados y pendientes de proyectos reales.</small>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="btnOpenSemestresStatus" class="btn btn-outline-success btn-block mt-3">
+                                        Ver estado
+                                    </button>
+                                    <button type="button" id="btnRunSemestresCalc" class="btn btn-success btn-block mt-2">
+                                        Calcular faltantes
                                     </button>
                                 </div>
                             </div>
@@ -319,6 +347,123 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
     </div>
 </div>
 
+<div class="modal fade" id="modalSemestresCalc" tabindex="-1" role="dialog" aria-labelledby="modalSemestresCalcLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="modalSemestresCalcLabel">
+                    <i class="fas fa-calendar-check mr-2 text-success"></i>Calculo de Semestres
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="evtSemAlert" class="alert d-none"></div>
+
+                <div class="row mb-3">
+                    <div class="col-6 col-lg-3 mb-2 mb-lg-0">
+                        <div class="border rounded p-2">
+                            <small class="text-muted d-block">Proyectos reales</small>
+                            <strong id="evtSemTotalReales">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3 mb-2 mb-lg-0">
+                        <div class="border rounded p-2">
+                            <small class="text-muted d-block">Calculados</small>
+                            <strong id="evtSemTotalCalculados">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded p-2">
+                            <small class="text-muted d-block">Pendientes</small>
+                            <strong id="evtSemTotalPendientes">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded p-2">
+                            <small class="text-muted d-block">No elegibles</small>
+                            <strong id="evtSemTotalNoElegibles">0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <strong>Progreso de calculo</strong>
+                        <small id="evtSemProgressText" class="text-muted">Sin proceso en curso</small>
+                    </div>
+                    <div class="progress" style="height: 16px;">
+                        <div id="evtSemProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
+                    </div>
+                    <small id="evtSemProgressDetail" class="text-muted d-block mt-1">Creados: 0 | Actualizados: 0 | Desactivados: 0</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-12 col-lg-6">
+                        <h6>Pendientes por calcular</h6>
+                        <div class="border rounded evt-sem-scroll">
+                            <table class="table table-sm table-striped mb-0 evt-sem-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Titulo</th>
+                                        <th>Fechas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="evtSemPendingBody">
+                                    <tr><td colspan="3" class="text-muted text-center">Sin datos.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 mt-3 mt-lg-0">
+                        <h6>No elegibles para calculo</h6>
+                        <div class="border rounded evt-sem-scroll">
+                            <table class="table table-sm table-striped mb-0 evt-sem-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Titulo</th>
+                                        <th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="evtSemIneligibleBody">
+                                    <tr><td colspan="3" class="text-muted text-center">Sin datos.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Errores del ultimo proceso</h6>
+                        <div class="border rounded evt-sem-scroll">
+                            <table class="table table-sm table-striped mb-0 evt-sem-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Titulo</th>
+                                        <th>Detalle</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="evtSemErrorsBody">
+                                    <tr><td colspan="3" class="text-muted text-center">Sin errores.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" id="btnRefreshSemestresStatus" class="btn btn-outline-success">Actualizar estado</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modalEvtMtoConfirm" tabindex="-1" role="dialog" aria-labelledby="modalEvtMtoConfirmLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -353,9 +498,12 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
 <script>
     (function () {
         var apiUrl = 'funciones/evt_mantenimiento_api.php';
+        var semApiUrl = 'funciones/evt_semestres_api.php';
         var csrfToken = <?php echo json_encode($evtMtoCsrf); ?>;
         var currentState = null;
         var pendingConfirmAction = null;
+        var semCurrentStatus = null;
+        var semRunInProgress = false;
 
         function escapeHtml(value) {
             return String(value || '')
@@ -376,6 +524,105 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
         function clearAlert(selector) {
             var $alert = $(selector);
             $alert.addClass('d-none').removeClass('alert-success alert-danger alert-warning alert-info').text('');
+        }
+
+        function formatSemDateRange(inicio, fin) {
+            var a = $.trim(String(inicio || ''));
+            var b = $.trim(String(fin || ''));
+            if (a === '' && b === '') {
+                return 'Sin fechas';
+            }
+            return 'Inicio: ' + (a === '' ? '-' : a) + ' | Fin: ' + (b === '' ? '-' : b);
+        }
+
+        function renderSemRows($tbody, rows, type) {
+            var html = '';
+            if (!$.isArray(rows) || rows.length === 0) {
+                if (type === 'pending') {
+                    html = '<tr><td colspan="3" class="text-muted text-center">Sin pendientes.</td></tr>';
+                } else if (type === 'ineligible') {
+                    html = '<tr><td colspan="3" class="text-muted text-center">Sin no elegibles.</td></tr>';
+                } else {
+                    html = '<tr><td colspan="3" class="text-muted text-center">Sin errores.</td></tr>';
+                }
+                $tbody.html(html);
+                return;
+            }
+
+            for (var i = 0; i < rows.length; i++) {
+                var it = rows[i] || {};
+                var idPy = escapeHtml(it.id_py || '');
+                var titulo = escapeHtml(it.titulo || '');
+                if (type === 'pending') {
+                    html += '<tr>' +
+                        '<td>' + idPy + '</td>' +
+                        '<td>' + titulo + '</td>' +
+                        '<td>' + escapeHtml(formatSemDateRange(it.fecha_inicio, it.fecha_fin)) + '</td>' +
+                        '</tr>';
+                } else if (type === 'ineligible') {
+                    html += '<tr>' +
+                        '<td>' + idPy + '</td>' +
+                        '<td>' + titulo + '</td>' +
+                        '<td>' + escapeHtml(it.motivo || 'No elegible') + '</td>' +
+                        '</tr>';
+                } else {
+                    html += '<tr>' +
+                        '<td>' + idPy + '</td>' +
+                        '<td>' + titulo + '</td>' +
+                        '<td>' + escapeHtml(it.mensaje || 'Error no especificado') + '</td>' +
+                        '</tr>';
+                }
+            }
+            $tbody.html(html);
+        }
+
+        function renderSemStatus(data) {
+            semCurrentStatus = data || {};
+            var totals = semCurrentStatus.totales || {};
+
+            $('#evtSemTotalReales').text(Number(totals.proyectos_reales || 0));
+            $('#evtSemTotalCalculados').text(Number(totals.calculados || 0));
+            $('#evtSemTotalPendientes').text(Number(totals.pendientes || 0));
+            $('#evtSemTotalNoElegibles').text(Number(totals.no_elegibles || 0));
+
+            renderSemRows($('#evtSemPendingBody'), semCurrentStatus.pendientes || [], 'pending');
+            renderSemRows($('#evtSemIneligibleBody'), semCurrentStatus.no_elegibles || [], 'ineligible');
+        }
+
+        function renderSemJob(job) {
+            var state = job || {};
+            var percent = Number(state.porcentaje || 0);
+            if (percent < 0) {
+                percent = 0;
+            }
+            if (percent > 100) {
+                percent = 100;
+            }
+
+            $('#evtSemProgressBar').css('width', percent + '%').text(percent + '%');
+            $('#evtSemProgressText').text(
+                'Procesados ' + Number(state.procesados || 0) + ' de ' + Number(state.total || 0) +
+                ' | Pendientes: ' + Number(state.pendientes || 0)
+            );
+            $('#evtSemProgressDetail').text(
+                'Creados: ' + Number(state.creados || 0) +
+                ' | Actualizados: ' + Number(state.actualizados || 0) +
+                ' | Desactivados: ' + Number(state.desactivados || 0)
+            );
+            renderSemRows($('#evtSemErrorsBody'), state.errores || [], 'errors');
+        }
+
+        function resetSemProgress() {
+            $('#evtSemProgressBar').css('width', '0%').text('0%');
+            $('#evtSemProgressText').text('Sin proceso en curso');
+            $('#evtSemProgressDetail').text('Creados: 0 | Actualizados: 0 | Desactivados: 0');
+            renderSemRows($('#evtSemErrorsBody'), [], 'errors');
+        }
+
+        function setSemButtonsDisabled(disabled) {
+            $('#btnOpenSemestresStatus').prop('disabled', disabled);
+            $('#btnRunSemestresCalc').prop('disabled', disabled);
+            $('#btnRefreshSemestresStatus').prop('disabled', disabled);
         }
 
         function setSaving(isSaving) {
@@ -570,6 +817,158 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             });
         }
 
+        function loadSemStatus(openModal) {
+            clearAlert('#evtSemAlert');
+            $.ajax({
+                url: semApiUrl,
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'get_status',
+                    csrf_token: csrfToken
+                }
+            }).done(function (res) {
+                if (!res || !res.success) {
+                    showAlert('#evtSemAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo cargar el estado de semestres.');
+                    return;
+                }
+                renderSemStatus(res.data || {});
+                if (openModal) {
+                    $('#modalSemestresCalc').modal('show');
+                }
+            }).fail(function () {
+                showAlert('#evtSemAlert', 'danger', 'Error de comunicacion con el servidor.');
+            });
+        }
+
+        function processSemCalcStep() {
+            $.ajax({
+                url: semApiUrl,
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'run_step',
+                    batch: 5,
+                    csrf_token: csrfToken
+                }
+            }).done(function (res) {
+                if (!res || !res.success) {
+                    semRunInProgress = false;
+                    setSemButtonsDisabled(false);
+                    showAlert('#evtSemAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo avanzar en el calculo.');
+                    return;
+                }
+
+                var job = (res.data && res.data.job) ? res.data.job : {};
+                renderSemJob(job);
+
+                if (job.finalizado) {
+                    semRunInProgress = false;
+                    setSemButtonsDisabled(false);
+                    if ($.isArray(job.errores) && job.errores.length > 0) {
+                        showAlert('#evtSemAlert', 'warning', 'Calculo finalizado con observaciones. Revisa la lista de errores.');
+                    } else {
+                        showAlert('#evtSemAlert', 'success', 'Calculo de semestres finalizado correctamente.');
+                    }
+                    loadSemStatus(false);
+                    return;
+                }
+
+                window.setTimeout(processSemCalcStep, 120);
+            }).fail(function () {
+                semRunInProgress = false;
+                setSemButtonsDisabled(false);
+                showAlert('#evtSemAlert', 'danger', 'Error de comunicacion durante el calculo.');
+            });
+        }
+
+        function startSemCalcFlow() {
+            if (semRunInProgress) {
+                showAlert('#evtSemAlert', 'warning', 'Ya hay un calculo en proceso.');
+                return;
+            }
+
+            setSemButtonsDisabled(true);
+            clearAlert('#evtSemAlert');
+
+            $.ajax({
+                url: semApiUrl,
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'start_calc',
+                    csrf_token: csrfToken
+                }
+            }).done(function (res) {
+                if (!res || !res.success) {
+                    setSemButtonsDisabled(false);
+                    showAlert('#evtSemAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo iniciar el calculo.');
+                    return;
+                }
+
+                var payload = res.data || {};
+                var job = payload.job || null;
+                if (!job || Number(job.total || 0) <= 0) {
+                    semRunInProgress = false;
+                    setSemButtonsDisabled(false);
+                    resetSemProgress();
+                    showAlert('#evtSemAlert', 'info', 'No hay proyectos pendientes por calcular.');
+                    loadSemStatus(false);
+                    return;
+                }
+
+                semRunInProgress = true;
+                $('#modalSemestresCalc').modal('show');
+                renderSemJob(job);
+                showAlert('#evtSemAlert', 'info', 'Iniciando calculo por lotes...');
+                processSemCalcStep();
+            }).fail(function () {
+                setSemButtonsDisabled(false);
+                showAlert('#evtSemAlert', 'danger', 'Error de comunicacion al iniciar el calculo.');
+            });
+        }
+
+        function confirmAndRunSemCalc() {
+            clearAlert('#evtSemAlert');
+            $.ajax({
+                url: semApiUrl,
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'get_status',
+                    csrf_token: csrfToken
+                }
+            }).done(function (res) {
+                if (!res || !res.success) {
+                    $('#modalSemestresCalc').modal('show');
+                    showAlert('#evtSemAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo validar pendientes.');
+                    return;
+                }
+
+                var data = res.data || {};
+                renderSemStatus(data);
+                var totals = data.totales || {};
+                var pendientes = Number(totals.pendientes || 0);
+
+                $('#modalSemestresCalc').modal('show');
+                if (pendientes <= 0) {
+                    resetSemProgress();
+                    showAlert('#evtSemAlert', 'info', 'No hay proyectos pendientes por calcular.');
+                    return;
+                }
+
+                openConfirm(
+                    'Se calcularan semestres para ' + pendientes + ' proyecto(s) real(es). Deseas continuar?',
+                    function () {
+                        startSemCalcFlow();
+                    }
+                );
+            }).fail(function () {
+                $('#modalSemestresCalc').modal('show');
+                showAlert('#evtSemAlert', 'danger', 'Error de comunicacion al validar pendientes.');
+            });
+        }
+
         function buildMaintenancePayload() {
             if (!currentState) {
                 showAlert('#evtMtoAlert', 'warning', 'Primero cargue el estado del sistema.');
@@ -709,6 +1108,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
 
         $(function () {
             loadState('');
+            resetSemProgress();
 
             $('#btnOpenMantenimiento').on('click', function () {
                 loadState('mto');
@@ -719,6 +1119,15 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             });
             $('#btnOpenInicioDeadline').on('click', function () {
                 loadState('inicio_deadline');
+            });
+            $('#btnOpenSemestresStatus').on('click', function () {
+                loadSemStatus(true);
+            });
+            $('#btnRefreshSemestresStatus').on('click', function () {
+                loadSemStatus(false);
+            });
+            $('#btnRunSemestresCalc').on('click', function () {
+                confirmAndRunSemCalc();
             });
 
             $('#btnGuardarMantenimiento').on('click', saveMaintenance);

@@ -220,6 +220,13 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'active_on' => array('inicio.php')
                     ),
                     array(
+                        'type' => 'item',
+                        'label' => 'Proyectos',
+                        'icon' => 'fas fa-folder-open',
+                        'href_dynamic' => 'lista_proyectos/evaluador.php',
+                        'active_on_dynamic' => array('lista_proyectos/evaluador.php')
+                    ),
+                    array(
                         'type' => 'header',
                         'label' => 'Evaluación de Proyectos'
                     ),
@@ -354,6 +361,13 @@ if (!function_exists('rsu_get_menu_matrix')) {
                     ),
                     array(
                         'type' => 'item',
+                        'label' => 'Proyectos',
+                        'icon' => 'fas fa-folder-open',
+                        'href_dynamic' => 'lista_proyectos/coordinador.php',
+                        'active_on_dynamic' => array('lista_proyectos/coordinador.php')
+                    ),
+                    array(
+                        'type' => 'item',
                         'label' => 'Guía de trabajo',
                         'icon' => 'fa fa-road',
                         'href' => 'guia.php',
@@ -471,6 +485,9 @@ if (!function_exists('rsu_get_menu_matrix')) {
                             array(
                                 'label' => '3.1. Informe semestral',
                                 'href' => '../semestral/index.php',
+                                'href_by_app_path' => array(
+                                    'semestral/index.php' => 'index.php'
+                                ),
                                 'href_by_page' => array(
                                     'inicio.php' => 'semestral/index.php',
                                     'index.php' => 'index.php'
@@ -506,6 +523,13 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'icon' => 'fas fa-home',
                         'href' => 'inicio.php',
                         'active_on' => array('inicio.php', 'inicio_antiguo.php')
+                    ),
+                    array(
+                        'type' => 'item',
+                        'label' => 'Proyectos',
+                        'icon' => 'fas fa-folder-open',
+                        'href_dynamic' => 'lista_proyectos/evaluador.php',
+                        'active_on_dynamic' => array('lista_proyectos/evaluador.php')
                     ),
                     array(
                         'type' => 'header',
@@ -551,6 +575,13 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'active_on' => array('inicio.php', 'inicio_antiguo.php')
                     ),
                     array(
+                        'type' => 'item',
+                        'label' => 'Proyectos',
+                        'icon' => 'fas fa-folder-open',
+                        'href_dynamic' => 'lista_proyectos/evaluador.php',
+                        'active_on_dynamic' => array('lista_proyectos/evaluador.php')
+                    ),
+                    array(
                         'type' => 'header',
                         'label' => 'Evaluación de Proyectos'
                     ),
@@ -592,6 +623,13 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'icon' => 'fas fa-home',
                         'href' => 'inicio.php',
                         'active_on' => array('inicio.php', 'inicio_antiguo.php')
+                    ),
+                    array(
+                        'type' => 'item',
+                        'label' => 'Proyectos',
+                        'icon' => 'fas fa-folder-open',
+                        'href_dynamic' => 'lista_proyectos/evaluador.php',
+                        'active_on_dynamic' => array('lista_proyectos/evaluador.php')
                     ),
                     array(
                         'type' => 'header',
