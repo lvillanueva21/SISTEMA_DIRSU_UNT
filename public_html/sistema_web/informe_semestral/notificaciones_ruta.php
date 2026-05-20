@@ -7,6 +7,7 @@ declare(strict_types=1);
 namespace {
 
 date_default_timezone_set('America/Lima');
+require_once __DIR__ . '/../includes/evaluacion_v1/messaging_helpers.php';
 
 /**
  * Obtiene emails de coordinadores (id_rol=2) del proyecto (con fix de collation).
@@ -135,6 +136,47 @@ function _notif_mail_send(array $to, string $subject, string $html, string $text
 }
 
 /**
+ * Wrapper centralizado: respeta modo de mensajería y audita en ev_eventos.
+ */
+function _notif_mail_controlado(
+    \mysqli $db,
+    int $eval_id,
+    int $office_id,
+    ?int $tipo,
+    string $event_code,
+    array $to,
+    string $subject,
+    string $html,
+    string $text
+): bool {
+    $id_respuesta = rsu_eval_v1_eval_to_respuesta($db, $eval_id);
+    if ($id_respuesta <= 0) {
+        rsu_eval_v1_notification_add_warning('La evaluación se guardó, pero no se pudo vincular la notificación al expediente.');
+        return false;
+    }
+
+    return rsu_eval_v1_notify_mail(
+        $db,
+        array(
+            'id_respuesta' => $id_respuesta,
+            'event_code' => $event_code,
+            'office' => $office_id,
+            'tipo' => $tipo,
+            'to' => $to,
+            'subject' => $subject,
+            'message' => $html,
+            'html' => $html,
+            'text' => $text,
+            'created_by' => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
+            'ip' => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+        ),
+        function (array $mailPayload) use ($to, $subject, $html, $text) {
+            return _notif_mail_send($to, $subject, $html, $text);
+        }
+    );
+}
+
+/**
  * Notifica DERIVACIÓN: aprobado en origen y derivado a destino.
  * ctx: ['id_py', 'eval_id', 'of_origen_id', 'of_destino_id', 'instancia_id']
  */
@@ -171,7 +213,17 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
     $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo? " — {$periodo}":"")."\n";
     $text .= "Ingresar: {$url}\n";
 
-    return _notif_mail_send($to, $subject, $html, $text);
+    return _notif_mail_controlado(
+        $db,
+        (int)($ctx['eval_id'] ?? 0),
+        $of_destino,
+        3,
+        'MAIL_DERIVACION',
+        $to,
+        $subject,
+        $html,
+        $text
+    );
 }
 
 /**
@@ -211,7 +263,17 @@ function notif_aprobacion_total(\mysqli $db, array $ctx): bool {
     $text .= "Proyecto: {$titulo} (ID {$id_py})".($periodo? " — {$periodo}":"")."\n";
     $text .= "Ingresar: {$url}\n";
 
-    return _notif_mail_send($to, $subject, $html, $text);
+    return _notif_mail_controlado(
+        $db,
+        (int)($ctx['eval_id'] ?? 0),
+        $of_ult,
+        3,
+        'MAIL_APROB_TOTAL',
+        $to,
+        $subject,
+        $html,
+        $text
+    );
 }
 
 } // fin namespace

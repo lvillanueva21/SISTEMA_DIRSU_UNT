@@ -112,14 +112,62 @@ if (!function_exists('rsu_projects_real_from_sql')) {
     }
 }
 
+if (!function_exists('rsu_projects_real_normalize_filters')) {
+    function rsu_projects_real_normalize_filters($filters)
+    {
+        $filters = is_array($filters) ? $filters : array();
+
+        $facultad_id = isset($filters['facultad_id']) ? (int)$filters['facultad_id'] : 0;
+        $departamento_id = isset($filters['departamento_id']) ? (int)$filters['departamento_id'] : 0;
+        $creacion_periodo_id = isset($filters['creacion_periodo_id']) ? (int)$filters['creacion_periodo_id'] : 0;
+
+        if ($facultad_id < 0) $facultad_id = 0;
+        if ($departamento_id < 0) $departamento_id = 0;
+        if ($creacion_periodo_id < 0) $creacion_periodo_id = 0;
+
+        return array(
+            'facultad_id' => $facultad_id,
+            'departamento_id' => $departamento_id,
+            'creacion_periodo_id' => $creacion_periodo_id,
+        );
+    }
+}
+
+if (!function_exists('rsu_projects_real_filters_where_sql')) {
+    function rsu_projects_real_filters_where_sql($filters)
+    {
+        $parts = array();
+        $filters = rsu_projects_real_normalize_filters($filters);
+
+        if ($filters['facultad_id'] > 0) {
+            $parts[] = "f.id = " . (int)$filters['facultad_id'];
+        }
+        if ($filters['departamento_id'] > 0) {
+            $parts[] = "d.id = " . (int)$filters['departamento_id'];
+            if ($filters['facultad_id'] > 0) {
+                $parts[] = "d.id_facultad = " . (int)$filters['facultad_id'];
+            }
+        }
+        if ($filters['creacion_periodo_id'] > 0) {
+            $parts[] = "pp_creacion.id_periodo = " . (int)$filters['creacion_periodo_id'];
+        }
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        return ' AND ' . implode(' AND ', $parts) . ' ';
+    }
+}
+
 if (!function_exists('rsu_projects_real_count')) {
-    function rsu_projects_real_count($conexion)
+    function rsu_projects_real_count($conexion, $filters = array())
     {
         if (!($conexion instanceof mysqli)) {
             return 0;
         }
 
-        $sql = "SELECT COUNT(*) AS total " . rsu_projects_real_from_sql();
+        $sql = "SELECT COUNT(*) AS total " . rsu_projects_real_from_sql() . rsu_projects_real_filters_where_sql($filters);
         $rs = mysqli_query($conexion, $sql);
         if (!($rs instanceof mysqli_result)) {
             return 0;
@@ -132,12 +180,13 @@ if (!function_exists('rsu_projects_real_count')) {
 }
 
 if (!function_exists('rsu_projects_real_list')) {
-    function rsu_projects_real_list($conexion, $pagina = 1, $por_pagina = 20)
+    function rsu_projects_real_list($conexion, $pagina = 1, $por_pagina = 20, $filters = array())
     {
         $pagina = rsu_projects_real_normalize_page($pagina);
         $por_pagina = rsu_projects_real_normalize_page_size($por_pagina);
+        $filters = rsu_projects_real_normalize_filters($filters);
 
-        $total_items = rsu_projects_real_count($conexion);
+        $total_items = rsu_projects_real_count($conexion, $filters);
         $total_pages = max(1, (int)ceil($total_items / $por_pagina));
         if ($pagina > $total_pages) {
             $pagina = $total_pages;
@@ -168,7 +217,7 @@ if (!function_exists('rsu_projects_real_list')) {
                 COALESCE(NULLIF(TRIM(p.fecha_inicio), ''), '') AS fecha_inicio,
                 COALESCE(NULLIF(TRIM(p.fecha_fin), ''), '') AS fecha_fin,
                 COALESCE(hc.fecha_creacion, fa.fecha_primera_asignacion, NULL) AS fecha_orden
-            " . rsu_projects_real_from_sql() . "
+            " . rsu_projects_real_from_sql() . rsu_projects_real_filters_where_sql($filters) . "
             ORDER BY
                 CASE WHEN COALESCE(hc.fecha_creacion, fa.fecha_primera_asignacion) IS NULL THEN 1 ELSE 0 END ASC,
                 COALESCE(hc.fecha_creacion, fa.fecha_primera_asignacion) DESC,
@@ -212,3 +261,106 @@ if (!function_exists('rsu_projects_real_list')) {
     }
 }
 
+if (!function_exists('rsu_projects_real_filter_facultades')) {
+    function rsu_projects_real_filter_facultades($conexion)
+    {
+        $rows = array();
+        if (!($conexion instanceof mysqli)) {
+            return $rows;
+        }
+
+        $sql = "
+            SELECT DISTINCT
+                f.id AS id_facultad,
+                COALESCE(NULLIF(TRIM(f.nombre), ''), 'Sin Facultad') AS nombre
+            " . rsu_projects_real_from_sql() . "
+            AND f.id IS NOT NULL
+            ORDER BY nombre ASC
+        ";
+
+        $rs = mysqli_query($conexion, $sql);
+        if (!($rs instanceof mysqli_result)) {
+            return $rows;
+        }
+        while ($row = mysqli_fetch_assoc($rs)) {
+            $id = isset($row['id_facultad']) ? (int)$row['id_facultad'] : 0;
+            if ($id <= 0) continue;
+            $rows[$id] = (string)$row['nombre'];
+        }
+        mysqli_free_result($rs);
+        return $rows;
+    }
+}
+
+if (!function_exists('rsu_projects_real_filter_departamentos')) {
+    function rsu_projects_real_filter_departamentos($conexion, $facultad_id = 0)
+    {
+        $rows = array();
+        if (!($conexion instanceof mysqli)) {
+            return $rows;
+        }
+
+        $facultad_id = (int)$facultad_id;
+        $extra = '';
+        if ($facultad_id > 0) {
+            $extra = " AND d.id_facultad = " . $facultad_id . " ";
+        }
+
+        $sql = "
+            SELECT DISTINCT
+                d.id AS id_departamento,
+                COALESCE(NULLIF(TRIM(d.nombre), ''), 'Sin Departamento Academico') AS nombre
+            " . rsu_projects_real_from_sql() . "
+            AND d.id IS NOT NULL
+            " . $extra . "
+            ORDER BY nombre ASC
+        ";
+
+        $rs = mysqli_query($conexion, $sql);
+        if (!($rs instanceof mysqli_result)) {
+            return $rows;
+        }
+        while ($row = mysqli_fetch_assoc($rs)) {
+            $id = isset($row['id_departamento']) ? (int)$row['id_departamento'] : 0;
+            if ($id <= 0) continue;
+            $rows[$id] = (string)$row['nombre'];
+        }
+        mysqli_free_result($rs);
+        return $rows;
+    }
+}
+
+if (!function_exists('rsu_projects_real_filter_periodos_creacion')) {
+    function rsu_projects_real_filter_periodos_creacion($conexion)
+    {
+        $rows = array();
+        if (!($conexion instanceof mysqli)) {
+            return $rows;
+        }
+
+        $sql = "
+            SELECT DISTINCT
+                pp_creacion.id_periodo AS id_periodo,
+                COALESCE(NULLIF(TRIM(per.nombre), ''), 'No definido') AS nombre,
+                per.fecha_inicio
+            " . rsu_projects_real_from_sql() . "
+            AND pp_creacion.id_periodo IS NOT NULL
+            ORDER BY
+                CASE WHEN per.fecha_inicio IS NULL THEN 1 ELSE 0 END ASC,
+                per.fecha_inicio DESC,
+                nombre DESC
+        ";
+
+        $rs = mysqli_query($conexion, $sql);
+        if (!($rs instanceof mysqli_result)) {
+            return $rows;
+        }
+        while ($row = mysqli_fetch_assoc($rs)) {
+            $id = isset($row['id_periodo']) ? (int)$row['id_periodo'] : 0;
+            if ($id <= 0) continue;
+            $rows[$id] = (string)$row['nombre'];
+        }
+        mysqli_free_result($rs);
+        return $rows;
+    }
+}

@@ -168,6 +168,25 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                     </button>
                                 </div>
                             </div>
+                            <div class="col-12 col-md-6 col-lg-4 mt-3">
+                                <div class="p-3 evt-card-action h-100">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="mr-3">
+                                            <span class="btn btn-warning btn-sm disabled"><i class="fas fa-envelope"></i></span>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-1">Mensajeria</h5>
+                                            <small id="evtMessagingHint" class="text-muted">Controla que eventos de evaluacion envian correo.</small>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span id="evtMessagingBadge" class="badge badge-secondary">Sin estado</span>
+                                    </div>
+                                    <button type="button" id="btnOpenMessaging" class="btn btn-outline-warning btn-block mt-3">
+                                        Configurar mensajeria
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div class="alert alert-light border mt-4 mb-0">
                             Administra aqui los eventos criticos del sistema.
@@ -342,6 +361,60 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                 <button type="button" id="btnGuardarInicioDeadline" class="btn btn-danger">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMessaging" tabindex="-1" role="dialog" aria-labelledby="modalMessagingLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="modalMessagingLabel">
+                    <i class="fas fa-envelope mr-2 text-warning"></i>Mensajeria de Evaluacion
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="evtMessagingAlert" class="alert d-none"></div>
+
+                <p class="mb-3">Activa o desactiva envios de correo por actividad. Cuando este desactivado, el evento igual se auditara en <code>ev_eventos</code> como no enviado.</p>
+
+                <div class="custom-control custom-switch mb-3 pb-2 border-bottom">
+                    <input type="checkbox" class="custom-control-input" id="evtMsgGlobal">
+                    <label class="custom-control-label" for="evtMsgGlobal"><strong>Mensajeria global de evaluacion</strong></label>
+                </div>
+
+                <div class="custom-control custom-switch mb-2">
+                    <input type="checkbox" class="custom-control-input evt-msg-item" id="evtMsgDerivacion">
+                    <label class="custom-control-label" for="evtMsgDerivacion">Derivacion entre oficinas</label>
+                </div>
+                <div class="custom-control custom-switch mb-2">
+                    <input type="checkbox" class="custom-control-input evt-msg-item" id="evtMsgObservacion">
+                    <label class="custom-control-label" for="evtMsgObservacion">Observacion de cotejo/rubrica</label>
+                </div>
+                <div class="custom-control custom-switch mb-2">
+                    <input type="checkbox" class="custom-control-input evt-msg-item" id="evtMsgAprobTotal">
+                    <label class="custom-control-label" for="evtMsgAprobTotal">Aprobacion total</label>
+                </div>
+                <div class="custom-control custom-switch mb-2">
+                    <input type="checkbox" class="custom-control-input evt-msg-item" id="evtMsgSolicitudRevision">
+                    <label class="custom-control-label" for="evtMsgSolicitudRevision">Solicitud de revision (reservado)</label>
+                </div>
+                <div class="custom-control custom-switch mb-2">
+                    <input type="checkbox" class="custom-control-input evt-msg-item" id="evtMsgSubsanacion">
+                    <label class="custom-control-label" for="evtMsgSubsanacion">Subsanacion (reservado)</label>
+                </div>
+
+                <div class="text-muted small mt-3">
+                    Ultima actualizacion global: <span id="evtMessagingUpdatedAt">-</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" id="btnGuardarMessaging" class="btn btn-warning">Guardar</button>
             </div>
         </div>
     </div>
@@ -768,11 +841,38 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             );
         }
 
+        function renderMessagingState(messagingState) {
+            var state = messagingState || {};
+            var global = state.evaluacion_mensajeria || {};
+            var isGlobalOn = Number(global.estado) === 1;
+
+            $('#evtMsgGlobal').prop('checked', isGlobalOn);
+            $('#evtMsgDerivacion').prop('checked', Number((state.evaluacion_mail_derivacion || {}).estado) === 1);
+            $('#evtMsgObservacion').prop('checked', Number((state.evaluacion_mail_observacion || {}).estado) === 1);
+            $('#evtMsgAprobTotal').prop('checked', Number((state.evaluacion_mail_aprob_total || {}).estado) === 1);
+            $('#evtMsgSolicitudRevision').prop('checked', Number((state.evaluacion_mail_solicitud_revision || {}).estado) === 1);
+            $('#evtMsgSubsanacion').prop('checked', Number((state.evaluacion_mail_subsanacion || {}).estado) === 1);
+
+            $('.evt-msg-item').prop('disabled', !isGlobalOn);
+
+            $('#evtMessagingBadge')
+                .removeClass('badge-success badge-secondary badge-warning')
+                .addClass(isGlobalOn ? 'badge-success' : 'badge-secondary')
+                .text(isGlobalOn ? 'Activa' : 'Desactivada');
+            $('#evtMessagingHint').text(
+                isGlobalOn
+                    ? 'Mensajeria activa segun switches por actividad.'
+                    : 'Mensajeria global desactivada (solo auditoria).'
+            );
+            $('#evtMessagingUpdatedAt').text(global && global.actualizado_en ? global.actualizado_en : '-');
+        }
+
         function renderState(state) {
             currentState = state || {};
             renderMaintenanceState(currentState);
             renderDbAccessState(currentState.db_manager_access || {});
             renderInicioDeadlineState(currentState.inicio_deadline || {});
+            renderMessagingState(currentState.messaging || {});
         }
 
         function openConfirm(text, callback) {
@@ -801,6 +901,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 clearAlert('#evtMtoAlert');
                 clearAlert('#evtDbAlert');
                 clearAlert('#evtInicioDeadlineAlert');
+                clearAlert('#evtMessagingAlert');
                 if (targetModal === 'mto') {
                     $('#modalMantenimiento').modal('show');
                 }
@@ -810,10 +911,14 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 if (targetModal === 'inicio_deadline') {
                     $('#modalInicioDeadline').modal('show');
                 }
+                if (targetModal === 'messaging') {
+                    $('#modalMessaging').modal('show');
+                }
             }).fail(function () {
                 showAlert('#evtMtoAlert', 'danger', 'Error de comunicacion con el servidor.');
                 showAlert('#evtDbAlert', 'danger', 'Error de comunicacion con el servidor.');
                 showAlert('#evtInicioDeadlineAlert', 'danger', 'Error de comunicacion con el servidor.');
+                showAlert('#evtMessagingAlert', 'danger', 'Error de comunicacion con el servidor.');
             });
         }
 
@@ -1106,6 +1211,40 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             });
         }
 
+        function saveMessaging() {
+            var payload = {
+                action: 'save_messaging',
+                csrf_token: csrfToken,
+                evaluacion_mensajeria: $('#evtMsgGlobal').is(':checked') ? 1 : 0,
+                evaluacion_mail_derivacion: $('#evtMsgDerivacion').is(':checked') ? 1 : 0,
+                evaluacion_mail_observacion: $('#evtMsgObservacion').is(':checked') ? 1 : 0,
+                evaluacion_mail_aprob_total: $('#evtMsgAprobTotal').is(':checked') ? 1 : 0,
+                evaluacion_mail_solicitud_revision: $('#evtMsgSolicitudRevision').is(':checked') ? 1 : 0,
+                evaluacion_mail_subsanacion: $('#evtMsgSubsanacion').is(':checked') ? 1 : 0
+            };
+
+            openConfirm('Confirmar actualizacion de switches de mensajeria?', function () {
+                $('#btnGuardarMessaging').prop('disabled', true);
+                $.ajax({
+                    url: apiUrl,
+                    method: 'POST',
+                    dataType: 'json',
+                    data: payload
+                }).done(function (res) {
+                    if (!res || !res.success) {
+                        showAlert('#evtMessagingAlert', 'danger', (res && res.msg) ? res.msg : 'No se pudo guardar mensajeria.');
+                        return;
+                    }
+                    renderState(res.data || {});
+                    showAlert('#evtMessagingAlert', 'success', res.msg || 'Mensajeria guardada.');
+                }).fail(function () {
+                    showAlert('#evtMessagingAlert', 'danger', 'Error de comunicacion con el servidor.');
+                }).always(function () {
+                    $('#btnGuardarMessaging').prop('disabled', false);
+                });
+            });
+        }
+
         $(function () {
             loadState('');
             resetSemProgress();
@@ -1120,6 +1259,9 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             $('#btnOpenInicioDeadline').on('click', function () {
                 loadState('inicio_deadline');
             });
+            $('#btnOpenMessaging').on('click', function () {
+                loadState('messaging');
+            });
             $('#btnOpenSemestresStatus').on('click', function () {
                 loadSemStatus(true);
             });
@@ -1133,6 +1275,12 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             $('#btnGuardarMantenimiento').on('click', saveMaintenance);
             $('#btnGuardarDbAccess').on('click', saveDbAccess);
             $('#btnGuardarInicioDeadline').on('click', saveInicioDeadline);
+            $('#btnGuardarMessaging').on('click', saveMessaging);
+
+            $('#evtMsgGlobal').on('change', function () {
+                var on = $(this).is(':checked');
+                $('.evt-msg-item').prop('disabled', !on);
+            });
 
             $('#btnEvtMtoConfirmAction').on('click', function () {
                 $('#modalEvtMtoConfirm').modal('hide');

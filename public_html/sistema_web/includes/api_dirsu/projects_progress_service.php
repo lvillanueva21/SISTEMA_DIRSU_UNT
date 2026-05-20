@@ -74,6 +74,38 @@ if (!function_exists('rsu_projects_eval_badge_from_summary')) {
     }
 }
 
+if (!function_exists('rsu_projects_eval_office_badge_from_summary')) {
+    function rsu_projects_eval_office_badge_from_summary($eval)
+    {
+        if (!is_array($eval) || empty($eval['eval_id'])) {
+            return null;
+        }
+
+        $code = strtoupper(trim((string)($eval['oficina_cod'] ?? '')));
+        if ($code === '') {
+            return null;
+        }
+
+        if ($code === 'PCF') {
+            return array('text' => 'Comite', 'class' => 'badge prj-badge-ofic-pcf');
+        }
+        if ($code === 'DD') {
+            return array('text' => 'Dir. Departamento', 'class' => 'badge prj-badge-ofic-dd');
+        }
+        if ($code === 'DF') {
+            return array('text' => 'Decanato', 'class' => 'badge prj-badge-ofic-df');
+        }
+        if ($code === 'RSU') {
+            return array('text' => 'Direccion RSU', 'class' => 'badge prj-badge-ofic-rsu');
+        }
+
+        return array(
+            'text' => ($eval['oficina_nom'] ?? 'Otra oficina'),
+            'class' => 'badge badge-secondary'
+        );
+    }
+}
+
 if (!function_exists('rsu_projects_eval_action_state')) {
     function rsu_projects_eval_action_state($id_rol, $accion, $eval)
     {
@@ -326,6 +358,7 @@ if (!function_exists('rsu_projects_progress_by_project_ids')) {
 
             $eval = isset($eval_by_response[$id_resp]) ? $eval_by_response[$id_resp] : null;
             $badge = rsu_projects_eval_badge_from_summary($eval);
+            $office_badge = rsu_projects_eval_office_badge_from_summary($eval);
             $actions = array();
             foreach (rsu_projects_eval_visible_actions($id_rol) as $accion) {
                 $actions[$accion] = rsu_projects_eval_action_state($id_rol, $accion, $eval);
@@ -336,6 +369,7 @@ if (!function_exists('rsu_projects_progress_by_project_ids')) {
             $map[$id_py][$idx]['eval'] = array(
                 'badge_text' => $badge['text'],
                 'badge_class' => $badge['class'],
+                'office_badge' => $office_badge,
                 'summary' => $eval,
                 'actions' => $actions
             );
@@ -344,4 +378,3 @@ if (!function_exists('rsu_projects_progress_by_project_ids')) {
         return $map;
     }
 }
-

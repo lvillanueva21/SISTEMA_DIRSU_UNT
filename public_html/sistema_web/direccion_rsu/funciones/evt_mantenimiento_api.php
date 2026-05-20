@@ -187,6 +187,76 @@ function evt_mto_api_get_inicio_deadline_state(mysqli $conexion)
     return $state;
 }
 
+function evt_mto_api_messaging_events_catalog()
+{
+    return array(
+        'evaluacion_mensajeria' => 'Mensajeria global de evaluacion',
+        'evaluacion_mail_derivacion' => 'Correo: derivacion entre oficinas',
+        'evaluacion_mail_observacion' => 'Correo: observacion (cotejo/rubrica)',
+        'evaluacion_mail_aprob_total' => 'Correo: aprobacion total',
+        'evaluacion_mail_solicitud_revision' => 'Correo: solicitud de revision',
+        'evaluacion_mail_subsanacion' => 'Correo: subsanacion',
+    );
+}
+
+function evt_mto_api_ensure_messaging_events(mysqli $conexion, $userId = null)
+{
+    $uid = ($userId === null || (int)$userId <= 0) ? null : (int)$userId;
+    $catalog = evt_mto_api_messaging_events_catalog();
+    foreach ($catalog as $code => $name) {
+        $sql = "INSERT INTO evt_eventos (codigo, nombre, estado, actualizado_por)
+                VALUES (?, ?, 1, ?)
+                ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)";
+        $st = mysqli_prepare($conexion, $sql);
+        if (!$st) {
+            return false;
+        }
+        mysqli_stmt_bind_param($st, 'ssi', $code, $name, $uid);
+        $ok = mysqli_stmt_execute($st);
+        mysqli_stmt_close($st);
+        if (!$ok) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function evt_mto_api_get_messaging_state(mysqli $conexion)
+{
+    $catalog = evt_mto_api_messaging_events_catalog();
+    $state = array();
+    foreach ($catalog as $code => $name) {
+        $state[$code] = array(
+            'codigo' => $code,
+            'nombre' => $name,
+            'estado' => 1,
+            'actualizado_en' => null,
+            'actualizado_por' => null
+        );
+    }
+
+    $sql = "SELECT codigo, nombre, estado, actualizado_en, actualizado_por
+              FROM evt_eventos
+             WHERE codigo IN ('evaluacion_mensajeria','evaluacion_mail_derivacion','evaluacion_mail_observacion','evaluacion_mail_aprob_total','evaluacion_mail_solicitud_revision','evaluacion_mail_subsanacion')";
+    $rs = mysqli_query($conexion, $sql);
+    if (!($rs instanceof mysqli_result)) {
+        return $state;
+    }
+    while ($row = mysqli_fetch_assoc($rs)) {
+        $code = isset($row['codigo']) ? (string)$row['codigo'] : '';
+        if ($code === '' || !isset($state[$code])) {
+            continue;
+        }
+        $state[$code]['nombre'] = isset($row['nombre']) && trim((string)$row['nombre']) !== '' ? (string)$row['nombre'] : $state[$code]['nombre'];
+        $state[$code]['estado'] = (isset($row['estado']) && (int)$row['estado'] === 1) ? 1 : 0;
+        $state[$code]['actualizado_en'] = isset($row['actualizado_en']) ? $row['actualizado_en'] : null;
+        $state[$code]['actualizado_por'] = isset($row['actualizado_por']) ? $row['actualizado_por'] : null;
+    }
+    mysqli_free_result($rs);
+
+    return $state;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     evt_mto_api_exit(false, 'Metodo no permitido.', null, 405);
 }
@@ -224,13 +294,66 @@ if (!evt_mto_api_ensure_inicio_deadline_event($conexion, $userId > 0 ? $userId :
     error_log('evt_mantenimiento_api: fallo al inicializar evento inicio_fecha_limite_visible');
     evt_mto_api_exit(false, 'No se pudo inicializar el control de fecha limite.', null, 500);
 }
+if (!evt_mto_api_ensure_messaging_events($conexion, $userId > 0 ? $userId : null)) {
+    error_log('evt_mantenimiento_api: fallo al inicializar eventos de mensajeria');
+    evt_mto_api_exit(false, 'No se pudo inicializar el control de mensajeria.', null, 500);
+}
 
 $action = isset($_POST['action']) ? trim((string)$_POST['action']) : '';
 if ($action === 'get_state') {
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
     evt_mto_api_exit(true, 'Estado cargado.', $state);
+}
+
+if ($action === 'save_messaging') {
+    $catalog = evt_mto_api_messaging_events_catalog();
+    $updates = array();
+    foreach ($catalog as $code => $name) {
+        $raw = isset($_POST[$code]) ? (int)$_POST[$code] : null;
+        if ($raw === null || ($raw !== 0 && $raw !== 1)) {
+            continue;
+        }
+        $updates[$code] = $raw;
+    }
+    if (empty($updates)) {
+        evt_mto_api_exit(false, 'No se recibieron cambios de mensajeria.', null, 422);
+    }
+
+    mysqli_begin_transaction($conexion);
+    try {
+        foreach ($updates as $code => $status) {
+            $sql = "UPDATE evt_eventos
+                       SET estado = ?,
+                           actualizado_por = ?,
+                           actualizado_en = NOW()
+                     WHERE codigo = ?
+                     LIMIT 1";
+            $st = mysqli_prepare($conexion, $sql);
+            if (!$st) {
+                throw new Exception('No se pudo preparar actualizacion de mensajeria.');
+            }
+            mysqli_stmt_bind_param($st, 'iis', $status, $userId, $code);
+            if (!mysqli_stmt_execute($st)) {
+                mysqli_stmt_close($st);
+                throw new Exception('No se pudo guardar estado de mensajeria.');
+            }
+            mysqli_stmt_close($st);
+        }
+        mysqli_commit($conexion);
+    } catch (Exception $e) {
+        mysqli_rollback($conexion);
+        error_log('evt_mantenimiento_api save_messaging: ' . $e->getMessage());
+        evt_mto_api_exit(false, 'No se pudo guardar la mensajeria.', null, 500);
+    }
+
+    $state = evt_mto_fetch_state();
+    $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
+    evt_mto_api_exit(true, 'Mensajeria actualizada correctamente.', $state);
 }
 
 if ($action === 'save_db_manager_access') {
@@ -259,6 +382,7 @@ if ($action === 'save_db_manager_access') {
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
     evt_mto_api_exit(true, 'Acceso a gestor DB actualizado correctamente.', $state);
 }
 
@@ -345,6 +469,7 @@ if ($action === 'save_inicio_deadline') {
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
     evt_mto_api_exit(true, 'Configuracion de fecha limite guardada correctamente.', $state);
 }
 
@@ -439,6 +564,7 @@ try {
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
     evt_mto_api_exit(true, 'Configuracion guardada correctamente.', $state);
 } catch (Exception $e) {
     mysqli_rollback($conexion);

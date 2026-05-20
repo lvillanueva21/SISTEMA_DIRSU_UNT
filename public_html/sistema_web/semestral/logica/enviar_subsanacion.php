@@ -118,6 +118,9 @@ try {
   $conexion->commit();
 
   // === Notificar a autoridades que observaron (según oficina/rol) ===
+  $mailOk = true;
+  $mailMsg = 'Notificación registrada correctamente.';
+  $mailDiag = array();
   try {
     require_once __DIR__ . '/notificaciones_subsanacion_autoridades.php';
     $resNotif = notif_subsanacion_autoridades($conexion, [
@@ -128,15 +131,26 @@ try {
       'oficina_nom'  => (string)($eval['ofi_nom'] ?? ''),
     ]);
     if (!$resNotif || empty($resNotif['ok'])) {
-      $msg  = $resNotif['error'] ?? 'Fallo desconocido al enviar la notificación de subsanación.';
-      $diag = !empty($resNotif['diag']) ? (' | '.implode(' | ', (array)$resNotif['diag'])) : '';
-      jfail(500, 'Subsanación registrada, pero falló el envío de correo: '.$msg.$diag);
+      $mailOk = false;
+      $mailMsg = 'Subsanación registrada, pero no se pudo enviar/auditar la notificación.';
+      if (!empty($resNotif['error'])) {
+        $mailMsg .= ' ' . (string)$resNotif['error'];
+      }
+      if (!empty($resNotif['diag']) && is_array($resNotif['diag'])) {
+        $mailDiag = $resNotif['diag'];
+      }
     }
   } catch (Throwable $e) {
-    jfail(500, 'Subsanación registrada, pero falló el envío de correo: '.$e->getMessage());
+    $mailOk = false;
+    $mailMsg = 'Subsanación registrada, pero ocurrió un error al notificar: ' . $e->getMessage();
   }
 
-  jok(['oficina'=>$eval['ofi_nom'] ?? 'Oficina']);
+  jok([
+    'oficina'  => $eval['ofi_nom'] ?? 'Oficina',
+    'mail_ok'  => $mailOk,
+    'mail_msg' => $mailMsg,
+    'mail_diag'=> $mailDiag
+  ]);
 
 } catch (Throwable $e) {
   $conexion->rollback();

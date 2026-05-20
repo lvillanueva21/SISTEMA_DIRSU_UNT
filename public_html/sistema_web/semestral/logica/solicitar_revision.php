@@ -139,6 +139,7 @@ function sm_enviar_correo_confirmacion($destino, $asunto, $textoPlano)
 }
 
 require_once __DIR__ . '/../../componentes/db.php';
+require_once __DIR__ . '/../../includes/evaluacion_v1/messaging_helpers.php';
 
 $id_respuesta = isset($_POST['id_respuesta']) ? (int)$_POST['id_respuesta'] : 0;
 $usuario = isset($_SESSION['usuario']) ? trim((string)$_SESSION['usuario']) : '';
@@ -474,7 +475,35 @@ if ($correoDestino !== '') {
     $mensaje = 'Se solicitó la revisión del proyecto "' . ($tituloProyecto !== '' ? $tituloProyecto : 'Proyecto') . '"'
         . ' para el formulario "' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario') . '"'
         . ' el día ' . $fecha . ' a las ' . $hora . ' (Lima-Perú).';
-    $mailInfo = sm_enviar_correo_confirmacion($correoDestino, $asunto, $mensaje);
+    $mailOk = rsu_eval_v1_notify_mail(
+        $conexion,
+        array(
+            'id_respuesta' => $id_respuesta,
+            'event_code' => 'MAIL_SOLICITUD_REVISION',
+            'office' => $oficinaId,
+            'tipo' => 3,
+            'to' => array($correoDestino),
+            'subject' => $asunto,
+            'message' => nl2br(htmlspecialchars($mensaje, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
+            'html' => nl2br(htmlspecialchars($mensaje, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
+            'text' => $mensaje,
+            'created_by' => $usuario,
+            'ip' => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+        ),
+        function (array $mailPayload) use ($correoDestino) {
+            $res = sm_enviar_correo_confirmacion(
+                $correoDestino,
+                isset($mailPayload['subject']) ? (string)$mailPayload['subject'] : '',
+                isset($mailPayload['text']) ? (string)$mailPayload['text'] : ''
+            );
+            return !empty($res['ok']);
+        }
+    );
+    if ($mailOk) {
+        $mailInfo = array('ok' => true, 'msg' => 'Notificación registrada correctamente.');
+    } else {
+        $mailInfo = array('ok' => false, 'msg' => 'La solicitud se registró, pero no se pudo enviar/notificar el correo.');
+    }
 }
 
 sm_json_ok(array(

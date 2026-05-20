@@ -6,6 +6,8 @@ declare(strict_types=1);
 namespace {
 
 date_default_timezone_set('America/Lima');
+require_once __DIR__ . '/notificaciones_ruta.php';
+require_once __DIR__ . '/../includes/evaluacion_v1/messaging_helpers.php';
 
 /**
  * Envía correo de observación a coordinadores activos (id_rol=2) del proyecto,
@@ -313,40 +315,18 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     }
     $text .= "Revisar y subsanar: {$url_det}\n";
 
-    /* ===== 6) PHPMailer ===== */
-    $base = realpath(__DIR__ . '/../recursos/src') ?: (__DIR__ . '/../recursos/src');
-    foreach ([$base.'/PHPMailer.php',$base.'/SMTP.php',$base.'/Exception.php'] as $p){
-        if(!file_exists($p)){ error_log('PHPMailer no encontrado: '.$p); return false; }
-    }
-    require_once $base.'/Exception.php';
-    require_once $base.'/PHPMailer.php';
-    require_once $base.'/SMTP.php';
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-    try{
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'proyectosdirsu@unitru.edu.pe';
-        $mail->Password   = 'owmjcvzzurfnocgq';
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-        $mail->CharSet    = 'UTF-8';
-
-        $mail->setFrom('proyectosdirsu@unitru.edu.pe','Sistema DIRSU');
-        $mail->addReplyTo('proyectosdirsu@unitru.edu.pe','Sistema DIRSU');
-        foreach(array_keys($dest) as $to){ $mail->addAddress($to); }
-
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $html;
-        $mail->AltBody = $text;
-
-        return $mail->send();
-    }catch(\Throwable $e){
-        error_log('Mailer obs error: '.$e->getMessage());
-        return false;
-    }
+    $tipo_num = ($tipo === 'cotejo') ? 1 : 2;
+    return _notif_mail_controlado(
+        $conexion,
+        $eval_id,
+        $oficina_id,
+        $tipo_num,
+        'MAIL_OBSERVACION',
+        array_keys($dest),
+        $subject,
+        $html,
+        $text
+    );
 }
 
 } // <- fin namespace global

@@ -1,4 +1,8 @@
 (function () {
+  var currentEvalContext = {
+    responseId: null,
+    projectId: null
+  };
   function hasJquery() {
     return !!(window.jQuery && window.jQuery.fn);
   }
@@ -140,10 +144,36 @@
       var a = actions[i] || {};
       var disabled = a.enabled ? '' : ' disabled';
       var title = esc(a.reason || '');
-      html += '<button type="button" class="btn btn-warning btn-sm" title="' + title + '"' + disabled + '>'
+      html += '<button type="button" class="btn btn-warning btn-sm prj-btn-eval-action" data-action="' + esc(a.key || '') + '" title="' + title + '"' + disabled + '>'
         + esc(a.label || 'Acción') + '</button>';
     }
     wrap.innerHTML = html;
+  }
+
+  function loadEvalActionForm(actionKey) {
+    var wrap = document.getElementById('prjEvalActions');
+    if (!wrap || !actionKey || !currentEvalContext.responseId) return;
+
+    wrap.innerHTML = '<div id="contenidoEval"><div class="text-muted">Cargando formulario...</div></div>';
+
+    if (window.jQuery && window.jQuery.ajax) {
+      window.jQuery.ajax({
+        url: '../informe_semestral/modales/evaluacion_msg.php',
+        method: 'GET',
+        data: {
+          accion: actionKey,
+          id_respuesta: currentEvalContext.responseId
+        },
+        cache: false
+      }).done(function (html) {
+        wrap.innerHTML = '<div id="contenidoEval">' + html + '</div>';
+      }).fail(function () {
+        wrap.innerHTML = '<div class="alert alert-danger mb-0">No se pudo cargar el formulario de calificación.</div>';
+      });
+      return;
+    }
+
+    wrap.innerHTML = '<div class="alert alert-danger mb-0">No hay motor AJAX disponible.</div>';
   }
 
   function openInformeModal(responseId) {
@@ -194,6 +224,8 @@
           return;
         }
         var data = json.data || {};
+        currentEvalContext.responseId = data.response_id || responseId || null;
+        currentEvalContext.projectId = data.id_py || null;
         if (resumen) {
           var badgeClass = (data.eval_badge && data.eval_badge.class) ? data.eval_badge.class : 'badge badge-secondary';
           var badgeText = (data.eval_badge && data.eval_badge.text) ? data.eval_badge.text : 'Sin ruta';
@@ -235,6 +267,16 @@
         openEvaluacionModal(responseId);
       }
     });
+
+    $doc.off('click.prjEvalAction').on('click.prjEvalAction', '.prj-btn-eval-action', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.disabled) return;
+      var actionKey = window.jQuery(this).attr('data-action');
+      if (actionKey) {
+        loadEvalActionForm(actionKey);
+      }
+    });
     return true;
   }
 
@@ -268,6 +310,22 @@
         if (responseEvalId) {
           openEvaluacionModal(responseEvalId);
         }
+        return;
+      }
+
+      var btnEvalAction = target;
+      while (btnEvalAction && btnEvalAction.nodeType === 1 && !btnEvalAction.classList.contains('prj-btn-eval-action')) {
+        btnEvalAction = btnEvalAction.parentNode;
+      }
+      if (btnEvalAction && btnEvalAction.classList && btnEvalAction.classList.contains('prj-btn-eval-action')) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!btnEvalAction.disabled) {
+          var action = btnEvalAction.getAttribute('data-action');
+          if (action) {
+            loadEvalActionForm(action);
+          }
+        }
       }
     }, false);
   }
@@ -278,9 +336,48 @@
     }
   }
 
+  function bindFilters() {
+    var form = document.getElementById('prjFiltersForm');
+    if (!form) return;
+
+    var fac = document.getElementById('prjFacultad');
+    var dep = document.getElementById('prjDepartamento');
+    var cre = document.getElementById('prjCreacion');
+
+    function submitForm() {
+      if (form.requestSubmit) {
+        form.requestSubmit();
+      } else {
+        form.submit();
+      }
+    }
+
+    if (fac) {
+      fac.addEventListener('change', function () {
+        if (dep) {
+          dep.value = '0';
+        }
+        submitForm();
+      });
+    }
+
+    if (dep) {
+      dep.addEventListener('change', function () {
+        submitForm();
+      });
+    }
+
+    if (cre) {
+      cre.addEventListener('change', function () {
+        submitForm();
+      });
+    }
+  }
+
   function init() {
     bindRowToggle();
     bindProgressButtons();
+    bindFilters();
   }
 
   if (document.readyState === 'loading') {

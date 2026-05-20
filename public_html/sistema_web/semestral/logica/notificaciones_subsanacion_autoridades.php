@@ -6,6 +6,7 @@
 
 declare(strict_types=1);
 date_default_timezone_set('America/Lima');
+require_once __DIR__ . '/../../includes/evaluacion_v1/messaging_helpers.php';
 
 /** Obtiene URL base de sistema_web segun host/ruta actual. */
 function sistema_web_base_url(): string {
@@ -275,18 +276,39 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
   $text = "Hola,\nEl proyecto: {$titulo} (coordinador: {$coordNom}){$facDepFraseTXT} registró una subsanación a las observaciones de tu oficina ({$ofi_nom}).\n\n"
         . "Ingresar: {$url}\n";
 
-  // 5) Envío
-  $send = enviarCorreoSubsanacion([
-    'asunto' => $asunto,
-    'html'   => $html,
-    'text'   => $text,
-    'emails' => $emails
-  ], $diag);
+  // 5) Mensajería controlada + auditoría (envía o solo registra según switch).
+  $notifyOk = rsu_eval_v1_notify_mail(
+    $cx,
+    [
+      'id_respuesta' => $id_resp,
+      'event_code'   => 'MAIL_SUBSANACION',
+      'office'       => $ofi_id,
+      'tipo'         => 3,
+      'to'           => $emails,
+      'subject'      => $asunto,
+      'message'      => $html,
+      'html'         => $html,
+      'text'         => $text,
+      'created_by'   => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
+      'ip'           => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+    ],
+    function(array $mailPayload) use (&$diag, $emails, $asunto, $html, $text) {
+      $send = enviarCorreoSubsanacion([
+        'asunto' => $asunto,
+        'html'   => $html,
+        'text'   => $text,
+        'emails' => $emails
+      ], $diag);
+      if (!$send['ok'] && !empty($send['detail'])) {
+        $diag[] = 'detail=' . (string)$send['detail'];
+      }
+      return !empty($send['ok']);
+    }
+  );
 
-  if (!$send['ok']) {
-    if (!empty($send['detail'])) $diag[] = 'detail='.$send['detail'];
-    return ['ok'=>false,'error'=>$send['error'] ?: 'Fallo desconocido al enviar correo','diag'=>$diag];
+  if (!$notifyOk) {
+    return ['ok'=>false,'error'=>'No se pudo enviar o auditar la mensajería de subsanación.','diag'=>$diag];
   }
 
-  return ['ok'=>true,'diag'=>$diag,'to'=>$send['to'] ?? []];
+  return ['ok'=>true,'diag'=>$diag,'to'=>$emails];
 }

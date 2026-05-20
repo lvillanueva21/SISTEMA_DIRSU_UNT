@@ -4,6 +4,20 @@
   vertical-align: middle;
 }
 
+.prj-filters-card .card-body {
+  padding-top: .5rem;
+  padding-bottom: .5rem;
+}
+
+.prj-filter-label {
+  font-weight: 600;
+  margin-bottom: .25rem;
+}
+
+.prj-filters-card .row > [class*="col-"] {
+  margin-bottom: .5rem;
+}
+
 .prj-row-toggle {
   cursor: pointer;
 }
@@ -89,6 +103,26 @@
 
 .prj-eval-btn-pres {
   background: #ffd54f;
+}
+
+.prj-badge-ofic-pcf {
+  background-color: #0275D8 !important;
+  color: #fff !important;
+}
+
+.prj-badge-ofic-dd {
+  background-color: #F0AD4E !important;
+  color: #111 !important;
+}
+
+.prj-badge-ofic-df {
+  background-color: #5BC0DE !important;
+  color: #111 !important;
+}
+
+.prj-badge-ofic-rsu {
+  background-color: #5CB85C !important;
+  color: #fff !important;
 }
 
 .prj-deliver-empty {

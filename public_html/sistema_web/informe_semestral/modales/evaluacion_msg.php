@@ -8,6 +8,13 @@ $usr        = testeo();
 $id_rol     = (int)$usr['id_rol'];
 $rol_nombre = $usr['rol'] ?? 'Rol no identificado';
 
+$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+$appBasePath = rtrim(dirname(dirname(dirname($scriptName))), '/');
+if ($appBasePath === '' || $appBasePath === '.') {
+    $appBasePath = '/sistema_web';
+}
+$saveEvalApiUrl = $appBasePath . '/informe_semestral/api/save_evaluacion.php';
+
 $accion = isset($_GET['accion']) ? strtolower(trim((string)$_GET['accion'])) : '';
 $id_py  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $id_py_req = $id_py;
@@ -716,7 +723,7 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
 ?>
 <script>
 (function(){
-  const API = '/sistema_web/informe_semestral/api/save_evaluacion.php';
+  const API = <?= json_encode($saveEvalApiUrl) ?>;
   const ID_PY   = <?= (int)$id_py ?>;
   const ID_RESP = <?= (int)$id_respuesta ?>;
   const SEMESTRAL = <?= (int)$id_periodo ?>;
@@ -797,8 +804,9 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
     // Quitamos modo busy antes de cerrar/recargar (por si tarda la redirección)
     setBusy(false);
     setTimeout(()=>{
-      if (window.jQuery && window.jQuery('#modalEval').modal) {
-        jQuery('#modalEval').modal('hide');
+      var modal = $btnGuardar ? $btnGuardar.closest('.modal') : null;
+      if (window.jQuery && modal && window.jQuery(modal).modal) {
+        window.jQuery(modal).modal('hide');
       }
       location.reload();
     }, 900);
@@ -866,7 +874,10 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
       }
 
       const r = await post(payload);
-      if (r && r.ok) return alertOK('✅ Evaluación guardada correctamente');
+      if (r && r.ok) {
+        if (r.warning_message) return alertOK('✅ Evaluación guardada correctamente\n\n⚠️ ' + r.warning_message);
+        return alertOK('✅ Evaluación guardada correctamente');
+      }
       return alertERR(r && r.error ? r.error : 'No se pudo guardar');
 
     }catch(err){

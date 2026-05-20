@@ -9,10 +9,37 @@ if (!function_exists('prj_h')) {
     }
 }
 
+if (!function_exists('prj_int_get')) {
+    function prj_int_get($key, $default = 0)
+    {
+        if (!isset($_GET[$key])) {
+            return (int)$default;
+        }
+        $v = (int)$_GET[$key];
+        return ($v > 0) ? $v : 0;
+    }
+}
+
 $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $por_pagina = 20;
 
-$resultado = rsu_projects_real_list($conexion, $pagina, $por_pagina);
+$filtros = array(
+    'facultad_id' => prj_int_get('facultad_id', 0),
+    'departamento_id' => prj_int_get('departamento_id', 0),
+    'creacion_periodo_id' => prj_int_get('creacion_periodo_id', 0),
+);
+
+$facultades = rsu_projects_real_filter_facultades($conexion);
+$periodos_creacion = rsu_projects_real_filter_periodos_creacion($conexion);
+$dep_disabled = ($filtros['facultad_id'] <= 0);
+$departamentos = $dep_disabled ? array() : rsu_projects_real_filter_departamentos($conexion, $filtros['facultad_id']);
+if ($dep_disabled) {
+    $filtros['departamento_id'] = 0;
+} elseif ($filtros['departamento_id'] > 0 && !isset($departamentos[$filtros['departamento_id']])) {
+    $filtros['departamento_id'] = 0;
+}
+
+$resultado = rsu_projects_real_list($conexion, $pagina, $por_pagina, $filtros);
 $items = isset($resultado['rows']) && is_array($resultado['rows']) ? $resultado['rows'] : array();
 $total_items = isset($resultado['total_items']) ? (int)$resultado['total_items'] : 0;
 $total_pages = isset($resultado['total_pages']) ? max(1, (int)$resultado['total_pages']) : 1;
@@ -42,15 +69,82 @@ $progress_map = rsu_projects_progress_by_project_ids($conexion, $project_ids, $i
 
 function prj_link_pagina($p)
 {
-    $params = $_GET;
-    $params['pagina'] = (int)$p;
+    global $filtros;
+    $params = array(
+        'pagina' => (int)$p,
+        'facultad_id' => isset($filtros['facultad_id']) ? (int)$filtros['facultad_id'] : 0,
+        'departamento_id' => isset($filtros['departamento_id']) ? (int)$filtros['departamento_id'] : 0,
+        'creacion_periodo_id' => isset($filtros['creacion_periodo_id']) ? (int)$filtros['creacion_periodo_id'] : 0,
+    );
     return '?' . http_build_query($params);
+}
+
+function prj_link_limpiar_filtros()
+{
+    return '?pagina=1';
 }
 ?>
 
 <div class="mb-2 p-2 border rounded">
   <strong>Rol:</strong> <?= prj_h($rol_texto) ?> &nbsp;&nbsp;
   <strong>Usuario:</strong> <?= prj_h($usuario) ?>
+</div>
+
+<div class="card prj-filters-card mb-2">
+  <div class="card-body py-2">
+    <form id="prjFiltersForm" method="get" class="mb-0">
+      <input type="hidden" name="pagina" value="1">
+      <div class="row align-items-end">
+        <div class="col-12 col-md-3 col-lg-2">
+          <label class="prj-filter-label" for="prjFacultad">Facultad:</label>
+          <select name="facultad_id" id="prjFacultad" class="form-control form-control-sm">
+            <option value="0" <?= ($filtros['facultad_id'] === 0) ? 'selected' : '' ?>>Todas</option>
+            <?php foreach ($facultades as $fac_id => $fac_name): ?>
+              <option value="<?= prj_h((int)$fac_id) ?>" <?= ((int)$filtros['facultad_id'] === (int)$fac_id) ? 'selected' : '' ?>>
+                <?= prj_h($fac_name) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-12 col-md-4 col-lg-3">
+          <label class="prj-filter-label" for="prjDepartamento">Departamento:</label>
+          <select name="departamento_id" id="prjDepartamento" class="form-control form-control-sm" <?= $dep_disabled ? 'disabled' : '' ?>>
+            <?php if ($dep_disabled): ?>
+              <option value="0" selected>Seleccione facultad</option>
+            <?php else: ?>
+              <option value="0" <?= ($filtros['departamento_id'] === 0) ? 'selected' : '' ?>>Todos</option>
+              <?php foreach ($departamentos as $dep_id => $dep_name): ?>
+                <option value="<?= prj_h((int)$dep_id) ?>" <?= ((int)$filtros['departamento_id'] === (int)$dep_id) ? 'selected' : '' ?>>
+                  <?= prj_h($dep_name) ?>
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
+        <div class="col-12 col-md-3 col-lg-2">
+          <label class="prj-filter-label" for="prjCreacion">Creacion:</label>
+          <select name="creacion_periodo_id" id="prjCreacion" class="form-control form-control-sm">
+            <option value="0" <?= ($filtros['creacion_periodo_id'] === 0) ? 'selected' : '' ?>>Todos</option>
+            <?php foreach ($periodos_creacion as $per_id => $per_name): ?>
+              <option value="<?= prj_h((int)$per_id) ?>" <?= ((int)$filtros['creacion_periodo_id'] === (int)$per_id) ? 'selected' : '' ?>>
+                <?= prj_h($per_name) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-12 col-md-2 col-lg-1">
+          <button type="submit" class="btn btn-primary btn-sm w-100" title="Aplicar filtros">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        <div class="col-12 col-md-2 col-lg-1">
+          <a class="btn btn-danger btn-sm w-100" title="Limpiar filtros" href="<?= prj_h(prj_link_limpiar_filtros()) ?>">
+            <i class="fas fa-broom"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-2" role="status" aria-live="polite">
@@ -147,6 +241,11 @@ function prj_link_pagina($p)
                       <?php if (isset($ent['eval']['badge_text'])): ?>
                         <span class="<?= prj_h($ent['eval']['badge_class']) ?>"><?= prj_h($ent['eval']['badge_text']) ?></span>
                       <?php endif; ?>
+                      <?php if (isset($ent['eval']['office_badge']) && is_array($ent['eval']['office_badge'])): ?>
+                        <span class="<?= prj_h($ent['eval']['office_badge']['class']) ?>" title="Oficina actual">
+                          <?= prj_h($ent['eval']['office_badge']['text']) ?>
+                        </span>
+                      <?php endif; ?>
                     <?php else: ?>
                       <span class="prj-deliver-empty-inline">vacío</span>
                     <?php endif; ?>
@@ -223,4 +322,3 @@ function prj_link_pagina($p)
     </div>
   </div>
 </div>
-
