@@ -11,6 +11,7 @@ require_once __DIR__ . '/ContextResolver.php';
 require_once __DIR__ . '/PermissionService.php';
 require_once __DIR__ . '/WorkflowService.php';
 require_once __DIR__ . '/EventLoggerService.php';
+require_once __DIR__ . '/MailOutboxService.php';
 require_once __DIR__ . '/NotificationService.php';
 require_once __DIR__ . '/MessagingPolicyService.php';
 require_once __DIR__ . '/NotificationWarnings.php';

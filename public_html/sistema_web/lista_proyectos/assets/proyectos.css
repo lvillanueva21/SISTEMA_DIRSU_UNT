@@ -27,10 +27,9 @@
   color: #fff !important;
 }
 
-.prj-badge-code-pending {
-  background: #fff !important;
-  color: #c82333 !important;
-  border: 1px solid #c82333;
+.prj-code-pending {
+  color: #c82333;
+  font-weight: 700;
 }
 
 .prj-created-text {
@@ -176,4 +175,63 @@
 .prj-eval-actions .btn {
   margin-right: 8px;
   margin-bottom: 8px;
+}
+
+.prj-coord-note {
+  color: #6c757d;
+  font-size: 12px;
+}
+
+.prj-obs-table th {
+  background: #fff3cd;
+}
+
+.prj-btn-eval-action.prj-eval-action-disabled {
+  opacity: .6;
+  cursor: not-allowed !important;
+}
+
+#modalInformeDetalle .modal-dialog,
+#modalPresentacionDetalle .modal-dialog,
+#modalEvaluacionDetalle .modal-dialog {
+  max-width: 1140px;
+}
+
+#modalInformeDetalle .modal-body {
+  overflow: hidden;
+  padding: .75rem;
+}
+
+#prjInformeDetalleBody {
+  max-height: 78vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#modalPresentacionDetalle .modal-body {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#prjPresentacionDetalleBody {
+  height: 78vh;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: .75rem;
+}
+
+#prjPresentacionDetalleBody .contenedor-scroll {
+  align-items: flex-start;
+}
+
+#prjPresentacionDetalleBody .navegacion-lateral {
+  max-height: calc(78vh - 1.5rem);
+  height: auto;
+  top: 0;
+}
+
+#modalEvaluacionDetalle .modal-body {
+  max-height: 78vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }

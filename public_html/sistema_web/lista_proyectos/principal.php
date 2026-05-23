@@ -22,24 +22,46 @@ if (!function_exists('prj_int_get')) {
 
 $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $por_pagina = 20;
+$id_rol = isset($_SESSION['id_rol']) ? (int)$_SESSION['id_rol'] : 0;
+$scope = rsu_projects_real_default_scope();
+$scope_facultad_id = isset($scope['id_escuela']) ? (int)$scope['id_escuela'] : 0;
 
 $filtros = array(
     'facultad_id' => prj_int_get('facultad_id', 0),
     'departamento_id' => prj_int_get('departamento_id', 0),
     'creacion_periodo_id' => prj_int_get('creacion_periodo_id', 0),
+    'search_text' => isset($_GET['q']) ? trim((string)$_GET['q']) : '',
 );
 
-$facultades = rsu_projects_real_filter_facultades($conexion);
-$periodos_creacion = rsu_projects_real_filter_periodos_creacion($conexion);
-$dep_disabled = ($filtros['facultad_id'] <= 0);
-$departamentos = $dep_disabled ? array() : rsu_projects_real_filter_departamentos($conexion, $filtros['facultad_id']);
-if ($dep_disabled) {
+$showFacultad = ($id_rol === 1 || $id_rol === 0);
+$showDepartamento = ($id_rol === 1 || $id_rol === 0 || $id_rol === 3 || $id_rol === 5);
+$showBusqueda = true;
+$showCreacion = true;
+
+if ($id_rol === 4 || $id_rol === 2) {
+    $showFacultad = false;
+    $showDepartamento = false;
+}
+
+$facultad_context_id = $showFacultad ? (int)$filtros['facultad_id'] : 0;
+if (!$showFacultad && ($id_rol === 3 || $id_rol === 5) && $scope_facultad_id > 0) {
+    $facultad_context_id = $scope_facultad_id;
+    $filtros['facultad_id'] = $scope_facultad_id;
+} elseif (!$showFacultad) {
+    $filtros['facultad_id'] = 0;
+}
+
+$facultades = $showFacultad ? rsu_projects_real_filter_facultades($conexion, $scope) : array();
+$periodos_creacion = rsu_projects_real_filter_periodos_creacion($conexion, $scope);
+$dep_disabled = (!$showDepartamento || $facultad_context_id <= 0);
+$departamentos = $dep_disabled ? array() : rsu_projects_real_filter_departamentos($conexion, $facultad_context_id, $scope);
+if ($dep_disabled || !$showDepartamento) {
     $filtros['departamento_id'] = 0;
 } elseif ($filtros['departamento_id'] > 0 && !isset($departamentos[$filtros['departamento_id']])) {
     $filtros['departamento_id'] = 0;
 }
 
-$resultado = rsu_projects_real_list($conexion, $pagina, $por_pagina, $filtros);
+$resultado = rsu_projects_real_list($conexion, $pagina, $por_pagina, $filtros, $scope);
 $items = isset($resultado['rows']) && is_array($resultado['rows']) ? $resultado['rows'] : array();
 $total_items = isset($resultado['total_items']) ? (int)$resultado['total_items'] : 0;
 $total_pages = isset($resultado['total_pages']) ? max(1, (int)$resultado['total_pages']) : 1;
@@ -55,7 +77,6 @@ $role_map = array(
     4 => 'Dirección de Departamento',
     5 => 'Comité de Facultad',
 );
-$id_rol = isset($_SESSION['id_rol']) ? (int)$_SESSION['id_rol'] : 0;
 $usuario = isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : '';
 $rol_texto = isset($role_map[$id_rol]) ? $role_map[$id_rol] : ('Rol ' . $id_rol);
 
@@ -75,6 +96,7 @@ function prj_link_pagina($p)
         'facultad_id' => isset($filtros['facultad_id']) ? (int)$filtros['facultad_id'] : 0,
         'departamento_id' => isset($filtros['departamento_id']) ? (int)$filtros['departamento_id'] : 0,
         'creacion_periodo_id' => isset($filtros['creacion_periodo_id']) ? (int)$filtros['creacion_periodo_id'] : 0,
+        'q' => isset($filtros['search_text']) ? (string)$filtros['search_text'] : '',
     );
     return '?' . http_build_query($params);
 }
@@ -94,44 +116,69 @@ function prj_link_limpiar_filtros()
   <div class="card-body py-2">
     <form id="prjFiltersForm" method="get" class="mb-0">
       <input type="hidden" name="pagina" value="1">
+      <?php if (!$showFacultad && $facultad_context_id > 0): ?>
+        <input type="hidden" name="facultad_id" value="<?= prj_h($facultad_context_id) ?>">
+      <?php endif; ?>
       <div class="row align-items-end">
-        <div class="col-12 col-md-3 col-lg-2">
-          <label class="prj-filter-label" for="prjFacultad">Facultad:</label>
-          <select name="facultad_id" id="prjFacultad" class="form-control form-control-sm">
-            <option value="0" <?= ($filtros['facultad_id'] === 0) ? 'selected' : '' ?>>Todas</option>
-            <?php foreach ($facultades as $fac_id => $fac_name): ?>
-              <option value="<?= prj_h((int)$fac_id) ?>" <?= ((int)$filtros['facultad_id'] === (int)$fac_id) ? 'selected' : '' ?>>
-                <?= prj_h($fac_name) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="col-12 col-md-4 col-lg-3">
-          <label class="prj-filter-label" for="prjDepartamento">Departamento:</label>
-          <select name="departamento_id" id="prjDepartamento" class="form-control form-control-sm" <?= $dep_disabled ? 'disabled' : '' ?>>
-            <?php if ($dep_disabled): ?>
-              <option value="0" selected>Seleccione facultad</option>
-            <?php else: ?>
-              <option value="0" <?= ($filtros['departamento_id'] === 0) ? 'selected' : '' ?>>Todos</option>
-              <?php foreach ($departamentos as $dep_id => $dep_name): ?>
-                <option value="<?= prj_h((int)$dep_id) ?>" <?= ((int)$filtros['departamento_id'] === (int)$dep_id) ? 'selected' : '' ?>>
-                  <?= prj_h($dep_name) ?>
+        <?php if ($showFacultad): ?>
+          <div class="col-12 col-md-3 col-lg-2">
+            <label class="prj-filter-label" for="prjFacultad">Facultad:</label>
+            <select name="facultad_id" id="prjFacultad" class="form-control form-control-sm">
+              <option value="0" <?= ($filtros['facultad_id'] === 0) ? 'selected' : '' ?>>Todas</option>
+              <?php foreach ($facultades as $fac_id => $fac_name): ?>
+                <option value="<?= prj_h((int)$fac_id) ?>" <?= ((int)$filtros['facultad_id'] === (int)$fac_id) ? 'selected' : '' ?>>
+                  <?= prj_h($fac_name) ?>
                 </option>
               <?php endforeach; ?>
-            <?php endif; ?>
-          </select>
-        </div>
-        <div class="col-12 col-md-3 col-lg-2">
-          <label class="prj-filter-label" for="prjCreacion">Creacion:</label>
-          <select name="creacion_periodo_id" id="prjCreacion" class="form-control form-control-sm">
-            <option value="0" <?= ($filtros['creacion_periodo_id'] === 0) ? 'selected' : '' ?>>Todos</option>
-            <?php foreach ($periodos_creacion as $per_id => $per_name): ?>
-              <option value="<?= prj_h((int)$per_id) ?>" <?= ((int)$filtros['creacion_periodo_id'] === (int)$per_id) ? 'selected' : '' ?>>
-                <?= prj_h($per_name) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
+            </select>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($showDepartamento): ?>
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="prj-filter-label" for="prjDepartamento">Departamento:</label>
+            <select name="departamento_id" id="prjDepartamento" class="form-control form-control-sm" <?= $dep_disabled ? 'disabled' : '' ?>>
+              <?php if ($dep_disabled): ?>
+                <option value="0" selected>Seleccione facultad</option>
+              <?php else: ?>
+                <option value="0" <?= ($filtros['departamento_id'] === 0) ? 'selected' : '' ?>>Todos</option>
+                <?php foreach ($departamentos as $dep_id => $dep_name): ?>
+                  <option value="<?= prj_h((int)$dep_id) ?>" <?= ((int)$filtros['departamento_id'] === (int)$dep_id) ? 'selected' : '' ?>>
+                    <?= prj_h($dep_name) ?>
+                  </option>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </select>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($showCreacion): ?>
+          <div class="col-12 col-md-3 col-lg-2">
+            <label class="prj-filter-label" for="prjCreacion">Creaci&oacute;n:</label>
+            <select name="creacion_periodo_id" id="prjCreacion" class="form-control form-control-sm">
+              <option value="0" <?= ($filtros['creacion_periodo_id'] === 0) ? 'selected' : '' ?>>Todos</option>
+              <?php foreach ($periodos_creacion as $per_id => $per_name): ?>
+                <option value="<?= prj_h((int)$per_id) ?>" <?= ((int)$filtros['creacion_periodo_id'] === (int)$per_id) ? 'selected' : '' ?>>
+                  <?= prj_h($per_name) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($showBusqueda): ?>
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="prj-filter-label" for="prjQ">Búsqueda:</label>
+            <input
+              type="text"
+              name="q"
+              id="prjQ"
+              value="<?= prj_h($filtros['search_text']) ?>"
+              class="form-control form-control-sm"
+              placeholder="Coordinador, código, id o título">
+          </div>
+        <?php endif; ?>
+
         <div class="col-12 col-md-2 col-lg-1">
           <button type="submit" class="btn btn-primary btn-sm w-100" title="Aplicar filtros">
             <i class="fas fa-search"></i>
@@ -162,7 +209,7 @@ function prj_link_limpiar_filtros()
   <thead class="thead-light">
     <tr>
       <th style="width: 4%;">#</th>
-      <th style="width: 30%;">Título de proyecto</th>
+      <th style="width: 30%;">T&iacute;tulo de proyecto</th>
       <th style="width: 16%;">Coordinador</th>
       <th style="width: 12%;">Fechas</th>
       <th style="width: 38%;">Progreso</th>
@@ -180,6 +227,9 @@ function prj_link_limpiar_filtros()
           $detail_id = 'prj-detail-' . (int)$idx;
           $fecha_inicio = trim((string)$it['fecha_inicio']);
           $fecha_fin = trim((string)$it['fecha_fin']);
+          $codigo_proyecto = trim((string)$it['codigo_proyecto']);
+          $codigo_lower = function_exists('mb_strtolower') ? mb_strtolower($codigo_proyecto, 'UTF-8') : strtolower($codigo_proyecto);
+          $codigo_pendiente = ($codigo_lower === '' || $codigo_lower === 'codigo pendiente' || $codigo_lower === 'código pendiente');
           $id_py = isset($it['id_py']) ? (int)$it['id_py'] : 0;
           $progress_items = isset($progress_map[$id_py]) && is_array($progress_map[$id_py]) ? $progress_map[$id_py] : array();
         ?>
@@ -187,10 +237,10 @@ function prj_link_limpiar_filtros()
           <td><?= prj_h($idx) ?></td>
           <td>
             <?= prj_h($it['titulo_proyecto']) ?><br>
-            <?php if (trim((string)$it['codigo_proyecto']) !== '' && trim((string)$it['codigo_proyecto']) !== 'Codigo pendiente'): ?>
-              <span class="badge prj-badge-code">CÓDIGO: <?= prj_h($it['codigo_proyecto']) ?></span>
+            <?php if (!$codigo_pendiente): ?>
+              <span class="badge prj-badge-code">C&Oacute;DIGO: <?= prj_h($codigo_proyecto) ?></span>
             <?php else: ?>
-              <span class="badge prj-badge-code-pending">Código pendiente</span>
+              <span class="prj-code-pending">Código pendiente</span>
             <?php endif; ?>
             <br>
             <small class="prj-created-text"><em>Creado en: <?= prj_h($it['periodo_creacion']) ?></em></small>
@@ -209,13 +259,18 @@ function prj_link_limpiar_filtros()
           <td>
             <div class="prj-progress-wrap">
               <div class="prj-progress-line">
-                <span class="prj-deliver-period">Presentación:</span>
-                <button type="button" class="prj-deliver-btn prj-deliver-btn-pres" title="Presentación de proyecto">
-                  Pres. de Proyecto
-                </button>
-                <button type="button" class="prj-eval-btn prj-eval-btn-pres" disabled title="Evaluación de presentación (próximamente)">
-                  Evaluación
-                </button>
+                <span class="prj-deliver-period">Presentaci&oacute;n:</span>
+                <button
+                  type="button"
+                  class="prj-deliver-btn prj-deliver-btn-pres prj-btn-presentacion"
+                  data-project-id="<?= prj_h($id_py) ?>"
+                  title="Presentaci&oacute;n de proyecto"
+                >Pres. de Proyecto</button>
+                <button
+                  type="button"
+                  class="prj-eval-btn prj-eval-btn-pres"
+                  title="Evaluaci&oacute;n de presentaci&oacute;n (pr&oacute;ximamente)"
+                >Evaluaci&oacute;n</button>
                 <span class="badge badge-secondary">Sin ruta</span>
               </div>
 
@@ -229,15 +284,17 @@ function prj_link_limpiar_filtros()
                       <button
                         type="button"
                         class="prj-deliver-btn <?= ($ent['tipo'] === 'final') ? 'prj-deliver-btn-final' : 'prj-deliver-btn-semestral' ?> prj-btn-informe"
+                        data-project-id="<?= prj_h($id_py) ?>"
                         data-response-id="<?= prj_h($ent['response_id']) ?>"
                         title="<?= prj_h($ent['informe_label']) ?>"
                       ><?= prj_h($ent['informe_label']) ?></button>
                       <button
                         type="button"
                         class="prj-eval-btn prj-btn-evaluacion"
+                        data-project-id="<?= prj_h($id_py) ?>"
                         data-response-id="<?= prj_h($ent['response_id']) ?>"
-                        title="Estado de evaluación"
-                      >Evaluación</button>
+                        title="Estado de evaluaci&oacute;n"
+                      >Evaluaci&oacute;n</button>
                       <?php if (isset($ent['eval']['badge_text'])): ?>
                         <span class="<?= prj_h($ent['eval']['badge_class']) ?>"><?= prj_h($ent['eval']['badge_text']) ?></span>
                       <?php endif; ?>
@@ -247,7 +304,7 @@ function prj_link_limpiar_filtros()
                         </span>
                       <?php endif; ?>
                     <?php else: ?>
-                      <span class="prj-deliver-empty-inline">vacío</span>
+                      <span class="prj-deliver-empty-inline">vac&iacute;o</span>
                     <?php endif; ?>
                   </div>
                 <?php endforeach; ?>
@@ -259,10 +316,10 @@ function prj_link_limpiar_filtros()
           <td colspan="5" style="text-align:center; padding:12px;">
             <p style="margin-bottom:6px;">
               <strong>Facultad:</strong> <?= prj_h($it['facultad']) ?> |
-              <strong>Departamento Academico:</strong> <?= prj_h($it['departamento']) ?>
+              <strong>Departamento Acad&eacute;mico:</strong> <?= prj_h($it['departamento']) ?>
             </p>
             <p style="margin:0;">
-              <strong>Codigo docente:</strong> <?= prj_h($it['cod_docente']) ?> |
+              <strong>C&oacute;digo docente:</strong> <?= prj_h($it['cod_docente']) ?> |
               <strong>id_py:</strong> <?= prj_h($it['id_py']) ?>
             </p>
           </td>
@@ -273,7 +330,7 @@ function prj_link_limpiar_filtros()
 </table>
 
 <?php if ($total_pages > 1): ?>
-  <nav aria-label="Paginacion" class="mt-2">
+  <nav aria-label="Paginación" class="mt-2">
     <ul class="pagination justify-content-center mb-0">
       <?php for ($p = 1; $p <= $total_pages; $p++): ?>
         <?php if ($p === $pagina): ?>
@@ -287,10 +344,10 @@ function prj_link_limpiar_filtros()
 <?php endif; ?>
 
 <div class="modal fade" id="modalInformeDetalle" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+  <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header bg-light">
-        <h5 class="modal-title">Detalle de Informe</h5>
+        <h5 class="modal-title">Informe Semestral / Final</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -302,11 +359,27 @@ function prj_link_limpiar_filtros()
   </div>
 </div>
 
-<div class="modal fade" id="modalEvaluacionDetalle" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+<div class="modal fade" id="modalPresentacionDetalle" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header bg-light">
-        <h5 class="modal-title">Estado de Evaluación</h5>
+        <h5 class="modal-title">Formulaci&oacute;n y Presentaci&oacute;n de Proyecto</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="prjPresentacionDetalleBody">
+        <div class="text-muted">Cargando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalEvaluacionDetalle" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Estado de Evaluaci&oacute;n</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -316,8 +389,27 @@ function prj_link_limpiar_filtros()
         <div class="mb-2 border rounded p-2 bg-light" id="prjEvalResumen"></div>
         <div id="prjEvalTimeline" class="prj-eval-timeline"></div>
         <hr>
-        <h6 class="mb-2">Acciones de evaluación</h6>
+        <h6 class="mb-2">Flujo del coordinador</h6>
+        <div id="prjCoordActions" class="prj-eval-actions"></div>
+        <hr>
+        <h6 class="mb-2">Acciones de evaluaci&oacute;n</h6>
         <div id="prjEvalActions" class="prj-eval-actions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalObservacionesDetalle" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-1"></i> Observaciones</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="prjObsDetalleBody">
+        <div class="text-muted">Cargando...</div>
       </div>
     </div>
   </div>

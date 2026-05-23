@@ -48,41 +48,83 @@ class RSUEvaluacionV1MessagingPolicyService
 
     public function getModeForEventCode($eventCode)
     {
+        $decision = $this->getDecisionForEventCode($eventCode);
+        return isset($decision['mode']) ? (string)$decision['mode'] : 'log_only';
+    }
+
+    public function getDecisionForEventCode($eventCode)
+    {
         $globalMode = $this->getMode();
         if ($globalMode !== 'send_and_log') {
-            return 'log_only';
+            return array(
+                'mode' => 'log_only',
+                'reason' => 'mensajeria_global_desactivada',
+                'toggle_code' => '',
+            );
         }
 
         $eventCode = strtoupper(trim((string)$eventCode));
         if ($eventCode === '') {
-            return $globalMode;
+            return array(
+                'mode' => $globalMode,
+                'reason' => 'sin_evento',
+                'toggle_code' => '',
+            );
         }
 
         $toggleCode = $this->toggleCodeForEventCode($eventCode);
         if ($toggleCode === '') {
-            return $globalMode;
+            return array(
+                'mode' => $globalMode,
+                'reason' => 'sin_toggle_especifico',
+                'toggle_code' => '',
+            );
         }
 
         $sql = "SELECT estado FROM evt_eventos WHERE codigo = ? LIMIT 1";
         $st = @mysqli_prepare($this->db, $sql);
         if (!$st) {
-            return $globalMode;
+            return array(
+                'mode' => $globalMode,
+                'reason' => 'toggle_no_disponible',
+                'toggle_code' => $toggleCode,
+            );
         }
         mysqli_stmt_bind_param($st, 's', $toggleCode);
         $ok = @mysqli_stmt_execute($st);
         if (!$ok) {
             mysqli_stmt_close($st);
-            return $globalMode;
+            return array(
+                'mode' => $globalMode,
+                'reason' => 'toggle_no_disponible',
+                'toggle_code' => $toggleCode,
+            );
         }
         $rs = mysqli_stmt_get_result($st);
         $row = ($rs instanceof mysqli_result) ? mysqli_fetch_assoc($rs) : null;
         mysqli_stmt_close($st);
 
         if (!$row || !isset($row['estado'])) {
-            return $globalMode;
+            return array(
+                'mode' => $globalMode,
+                'reason' => 'toggle_no_configurado',
+                'toggle_code' => $toggleCode,
+            );
         }
 
-        return ((int)$row['estado'] === 1) ? 'send_and_log' : 'log_only';
+        if ((int)$row['estado'] !== 1) {
+            return array(
+                'mode' => 'log_only',
+                'reason' => 'evento_desactivado',
+                'toggle_code' => $toggleCode,
+            );
+        }
+
+        return array(
+            'mode' => 'send_and_log',
+            'reason' => 'evento_activado',
+            'toggle_code' => $toggleCode,
+        );
     }
 
     private function toggleCodeForEventCode($eventCode)

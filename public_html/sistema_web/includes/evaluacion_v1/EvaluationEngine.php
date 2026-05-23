@@ -23,6 +23,8 @@ class RSUEvaluacionV1EvaluationEngine
 
     /** @var RSUEvaluacionV1NotificationService */
     private $notificationService;
+    /** @var RSUEvaluacionV1MailOutboxService */
+    private $mailOutboxService;
 
     /** @var RSUEvaluacionV1LegacyDispatcher */
     private $legacyDispatcher;
@@ -37,7 +39,8 @@ class RSUEvaluacionV1EvaluationEngine
         $this->permissionService = new RSUEvaluacionV1PermissionService();
         $this->workflowService = new RSUEvaluacionV1WorkflowService($db);
         $this->eventLogger = new RSUEvaluacionV1EventLoggerService($db);
-        $this->notificationService = new RSUEvaluacionV1NotificationService($this->eventLogger, $mail_sender);
+        $this->mailOutboxService = new RSUEvaluacionV1MailOutboxService($db);
+        $this->notificationService = new RSUEvaluacionV1NotificationService($this->eventLogger, $mail_sender, $this->mailOutboxService);
         $this->legacyCompatibility = new RSUEvaluacionV1LegacyCompatibilityService($db);
         $this->legacyDispatcher = new RSUEvaluacionV1LegacyDispatcher($db);
     }

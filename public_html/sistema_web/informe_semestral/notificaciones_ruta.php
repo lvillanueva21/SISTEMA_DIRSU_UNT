@@ -188,7 +188,6 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
     if ($id_py<=0 || $of_origen<=0 || $of_destino<=0 || $inst_id<=0) return false;
 
     $to = _notif_destinatarios($db, $id_py);
-    if (empty($to)) return false;
 
     [$titulo,$periodo] = _notif_info_proyecto($db, $id_py);
     [$codOri,$nomOri]  = _notif_oficina($db, $of_origen);
@@ -237,7 +236,6 @@ function notif_aprobacion_total(\mysqli $db, array $ctx): bool {
     if ($id_py<=0 || $of_ult<=0 || $inst_id<=0) return false;
 
     $to = _notif_destinatarios($db, $id_py);
-    if (empty($to)) return false;
 
     [$titulo,$periodo] = _notif_info_proyecto($db, $id_py);
     [$codUlt,$nomUlt]  = _notif_oficina($db, $of_ult);

@@ -142,6 +142,89 @@ function destinatariosPorOficina(mysqli $cx, int $rol_id, array $ctx): array {
   return array_values(array_unique($usuarios));
 }
 /** Envío real con PHPMailer. Devuelve array con ok/error/detail y diag extra. */
+function obtenerResumenRubricaSubsanacion(mysqli $cx, int $eval_id, int $ofi_id): array {
+  $out = ['html' => '', 'text' => ''];
+  if ($eval_id <= 0 || $ofi_id <= 0) return $out;
+
+  $sqlCal = "SELECT id, total FROM eva_calificaciones
+             WHERE id_evaluacion = ? AND id_oficina = ? AND tipo = 'rubrica'
+             ORDER BY id DESC
+             LIMIT 1";
+  $stCal = $cx->prepare($sqlCal);
+  if (!$stCal) return $out;
+  $stCal->bind_param('ii', $eval_id, $ofi_id);
+  if (!$stCal->execute()) { $stCal->close(); return $out; }
+  $rc = $stCal->get_result()->fetch_assoc();
+  $stCal->close();
+  if (!$rc || empty($rc['id'])) return $out;
+
+  $id_cal = (int)$rc['id'];
+  $total = isset($rc['total']) ? (int)$rc['total'] : null;
+
+  $sqlAsp = "SELECT aspecto, nota, observacion
+             FROM eva_rubrica_aspectos
+             WHERE id_calificacion = ?
+             ORDER BY FIELD(aspecto,'estructura','contenido','redaccion','calidad_info','propuesta_mejora'), id ASC";
+  $stAsp = $cx->prepare($sqlAsp);
+  if (!$stAsp) return $out;
+  $stAsp->bind_param('i', $id_cal);
+  if (!$stAsp->execute()) { $stAsp->close(); return $out; }
+  $rs = $stAsp->get_result();
+  $rows = [];
+  while ($r = $rs->fetch_assoc()) {
+    $obs = trim((string)($r['observacion'] ?? ''));
+    if ($obs === '') continue;
+    $rows[] = [
+      'aspecto' => (string)($r['aspecto'] ?? ''),
+      'nota' => isset($r['nota']) ? (int)$r['nota'] : 0,
+      'obs' => $obs,
+    ];
+  }
+  $stAsp->close();
+  if (empty($rows)) return $out;
+
+  $alias = [
+    'estructura' => 'Estructura',
+    'contenido' => 'Contenido',
+    'redaccion' => 'Redaccion',
+    'calidad_info' => 'Calidad de informacion',
+    'propuesta_mejora' => 'Propuesta de mejora',
+  ];
+
+  $html = '<div style="margin-top:10px;">'
+    . '<p><strong>Resumen de observaciones de rubrica:</strong></p>'
+    . '<table role="presentation" cellspacing="0" cellpadding="6" border="0" style="width:100%;border-collapse:collapse;border:1px solid #ddd;">'
+    . '<thead><tr style="background:#f5f5f5;">'
+    . '<th align="left" style="border:1px solid #ddd;padding:8px;">Aspecto</th>'
+    . '<th align="center" style="border:1px solid #ddd;padding:8px;width:90px;">Nota</th>'
+    . '<th align="left" style="border:1px solid #ddd;padding:8px;">Observacion</th>'
+    . '</tr></thead><tbody>';
+
+  $text = "Resumen de observaciones de rubrica:\n";
+  foreach ($rows as $r) {
+    $aspecto = $alias[$r['aspecto']] ?? $r['aspecto'];
+    $nota = (int)$r['nota'];
+    $obs = (string)$r['obs'];
+    $html .= '<tr>'
+      . '<td style="border:1px solid #ddd;padding:8px;">' . htmlspecialchars($aspecto, ENT_QUOTES, 'UTF-8') . '</td>'
+      . '<td align="center" style="border:1px solid #ddd;padding:8px;">' . $nota . '</td>'
+      . '<td style="border:1px solid #ddd;padding:8px;">' . htmlspecialchars($obs, ENT_QUOTES, 'UTF-8') . '</td>'
+      . '</tr>';
+    $text .= "- {$aspecto} (nota {$nota}): {$obs}\n";
+  }
+
+  $html .= '</tbody></table>';
+  if ($total !== null) {
+    $html .= '<p style="margin-top:8px;"><strong>Puntaje total:</strong> ' . $total . ' / 20</p>';
+    $text .= "Puntaje total: {$total}/20\n";
+  }
+  $html .= '</div>';
+
+  $out['html'] = $html;
+  $out['text'] = $text . "\n";
+  return $out;
+}
+
 function enviarCorreoSubsanacion(array $payload, array &$diag): array {
   if (empty($payload['emails']) || !is_array($payload['emails'])) {
     return ['ok'=>false,'error'=>'Sin destinatarios (emails[])'];
@@ -252,10 +335,11 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
     return ['ok'=>false,'error'=>'No se encontraron correos en el directorio para los destinatarios.','diag'=>$diag];
   }
 
-  // 4) Contenido (link portable) — sin observaciones
+  // 4) Contenido (link portable)
   $asunto = "Subsanación enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU";
   $baseUrl = sistema_web_base_url();
   $url    = $baseUrl !== '' ? ($baseUrl . '/login.php') : '../login.php';
+  $rubricaResumen = obtenerResumenRubricaSubsanacion($cx, $eval_id, $ofi_id);
 
   $facDepFraseHTML = '';
   $facDepFraseTXT  = '';
@@ -268,12 +352,14 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
     <p>Hola,</p>
     <p>El proyecto con título: <strong>".htmlspecialchars($titulo,ENT_QUOTES,'UTF-8')."</strong> del coordinador <strong>".htmlspecialchars($coordNom,ENT_QUOTES,'UTF-8')."</strong>{$facDepFraseHTML} ha registrado una <strong>subsanación</strong> de las observaciones hechas por tu oficina (<strong>".htmlspecialchars($ofi_nom,ENT_QUOTES,'UTF-8')."</strong>).</p>
     <p>El siguiente paso es ingresar a la plataforma y volver a revisar el proyecto para aprobarlo si las subsanaciones satisfacen lo requerido.</p>
+    ".($rubricaResumen['html'] !== '' ? $rubricaResumen['html'] : '')."
     <p><a href=\"{$url}\" target=\"_blank\">Ingresar al Sistema DIRSU</a></p>
     <hr>
     <p style=\"font-size:12px;color:#666\">Este mensaje se envió automáticamente al/los evaluador(es) de la oficina correspondiente.</p>
   ";
 
   $text = "Hola,\nEl proyecto: {$titulo} (coordinador: {$coordNom}){$facDepFraseTXT} registró una subsanación a las observaciones de tu oficina ({$ofi_nom}).\n\n"
+        . ($rubricaResumen['text'] !== '' ? $rubricaResumen['text'] : '')
         . "Ingresar: {$url}\n";
 
   // 5) Mensajería controlada + auditoría (envía o solo registra según switch).

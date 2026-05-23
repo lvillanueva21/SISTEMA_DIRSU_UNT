@@ -46,6 +46,75 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             max-height: 180px;
             overflow-y: auto;
         }
+        .evt-msg-preview-wrap {
+            border-top: 1px dashed #dee2e6;
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+        .evt-msg-card {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            background: #fff;
+            margin-bottom: .75rem;
+            overflow: hidden;
+        }
+        .evt-msg-card-head {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: .55rem .75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .5rem;
+        }
+        .evt-msg-card-title {
+            font-weight: 600;
+            margin: 0;
+            font-size: .92rem;
+            line-height: 1.2;
+        }
+        .evt-msg-card-body {
+            padding: .65rem .75rem .75rem;
+        }
+        .evt-msg-subject {
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            color: #6c4a00;
+            border-radius: 7px;
+            padding: .4rem .55rem;
+            margin-bottom: .55rem;
+            font-size: .86rem;
+        }
+        .evt-msg-sample {
+            font-size: .83rem;
+            line-height: 1.45;
+            background: #fcfcfd;
+            border: 1px solid #e9ecef;
+            border-radius: 7px;
+            padding: .55rem;
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .evt-msg-var {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 0 .25rem;
+            font-weight: 600;
+        }
+        .evt-msg-note {
+            font-size: .78rem;
+            color: #6c757d;
+            margin-top: .35rem;
+            margin-bottom: 0;
+        }
+        .evt-msg-reserved {
+            border-color: #e2e3e5;
+            background: #f8f9fa;
+            color: #5a6268;
+        }
     </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -401,11 +470,193 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 </div>
                 <div class="custom-control custom-switch mb-2">
                     <input type="checkbox" class="custom-control-input evt-msg-item" id="evtMsgSolicitudRevision">
-                    <label class="custom-control-label" for="evtMsgSolicitudRevision">Solicitud de revision (reservado)</label>
+                    <label class="custom-control-label" for="evtMsgSolicitudRevision">Solicitud de revision</label>
                 </div>
                 <div class="custom-control custom-switch mb-2">
                     <input type="checkbox" class="custom-control-input evt-msg-item" id="evtMsgSubsanacion">
-                    <label class="custom-control-label" for="evtMsgSubsanacion">Subsanacion (reservado)</label>
+                    <label class="custom-control-label" for="evtMsgSubsanacion">Subsanacion</label>
+                </div>
+
+                <div class="evt-msg-preview-wrap">
+                    <h6 class="mb-2">Vista previa exacta de mensajes de correo</h6>
+                    <p class="text-muted small mb-3">
+                        Los datos en color celeste son variables armadas por el sistema en tiempo real.
+                    </p>
+
+                    <div class="evt-msg-card">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Derivacion entre oficinas</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplDerivacion" title="Copiar plantilla">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <div class="evt-msg-subject">
+                                <strong>Asunto:</strong> Tu informe fue derivado - Sistema DIRSU
+                            </div>
+                            <pre class="evt-msg-sample mb-0">Tu proyecto fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_origen}}</span> y ha sido derivado a la Oficina <span class="evt-msg-var">{{oficina_destino}}</span>.
+Fecha y hora: <span class="evt-msg-var">{{fecha_hora_derivacion}}</span>
+Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
+Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
+                            <textarea id="evtMsgTplDerivacion" class="d-none">Asunto: Tu informe fue derivado - Sistema DIRSU
+Tu proyecto fue aprobado en la Oficina {{oficina_origen}} y ha sido derivado a la Oficina {{oficina_destino}}.
+Fecha y hora: {{fecha_hora_derivacion}}
+Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
+Ingresar: {{url_login_proyecto}}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="evt-msg-card">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Observacion (Cotejo) - ejemplo con texto libre</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplObsCotejo" title="Copiar plantilla">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <div class="evt-msg-subject">
+                                <strong>Asunto:</strong> Recibiste una Observacion en <span class="evt-msg-var">{{oficina_actual}}</span> - Sistema DIRSU
+                            </div>
+                            <pre class="evt-msg-sample mb-0">Recibiste una observacion.
+Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
+Oficina: <span class="evt-msg-var">{{oficina_actual}}</span> (<span class="evt-msg-var">{{oficina_codigo}}</span>) | Tipo: Cotejo | Fecha: <span class="evt-msg-var">{{fecha_observacion}}</span>
+Observacion:
+Se solicita adjuntar la carta de compromiso etico y corregir la coherencia entre objetivo general y actividades del semestre.
+Fecha maxima de subsanacion: <span class="evt-msg-var">{{fecha_limite_subsanacion}}</span> (<span class="evt-msg-var">{{dias_restantes}}</span> dia(s) restantes)
+Revisar y subsanar: <span class="evt-msg-var">{{url_subsanacion}}</span></pre>
+                            <textarea id="evtMsgTplObsCotejo" class="d-none">Asunto: Recibiste una Observacion en {{oficina_actual}} - Sistema DIRSU
+Recibiste una observacion.
+Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
+Oficina: {{oficina_actual}} ({{oficina_codigo}}) | Tipo: Cotejo | Fecha: {{fecha_observacion}}
+Observacion:
+Se solicita adjuntar la carta de compromiso etico y corregir la coherencia entre objetivo general y actividades del semestre.
+Fecha maxima de subsanacion: {{fecha_limite_subsanacion}} ({{dias_restantes}} dia(s) restantes)
+Revisar y subsanar: {{url_subsanacion}}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="evt-msg-card">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Observacion (Rubrica) - ejemplo con aspectos</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplObsRubrica" title="Copiar plantilla">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <div class="evt-msg-subject">
+                                <strong>Asunto:</strong> Recibiste una Observacion en <span class="evt-msg-var">{{oficina_actual}}</span> - Sistema DIRSU
+                            </div>
+                            <pre class="evt-msg-sample mb-0">Recibiste una observacion.
+Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
+Oficina: <span class="evt-msg-var">{{oficina_actual}}</span> (<span class="evt-msg-var">{{oficina_codigo}}</span>) | Tipo: Rubrica | Fecha: <span class="evt-msg-var">{{fecha_observacion}}</span>
+- Estructura: (2) Mejorable — Falta ordenar mejor los apartados metodologicos.
+- Contenido: (1) Insuficiente — No se evidencia linea base ni indicadores cuantificables.
+- Redaccion: (3) Satisfactorio — Sin Observacion
+- Calidad de informacion: (2) Mejorable — Se citan fuentes sin fecha ni referencia institucional.
+- Propuesta de Mejora: (2) Mejorable — La propuesta no especifica responsables ni cronograma detallado.
+Puntaje total: <span class="evt-msg-var">{{puntaje_total}}</span> / 20
+Fecha maxima de subsanacion: <span class="evt-msg-var">{{fecha_limite_subsanacion}}</span> (<span class="evt-msg-var">{{dias_restantes}}</span> dia(s) restantes)
+Revisar y subsanar: <span class="evt-msg-var">{{url_subsanacion}}</span></pre>
+                            <textarea id="evtMsgTplObsRubrica" class="d-none">Asunto: Recibiste una Observacion en {{oficina_actual}} - Sistema DIRSU
+Recibiste una observacion.
+Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
+Oficina: {{oficina_actual}} ({{oficina_codigo}}) | Tipo: Rubrica | Fecha: {{fecha_observacion}}
+- Estructura: (2) Mejorable — Falta ordenar mejor los apartados metodologicos.
+- Contenido: (1) Insuficiente — No se evidencia linea base ni indicadores cuantificables.
+- Redaccion: (3) Satisfactorio — Sin Observacion
+- Calidad de informacion: (2) Mejorable — Se citan fuentes sin fecha ni referencia institucional.
+- Propuesta de Mejora: (2) Mejorable — La propuesta no especifica responsables ni cronograma detallado.
+Puntaje total: {{puntaje_total}} / 20
+Fecha maxima de subsanacion: {{fecha_limite_subsanacion}} ({{dias_restantes}} dia(s) restantes)
+Revisar y subsanar: {{url_subsanacion}}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="evt-msg-card">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Aprobacion total</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplAprobTotal" title="Copiar plantilla">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <div class="evt-msg-subject">
+                                <strong>Asunto:</strong> Aprobacion Total — Sistema DIRSU
+                            </div>
+                            <pre class="evt-msg-sample mb-0">¡Aprobacion Total!
+Tu proyecto fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_ultima}}</span> el <span class="evt-msg-var">{{fecha_hora_aprobacion}}</span>.
+El proceso de revision ha culminado exitosamente; no quedan tareas pendientes.
+Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
+Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
+                            <textarea id="evtMsgTplAprobTotal" class="d-none">Asunto: Aprobacion Total — Sistema DIRSU
+¡Aprobacion Total!
+Tu proyecto fue aprobado en la Oficina {{oficina_ultima}} el {{fecha_hora_aprobacion}}.
+El proceso de revision ha culminado exitosamente; no quedan tareas pendientes.
+Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
+Ingresar: {{url_login_proyecto}}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="evt-msg-card">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Solicitud de revision</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplSolicitudRevision" title="Copiar plantilla">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <div class="evt-msg-subject">
+                                <strong>Asunto:</strong> Tienes un informe pendiente de revision - Sistema DIRSU
+                            </div>
+                            <pre class="evt-msg-sample mb-0">Tienes un proyecto por revisar.
+Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
+Coordinador: <span class="evt-msg-var">{{coordinador_nombre}}</span>
+Facultad: <span class="evt-msg-var">{{facultad}}</span> | Departamento: <span class="evt-msg-var">{{departamento}}</span>
+Oficina destino: <span class="evt-msg-var">{{oficina_destino}}</span>
+Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
+                            <textarea id="evtMsgTplSolicitudRevision" class="d-none">Asunto: Tienes un informe pendiente de revision - Sistema DIRSU
+Tienes un proyecto por revisar.
+Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
+Coordinador: {{coordinador_nombre}}
+Facultad: {{facultad}} | Departamento: {{departamento}}
+Oficina destino: {{oficina_destino}}
+Ingresar: {{url_login_proyecto}}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="evt-msg-card mb-0">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Subsanacion</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplSubsanacion" title="Copiar plantilla">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <div class="evt-msg-subject">
+                                <strong>Asunto:</strong> Subsanacion enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU
+                            </div>
+                            <pre class="evt-msg-sample mb-0">El coordinador registro subsanacion.
+Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
+Oficina actual: <span class="evt-msg-var">{{oficina_actual}}</span>
+Resumen de observaciones de rubrica (si aplica):
+| Aspecto | Nota | Observacion |
+| Estructura | 2 | Mejorar secuencia metodologica |
+| Contenido | 1 | Falta evidenciar linea base |
+| Propuesta de mejora | 2 | No detalla responsables |
+Puntaje total: <span class="evt-msg-var">{{puntaje_total}}</span> / 20
+Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
+                            <textarea id="evtMsgTplSubsanacion" class="d-none">Asunto: Subsanacion enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU
+El coordinador registro subsanacion.
+Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
+Oficina actual: {{oficina_actual}}
+Resumen de observaciones de rubrica (si aplica):
+- Estructura (2): Mejorar secuencia metodologica
+- Contenido (1): Falta evidenciar linea base
+- Propuesta de mejora (2): No detalla responsables
+Puntaje total: {{puntaje_total}} / 20
+Ingresar: {{url_login_proyecto}}</textarea>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="text-muted small mt-3">
@@ -724,6 +975,41 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
             return ok;
         }
 
+        function copyTextToClipboard(value, onOk, onError) {
+            var text = String(value || '');
+            if (text === '') {
+                if (typeof onError === 'function') {
+                    onError();
+                }
+                return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function () {
+                    if (typeof onOk === 'function') {
+                        onOk();
+                    }
+                }).catch(function () {
+                    if (fallbackCopyText(text)) {
+                        if (typeof onOk === 'function') {
+                            onOk();
+                        }
+                    } else if (typeof onError === 'function') {
+                        onError();
+                    }
+                });
+                return;
+            }
+
+            if (fallbackCopyText(text)) {
+                if (typeof onOk === 'function') {
+                    onOk();
+                }
+            } else if (typeof onError === 'function') {
+                onError();
+            }
+        }
+
         function copySecretInput() {
             var value = $.trim($('#evtMtoClaveNueva').val());
             if (value === '') {
@@ -731,24 +1017,25 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 return;
             }
 
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(value).then(function () {
-                    showAlert('#evtMtoAlert', 'success', 'Clave copiada al portapapeles.');
-                }).catch(function () {
-                    if (fallbackCopyText(value)) {
-                        showAlert('#evtMtoAlert', 'success', 'Clave copiada al portapapeles.');
-                    } else {
-                        showAlert('#evtMtoAlert', 'danger', 'No se pudo copiar la clave.');
-                    }
-                });
+            copyTextToClipboard(value, function () {
+                showAlert('#evtMtoAlert', 'success', 'Clave copiada al portapapeles.');
+            }, function () {
+                showAlert('#evtMtoAlert', 'danger', 'No se pudo copiar la clave.');
+            });
+        }
+
+        function copyMessagingTemplateById(targetId) {
+            var $src = $('#' + targetId);
+            if ($src.length === 0) {
+                showAlert('#evtMessagingAlert', 'warning', 'No se encontro la plantilla para copiar.');
                 return;
             }
-
-            if (fallbackCopyText(value)) {
-                showAlert('#evtMtoAlert', 'success', 'Clave copiada al portapapeles.');
-            } else {
-                showAlert('#evtMtoAlert', 'danger', 'No se pudo copiar la clave.');
-            }
+            var text = String($src.val() || '');
+            copyTextToClipboard(text, function () {
+                showAlert('#evtMessagingAlert', 'success', 'Plantilla copiada al portapapeles.');
+            }, function () {
+                showAlert('#evtMessagingAlert', 'danger', 'No se pudo copiar la plantilla.');
+            });
         }
 
         function toggleSecretInput() {
@@ -1293,6 +1580,10 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
 
             $('#btnEvtMtoToggle').on('click', toggleSecretInput);
             $('#btnEvtMtoCopy').on('click', copySecretInput);
+            $(document).on('click', '.evt-msg-copy-btn', function () {
+                var targetId = $(this).attr('data-copy-target') || '';
+                copyMessagingTemplateById(targetId);
+            });
 
             $('#btnGotoDbManager').on('click', function (e) {
                 if ($(this).hasClass('disabled')) {

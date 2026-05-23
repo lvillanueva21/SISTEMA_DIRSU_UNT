@@ -87,7 +87,7 @@ if (!function_exists('rsu_projects_eval_office_badge_from_summary')) {
         }
 
         if ($code === 'PCF') {
-            return array('text' => 'Comite', 'class' => 'badge prj-badge-ofic-pcf');
+            return array('text' => 'Comité', 'class' => 'badge prj-badge-ofic-pcf');
         }
         if ($code === 'DD') {
             return array('text' => 'Dir. Departamento', 'class' => 'badge prj-badge-ofic-dd');
@@ -96,7 +96,7 @@ if (!function_exists('rsu_projects_eval_office_badge_from_summary')) {
             return array('text' => 'Decanato', 'class' => 'badge prj-badge-ofic-df');
         }
         if ($code === 'RSU') {
-            return array('text' => 'Direccion RSU', 'class' => 'badge prj-badge-ofic-rsu');
+            return array('text' => 'Dirección RSU', 'class' => 'badge prj-badge-ofic-rsu');
         }
 
         return array(
@@ -129,8 +129,9 @@ if (!function_exists('rsu_projects_eval_action_state')) {
             return array('enabled' => false, 'reason' => 'Pendiente de subsanación del coordinador.');
         }
 
-        $roleOffice = rsu_projects_eval_role_office_code($id_rol);
-        $currOffice = isset($eval['oficina_cod']) ? (string)$eval['oficina_cod'] : '';
+        $roleOfficeRaw = rsu_projects_eval_role_office_code($id_rol);
+        $roleOffice = ($roleOfficeRaw === null) ? null : strtoupper((string)$roleOfficeRaw);
+        $currOffice = strtoupper((string)(isset($eval['oficina_cod']) ? $eval['oficina_cod'] : ''));
         if ($roleOffice === null || $currOffice === '' || $roleOffice !== $currOffice) {
             $ofName = isset($eval['oficina_nom']) ? trim((string)$eval['oficina_nom']) : '';
             if ($ofName === '') {

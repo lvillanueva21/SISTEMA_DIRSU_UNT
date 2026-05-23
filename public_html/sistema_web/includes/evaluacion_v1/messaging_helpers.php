@@ -49,7 +49,11 @@ if (!function_exists('rsu_eval_v1_notify_mail')) {
 
         $eventCode = isset($payload['event_code']) ? strtoupper(trim((string)$payload['event_code'])) : '';
         $policy = new RSUEvaluacionV1MessagingPolicyService($db);
-        $mode = $policy->getModeForEventCode($eventCode);
+        $decision = $policy->getDecisionForEventCode($eventCode);
+        $mode = isset($decision['mode']) ? (string)$decision['mode'] : 'log_only';
+        if ($mode !== 'send_and_log') {
+            $payload['skip_reason'] = isset($decision['reason']) ? (string)$decision['reason'] : 'mensajeria_desactivada';
+        }
         $payload['mail_sender'] = $sender;
         $result = $engine->notify($payload, $mode);
 

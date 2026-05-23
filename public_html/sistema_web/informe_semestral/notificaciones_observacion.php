@@ -58,7 +58,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         if ($e && filter_var($e, FILTER_VALIDATE_EMAIL)) $dest[$e] = true;
     }
     $stmt->close();
-    if (empty($dest)) { error_log('notif_obs: sin destinatarios'); return false; }
+    if (empty($dest)) { error_log('notif_obs: sin destinatarios'); }
 
     /* ===== 2) Proyecto & período ===== */
     $titulo  = 'Proyecto';
