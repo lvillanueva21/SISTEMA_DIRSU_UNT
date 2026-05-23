@@ -15,10 +15,10 @@ class PCFHandler {
     $this->ruta = new RutaService($db);
   }
 
-  public function guardar(int $id_py, string $accion, array $val, array $usr): array {
+  public function guardar(int $id_py, int $id_respuesta, string $accion, array $val, array $usr): array {
     $this->svc->begin();
     try{
-      $eval = $this->svc->getEvalForUpdate($id_py);
+      $eval = $this->svc->getEvalForUpdateByRespuesta($id_respuesta);
       if(!$eval){ $this->svc->rollback(); return ['ok'=>false,'error'=>'El proyecto no inició su ruta']; }
 
       $eval_id   = (int)$eval['id'];
@@ -45,6 +45,15 @@ class PCFHandler {
             $next = $this->ruta->siguienteOficinaId($oficinaId);
             if ($next !== null) { $nextId = (int)$next; $this->svc->abrirSiguienteOficina($eval_id, $nextId); $this->svc->setOficinaActual($eval_id, $nextId, 'en_oficina'); }
             else { $aprobadoTotal = true; $this->svc->setOficinaActual($eval_id, null, 'aprobado'); }
+          }
+        }
+
+        $requiereNotificacion = ($estado === 'observado') || ($inst_id && ($nextId || $aprobadoTotal));
+        if ($requiereNotificacion) {
+          $metaTipo = rsu_eval_v1_report_type($this->db, $id_respuesta);
+          if (empty($metaTipo['ok'])) {
+            $msgTipo = isset($metaTipo['message']) ? (string)$metaTipo['message'] : 'No se pudo determinar el tipo de informe.';
+            throw new \Exception($msgTipo);
           }
         }
 
@@ -102,6 +111,15 @@ class PCFHandler {
             $next = $this->ruta->siguienteOficinaId($oficinaId);
             if ($next !== null) { $nextId = (int)$next; $this->svc->abrirSiguienteOficina($eval_id, $nextId); $this->svc->setOficinaActual($eval_id, $nextId, 'en_oficina'); }
             else { $aprobadoTotal = true; $this->svc->setOficinaActual($eval_id, null, 'aprobado'); }
+          }
+        }
+
+        $requiereNotificacion = ($estado === 'observado') || ($inst_id && ($nextId || $aprobadoTotal));
+        if ($requiereNotificacion) {
+          $metaTipo = rsu_eval_v1_report_type($this->db, $id_respuesta);
+          if (empty($metaTipo['ok'])) {
+            $msgTipo = isset($metaTipo['message']) ? (string)$metaTipo['message'] : 'No se pudo determinar el tipo de informe.';
+            throw new \Exception($msgTipo);
           }
         }
 

@@ -185,6 +185,13 @@ if (!$resp) {
 
 $idProyecto = (int)$resp['id_py'];
 
+$metaTipoInforme = rsu_eval_v1_report_type($conexion, $id_respuesta);
+if (empty($metaTipoInforme['ok'])) {
+    $msgTipo = isset($metaTipoInforme['message']) ? (string)$metaTipoInforme['message'] : 'No se pudo determinar el tipo de informe.';
+    sm_json_error(409, $msgTipo);
+}
+$tipoInformeTitle = (string)$metaTipoInforme['label_title'];
+
 $estadoActual = (int)$resp['estado'];
 if (!in_array($estadoActual, array(0, 1, 3), true)) {
     sm_json_error(409, 'La respuesta no se puede enviar a revisión en su estado actual.');
@@ -471,7 +478,7 @@ if ($nombreFormulario === '') {
 if ($correoDestino !== '') {
     $fecha = date('d/m/Y');
     $hora = date('H:i');
-    $asunto = 'Solicitud de Revisión de Informe — ' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario');
+    $asunto = 'Solicitud de Revisión de ' . $tipoInformeTitle . ' — ' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario');
     $mensaje = 'Se solicitó la revisión del proyecto "' . ($tituloProyecto !== '' ? $tituloProyecto : 'Proyecto') . '"'
         . ' para el formulario "' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario') . '"'
         . ' el día ' . $fecha . ' a las ' . $hora . ' (Lima-Perú).';

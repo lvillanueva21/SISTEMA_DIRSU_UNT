@@ -48,6 +48,15 @@ class PCFHandler {
           }
         }
 
+        $requiereNotificacion = ($estado === 'observado') || ($inst_id && ($nextId || $aprobadoTotal));
+        if ($requiereNotificacion) {
+          $metaTipo = rsu_eval_v1_report_type($this->db, $id_respuesta);
+          if (empty($metaTipo['ok'])) {
+            $msgTipo = isset($metaTipo['message']) ? (string)$metaTipo['message'] : 'No se pudo determinar el tipo de informe.';
+            throw new \Exception($msgTipo);
+          }
+        }
+
         $this->svc->commit();
 
         // Notificaciones solo si OBSERVADO
@@ -102,6 +111,15 @@ class PCFHandler {
             $next = $this->ruta->siguienteOficinaId($oficinaId);
             if ($next !== null) { $nextId = (int)$next; $this->svc->abrirSiguienteOficina($eval_id, $nextId); $this->svc->setOficinaActual($eval_id, $nextId, 'en_oficina'); }
             else { $aprobadoTotal = true; $this->svc->setOficinaActual($eval_id, null, 'aprobado'); }
+          }
+        }
+
+        $requiereNotificacion = ($estado === 'observado') || ($inst_id && ($nextId || $aprobadoTotal));
+        if ($requiereNotificacion) {
+          $metaTipo = rsu_eval_v1_report_type($this->db, $id_respuesta);
+          if (empty($metaTipo['ok'])) {
+            $msgTipo = isset($metaTipo['message']) ? (string)$metaTipo['message'] : 'No se pudo determinar el tipo de informe.';
+            throw new \Exception($msgTipo);
           }
         }
 

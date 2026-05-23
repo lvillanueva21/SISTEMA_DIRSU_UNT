@@ -309,6 +309,13 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
     return ['ok'=>false,'error'=>'Parámetros incompletos (id_respuesta/eval_id/oficina_id).','diag'=>$diag];
   }
 
+  $metaTipoInforme = rsu_eval_v1_report_type($cx, $id_resp);
+  if (empty($metaTipoInforme['ok'])) {
+    $msgTipo = isset($metaTipoInforme['message']) ? (string)$metaTipoInforme['message'] : 'No se pudo determinar el tipo de informe.';
+    return ['ok'=>false,'error'=>$msgTipo,'diag'=>$diag];
+  }
+  $tipoInformeLower = (string)$metaTipoInforme['label_lower'];
+
   // 1) Contexto
   $PX = obtenerContextoProyecto($cx, $id_resp);
   $id_py    = (int)$PX['id_py'];
@@ -336,7 +343,7 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
   }
 
   // 4) Contenido (link portable)
-  $asunto = "Subsanación enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU";
+  $asunto = "Subsanación enviada de {$tipoInformeLower} — Tienes un proyecto por revisar — PROYECTOS DIRSU";
   $baseUrl = sistema_web_base_url();
   $url    = $baseUrl !== '' ? ($baseUrl . '/login.php') : '../login.php';
   $rubricaResumen = obtenerResumenRubricaSubsanacion($cx, $eval_id, $ofi_id);

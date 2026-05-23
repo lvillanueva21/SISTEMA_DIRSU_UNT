@@ -19,12 +19,12 @@ class DFHandler {
    * - No usa observación: se envía NULL.
    * - No usa días: se envía 0.
    */
-  public function guardar(int $id_py, string $accion, array $val, array $usr): array {
+  public function guardar(int $id_py, int $id_respuesta, string $accion, array $val, array $usr): array {
     if ($accion !== 'vb') return ['ok'=>false,'error'=>'Acción no soportada en DF'];
 
     $this->svc->begin();
     try{
-      $eval = $this->svc->getEvalForUpdate($id_py);
+      $eval = $this->svc->getEvalForUpdateByRespuesta($id_respuesta);
       if(!$eval){
         $this->svc->rollback();
         return ['ok'=>false,'error'=>'El proyecto no inició su ruta'];
@@ -63,6 +63,15 @@ class DFHandler {
         } else {
           $aprobadoTotal = true;
           $this->svc->setOficinaActual($eval_id, null, 'aprobado');
+        }
+      }
+
+      $requiereNotificacion = ($inst_id && ($nextId || $aprobadoTotal));
+      if ($requiereNotificacion) {
+        $metaTipo = rsu_eval_v1_report_type($this->db, $id_respuesta);
+        if (empty($metaTipo['ok'])) {
+          $msgTipo = isset($metaTipo['message']) ? (string)$metaTipo['message'] : 'No se pudo determinar el tipo de informe.';
+          throw new \Exception($msgTipo);
         }
       }
 

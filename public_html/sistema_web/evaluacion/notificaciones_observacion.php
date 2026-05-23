@@ -1,11 +1,13 @@
 <?php
 declare(strict_types=1);
 
-// /sistema_web/evaluacion/notificaciones_observacion.php
+// /sistema_web/informe_semestral/notificaciones_observacion.php
 // Define la función en el namespace GLOBAL para evitar conflictos con includes desde archivos con namespace.
 namespace {
 
 date_default_timezone_set('America/Lima');
+require_once __DIR__ . '/notificaciones_ruta.php';
+require_once __DIR__ . '/../includes/evaluacion_v1/messaging_helpers.php';
 
 /**
  * Envía correo de observación a coordinadores activos (id_rol=2) del proyecto,
@@ -33,6 +35,12 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         return false;
     }
 
+    $metaTipoInforme = _notif_resolver_tipo_informe($conexion, $eval_id);
+    if (empty($metaTipoInforme['ok'])) {
+        return false;
+    }
+    $tipoInformeTitle = (string)$metaTipoInforme['label_title'];
+
     /* ===== 1) Destinatarios (coordinadores activos con email) ===== */
     $sqlTo = "SELECT DISTINCT uc.email
                 FROM usuarios_proyectos up
@@ -56,7 +64,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         if ($e && filter_var($e, FILTER_VALIDATE_EMAIL)) $dest[$e] = true;
     }
     $stmt->close();
-    if (empty($dest)) { error_log('notif_obs: sin destinatarios'); return false; }
+    if (empty($dest)) { error_log('notif_obs: sin destinatarios'); }
 
     /* ===== 2) Proyecto & período ===== */
     $titulo  = 'Proyecto';
@@ -242,7 +250,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     }
 
     /* ===== 5) Cuerpo del correo ===== */
-    $subject  = "Recibiste una Observación en {$of_nom} - Sistema DIRSU";
+    $subject  = "Recibiste una Observación en {$of_nom} ({$tipoInformeTitle}) - Sistema DIRSU";
     $url_det  = "https://rsu.unitru.edu.pe/sistema_web/login.php?id_py={$id_py}&tipo={$tipo}";
     $tipo_txt = ($tipo === 'cotejo') ? 'Cotejo' : 'Rúbrica';
 
@@ -313,40 +321,19 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     }
     $text .= "Revisar y subsanar: {$url_det}\n";
 
-    /* ===== 6) PHPMailer ===== */
-    $base = realpath(__DIR__ . '/../recursos/src') ?: (__DIR__ . '/../recursos/src');
-    foreach ([$base.'/PHPMailer.php',$base.'/SMTP.php',$base.'/Exception.php'] as $p){
-        if(!file_exists($p)){ error_log('PHPMailer no encontrado: '.$p); return false; }
-    }
-    require_once $base.'/Exception.php';
-    require_once $base.'/PHPMailer.php';
-    require_once $base.'/SMTP.php';
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-    try{
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'proyectosdirsu@unitru.edu.pe';
-        $mail->Password   = 'owmjcvzzurfnocgq';
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-        $mail->CharSet    = 'UTF-8';
-
-        $mail->setFrom('proyectosdirsu@unitru.edu.pe','Sistema DIRSU');
-        $mail->addReplyTo('proyectosdirsu@unitru.edu.pe','Sistema DIRSU');
-        foreach(array_keys($dest) as $to){ $mail->addAddress($to); }
-
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $html;
-        $mail->AltBody = $text;
-
-        return $mail->send();
-    }catch(\Throwable $e){
-        error_log('Mailer obs error: '.$e->getMessage());
-        return false;
-    }
+    $tipo_num = ($tipo === 'cotejo') ? 1 : 2;
+    return _notif_mail_controlado(
+        $conexion,
+        $eval_id,
+        $oficina_id,
+        $tipo_num,
+        'MAIL_OBSERVACION',
+        array_keys($dest),
+        $subject,
+        $html,
+        $text
+    );
 }
 
 } // <- fin namespace global
+

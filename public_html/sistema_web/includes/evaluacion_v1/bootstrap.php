@@ -15,6 +15,7 @@ require_once __DIR__ . '/MailOutboxService.php';
 require_once __DIR__ . '/NotificationService.php';
 require_once __DIR__ . '/MessagingPolicyService.php';
 require_once __DIR__ . '/NotificationWarnings.php';
+require_once __DIR__ . '/ReportTypeResolverService.php';
 require_once __DIR__ . '/LegacyCompatibilityService.php';
 require_once __DIR__ . '/LegacyDispatcher.php';
 require_once __DIR__ . '/EvaluationEngine.php';

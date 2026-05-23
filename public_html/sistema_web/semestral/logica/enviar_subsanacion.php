@@ -28,10 +28,17 @@ function jok(array $extra=[]){
 }
 
 require_once __DIR__ . '/../../componentes/db.php';
+require_once __DIR__ . '/../../includes/evaluacion_v1/messaging_helpers.php';
 
 $id_respuesta = (int)($_POST['id_respuesta'] ?? 0);
 if ($id_respuesta<=0) jfail(400,'ID de respuesta inválido');
 if (empty($_SESSION['usuario'])) jfail(401,'Sesión inválida');
+
+$metaTipoInforme = rsu_eval_v1_report_type($conexion, $id_respuesta);
+if (empty($metaTipoInforme['ok'])) {
+  $msgTipo = isset($metaTipoInforme['message']) ? (string)$metaTipoInforme['message'] : 'No se pudo determinar el tipo de informe.';
+  jfail(409, $msgTipo);
+}
 
 // 1) Cargar evaluación + oficina actual + estados
 $sql = "

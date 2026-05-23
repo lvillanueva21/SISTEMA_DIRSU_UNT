@@ -66,6 +66,15 @@ class DFHandler {
         }
       }
 
+      $requiereNotificacion = ($inst_id && ($nextId || $aprobadoTotal));
+      if ($requiereNotificacion) {
+        $metaTipo = rsu_eval_v1_report_type($this->db, $id_respuesta);
+        if (empty($metaTipo['ok'])) {
+          $msgTipo = isset($metaTipo['message']) ? (string)$metaTipo['message'] : 'No se pudo determinar el tipo de informe.';
+          throw new \Exception($msgTipo);
+        }
+      }
+
       $this->svc->commit();
 
       // Notificaciones (derivación o aprobación total)

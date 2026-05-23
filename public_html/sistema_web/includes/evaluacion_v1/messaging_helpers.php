@@ -38,6 +38,29 @@ if (!function_exists('rsu_eval_v1_messaging_mode')) {
     }
 }
 
+if (!function_exists('rsu_eval_v1_report_type')) {
+    function rsu_eval_v1_report_type(mysqli $db, $id_respuesta)
+    {
+        $svc = new RSUEvaluacionV1ReportTypeResolverService($db);
+        return $svc->resolveByRespuesta((int)$id_respuesta);
+    }
+}
+
+if (!function_exists('rsu_eval_v1_report_type_from_eval')) {
+    function rsu_eval_v1_report_type_from_eval(mysqli $db, $eval_id)
+    {
+        $id_respuesta = rsu_eval_v1_eval_to_respuesta($db, $eval_id);
+        if ($id_respuesta <= 0) {
+            return array(
+                'ok' => false,
+                'reason' => 'eval_sin_respuesta',
+                'message' => 'No se pudo determinar el tipo de informe: la evaluacion no tiene respuesta asociada.',
+            );
+        }
+        return rsu_eval_v1_report_type($db, $id_respuesta);
+    }
+}
+
 if (!function_exists('rsu_eval_v1_notify_mail')) {
     function rsu_eval_v1_notify_mail(mysqli $db, array $payload, callable $sender)
     {

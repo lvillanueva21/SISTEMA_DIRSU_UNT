@@ -478,187 +478,208 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                 </div>
 
                 <div class="evt-msg-preview-wrap">
-                    <h6 class="mb-2">Vista previa exacta de mensajes de correo</h6>
+                    <h6 class="mb-2">Vista previa de mensajes (alineada a formato real)</h6>
                     <p class="text-muted small mb-3">
-                        Los datos en color celeste son variables armadas por el sistema en tiempo real.
+                        Los datos en color celeste son variables dinámicas. Aunque la mensajería esté apagada, se audita en <code>ev_eventos</code> y <code>msj_correos_outbox</code>.
                     </p>
 
                     <div class="evt-msg-card">
                         <div class="evt-msg-card-head">
-                            <p class="evt-msg-card-title mb-0">Derivacion entre oficinas</p>
-                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplDerivacion" title="Copiar plantilla">
-                                <i class="fa fa-copy"></i>
-                            </button>
+                            <p class="evt-msg-card-title mb-0">Derivación entre oficinas</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplDerivacion" title="Copiar plantilla"><i class="fa fa-copy"></i></button>
                         </div>
                         <div class="evt-msg-card-body">
-                            <div class="evt-msg-subject">
-                                <strong>Asunto:</strong> Tu informe fue derivado - Sistema DIRSU
-                            </div>
+                            <div class="evt-msg-subject"><strong>Asunto:</strong> Tu <span class="evt-msg-var">{{tipo_informe_lower}}</span> fue derivado a <span class="evt-msg-var">{{oficina_destino}}</span> - Sistema DIRSU</div>
                             <pre class="evt-msg-sample mb-0">Tu proyecto fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_origen}}</span> y ha sido derivado a la Oficina <span class="evt-msg-var">{{oficina_destino}}</span>.
+
 Fecha y hora: <span class="evt-msg-var">{{fecha_hora_derivacion}}</span>
 Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
-Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
-                            <textarea id="evtMsgTplDerivacion" class="d-none">Asunto: Tu informe fue derivado - Sistema DIRSU
+Ingresar al Sistema DIRSU: <span class="evt-msg-var">{{url_login_proyecto}}</span>
+
+Este es un correo automático de notificación de derivación.</pre>
+                            <textarea id="evtMsgTplDerivacion" class="d-none">Asunto: Tu {{tipo_informe_lower}} fue derivado a {{oficina_destino}} - Sistema DIRSU
 Tu proyecto fue aprobado en la Oficina {{oficina_origen}} y ha sido derivado a la Oficina {{oficina_destino}}.
+
 Fecha y hora: {{fecha_hora_derivacion}}
 Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
-Ingresar: {{url_login_proyecto}}</textarea>
+Ingresar al Sistema DIRSU: {{url_login_proyecto}}
+
+Este es un correo automático de notificación de derivación.</textarea>
                         </div>
                     </div>
 
                     <div class="evt-msg-card">
                         <div class="evt-msg-card-head">
-                            <p class="evt-msg-card-title mb-0">Observacion (Cotejo) - ejemplo con texto libre</p>
-                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplObsCotejo" title="Copiar plantilla">
-                                <i class="fa fa-copy"></i>
-                            </button>
+                            <p class="evt-msg-card-title mb-0">Observación por Cotejo</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplObsCotejo" title="Copiar plantilla"><i class="fa fa-copy"></i></button>
                         </div>
                         <div class="evt-msg-card-body">
-                            <div class="evt-msg-subject">
-                                <strong>Asunto:</strong> Recibiste una Observacion en <span class="evt-msg-var">{{oficina_actual}}</span> - Sistema DIRSU
-                            </div>
-                            <pre class="evt-msg-sample mb-0">Recibiste una observacion.
+                            <div class="evt-msg-subject"><strong>Asunto:</strong> Recibiste una Observación en <span class="evt-msg-var">{{oficina_actual}}</span> (<span class="evt-msg-var">{{tipo_informe_title}}</span>) - Sistema DIRSU</div>
+                            <pre class="evt-msg-sample mb-0">Recibiste una observación.
+
 Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
 Oficina: <span class="evt-msg-var">{{oficina_actual}}</span> (<span class="evt-msg-var">{{oficina_codigo}}</span>) | Tipo: Cotejo | Fecha: <span class="evt-msg-var">{{fecha_observacion}}</span>
-Observacion:
-Se solicita adjuntar la carta de compromiso etico y corregir la coherencia entre objetivo general y actividades del semestre.
-Fecha maxima de subsanacion: <span class="evt-msg-var">{{fecha_limite_subsanacion}}</span> (<span class="evt-msg-var">{{dias_restantes}}</span> dia(s) restantes)
-Revisar y subsanar: <span class="evt-msg-var">{{url_subsanacion}}</span></pre>
-                            <textarea id="evtMsgTplObsCotejo" class="d-none">Asunto: Recibiste una Observacion en {{oficina_actual}} - Sistema DIRSU
-Recibiste una observacion.
+
+Observación:
+<span class="evt-msg-var">{{observacion_cotejo}}</span>
+
+Fecha máxima de subsanación: <span class="evt-msg-var">{{fecha_limite_subsanacion}}</span> (<span class="evt-msg-var">{{dias_restantes}}</span> día(s) restantes)
+Presiona para ir al Sistema DIRSU y subsanar.</pre>
+                            <textarea id="evtMsgTplObsCotejo" class="d-none">Asunto: Recibiste una Observación en {{oficina_actual}} ({{tipo_informe_title}}) - Sistema DIRSU
+Recibiste una observación.
+
 Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
 Oficina: {{oficina_actual}} ({{oficina_codigo}}) | Tipo: Cotejo | Fecha: {{fecha_observacion}}
-Observacion:
-Se solicita adjuntar la carta de compromiso etico y corregir la coherencia entre objetivo general y actividades del semestre.
-Fecha maxima de subsanacion: {{fecha_limite_subsanacion}} ({{dias_restantes}} dia(s) restantes)
-Revisar y subsanar: {{url_subsanacion}}</textarea>
+
+Observación:
+{{observacion_cotejo}}
+
+Fecha máxima de subsanación: {{fecha_limite_subsanacion}} ({{dias_restantes}} día(s) restantes)
+Presiona para ir al Sistema DIRSU y subsanar.</textarea>
                         </div>
                     </div>
 
                     <div class="evt-msg-card">
                         <div class="evt-msg-card-head">
-                            <p class="evt-msg-card-title mb-0">Observacion (Rubrica) - ejemplo con aspectos</p>
-                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplObsRubrica" title="Copiar plantilla">
-                                <i class="fa fa-copy"></i>
-                            </button>
+                            <p class="evt-msg-card-title mb-0">Observación por Rúbrica</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplObsRubrica" title="Copiar plantilla"><i class="fa fa-copy"></i></button>
                         </div>
                         <div class="evt-msg-card-body">
-                            <div class="evt-msg-subject">
-                                <strong>Asunto:</strong> Recibiste una Observacion en <span class="evt-msg-var">{{oficina_actual}}</span> - Sistema DIRSU
-                            </div>
-                            <pre class="evt-msg-sample mb-0">Recibiste una observacion.
+                            <div class="evt-msg-subject"><strong>Asunto:</strong> Recibiste una Observación en <span class="evt-msg-var">{{oficina_actual}}</span> (<span class="evt-msg-var">{{tipo_informe_title}}</span>) - Sistema DIRSU</div>
+                            <pre class="evt-msg-sample mb-0">Recibiste una observación.
+
 Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
-Oficina: <span class="evt-msg-var">{{oficina_actual}}</span> (<span class="evt-msg-var">{{oficina_codigo}}</span>) | Tipo: Rubrica | Fecha: <span class="evt-msg-var">{{fecha_observacion}}</span>
-- Estructura: (2) Mejorable — Falta ordenar mejor los apartados metodologicos.
-- Contenido: (1) Insuficiente — No se evidencia linea base ni indicadores cuantificables.
-- Redaccion: (3) Satisfactorio — Sin Observacion
-- Calidad de informacion: (2) Mejorable — Se citan fuentes sin fecha ni referencia institucional.
-- Propuesta de Mejora: (2) Mejorable — La propuesta no especifica responsables ni cronograma detallado.
+Oficina: <span class="evt-msg-var">{{oficina_actual}}</span> (<span class="evt-msg-var">{{oficina_codigo}}</span>) | Tipo: Rúbrica | Fecha: <span class="evt-msg-var">{{fecha_observacion}}</span>
+
+Aspecto | Nota | Observación
+Estructura | (1) Insuficiente | <span class="evt-msg-var">{{obs_estructura}}</span>
+Contenido | (1) Insuficiente | <span class="evt-msg-var">{{obs_contenido}}</span>
+Redacción | (3) Satisfactorio | Sin Observación
+Calidad de información | (4) Excelente | Sin Observación
+Propuesta de Mejora | (3) Satisfactorio | Sin Observación
+
 Puntaje total: <span class="evt-msg-var">{{puntaje_total}}</span> / 20
-Fecha maxima de subsanacion: <span class="evt-msg-var">{{fecha_limite_subsanacion}}</span> (<span class="evt-msg-var">{{dias_restantes}}</span> dia(s) restantes)
-Revisar y subsanar: <span class="evt-msg-var">{{url_subsanacion}}</span></pre>
-                            <textarea id="evtMsgTplObsRubrica" class="d-none">Asunto: Recibiste una Observacion en {{oficina_actual}} - Sistema DIRSU
-Recibiste una observacion.
+Fecha máxima de subsanación: <span class="evt-msg-var">{{fecha_limite_subsanacion}}</span> (<span class="evt-msg-var">{{dias_restantes}}</span> día(s) restantes)
+Presiona para ir al Sistema DIRSU y subsanar.</pre>
+                            <textarea id="evtMsgTplObsRubrica" class="d-none">Asunto: Recibiste una Observación en {{oficina_actual}} ({{tipo_informe_title}}) - Sistema DIRSU
+Recibiste una observación.
+
 Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
-Oficina: {{oficina_actual}} ({{oficina_codigo}}) | Tipo: Rubrica | Fecha: {{fecha_observacion}}
-- Estructura: (2) Mejorable — Falta ordenar mejor los apartados metodologicos.
-- Contenido: (1) Insuficiente — No se evidencia linea base ni indicadores cuantificables.
-- Redaccion: (3) Satisfactorio — Sin Observacion
-- Calidad de informacion: (2) Mejorable — Se citan fuentes sin fecha ni referencia institucional.
-- Propuesta de Mejora: (2) Mejorable — La propuesta no especifica responsables ni cronograma detallado.
+Oficina: {{oficina_actual}} ({{oficina_codigo}}) | Tipo: Rúbrica | Fecha: {{fecha_observacion}}
+
+Aspecto | Nota | Observación
+Estructura | (1) Insuficiente | {{obs_estructura}}
+Contenido | (1) Insuficiente | {{obs_contenido}}
+Redacción | (3) Satisfactorio | Sin Observación
+Calidad de información | (4) Excelente | Sin Observación
+Propuesta de Mejora | (3) Satisfactorio | Sin Observación
+
 Puntaje total: {{puntaje_total}} / 20
-Fecha maxima de subsanacion: {{fecha_limite_subsanacion}} ({{dias_restantes}} dia(s) restantes)
-Revisar y subsanar: {{url_subsanacion}}</textarea>
+Fecha máxima de subsanación: {{fecha_limite_subsanacion}} ({{dias_restantes}} día(s) restantes)
+Presiona para ir al Sistema DIRSU y subsanar.</textarea>
                         </div>
                     </div>
 
                     <div class="evt-msg-card">
                         <div class="evt-msg-card-head">
-                            <p class="evt-msg-card-title mb-0">Aprobacion total</p>
-                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplAprobTotal" title="Copiar plantilla">
-                                <i class="fa fa-copy"></i>
-                            </button>
+                            <p class="evt-msg-card-title mb-0">Aprobación total</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplAprobTotal" title="Copiar plantilla"><i class="fa fa-copy"></i></button>
                         </div>
                         <div class="evt-msg-card-body">
-                            <div class="evt-msg-subject">
-                                <strong>Asunto:</strong> Aprobacion Total — Sistema DIRSU
-                            </div>
-                            <pre class="evt-msg-sample mb-0">¡Aprobacion Total!
+                            <div class="evt-msg-subject"><strong>Asunto:</strong> Aprobación Total (<span class="evt-msg-var">{{tipo_informe_title}}</span>) - Sistema DIRSU</div>
+                            <pre class="evt-msg-sample mb-0">¡Aprobación Total!
+
 Tu proyecto fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_ultima}}</span> el <span class="evt-msg-var">{{fecha_hora_aprobacion}}</span>.
-El proceso de revision ha culminado exitosamente; no quedan tareas pendientes.
+Con esta aprobación, el proceso de revisión ha culminado exitosamente. No quedan tareas pendientes por realizar.
+
 Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
-Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
-                            <textarea id="evtMsgTplAprobTotal" class="d-none">Asunto: Aprobacion Total — Sistema DIRSU
-¡Aprobacion Total!
+Ingresar al Sistema DIRSU: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
+                            <textarea id="evtMsgTplAprobTotal" class="d-none">Asunto: Aprobación Total ({{tipo_informe_title}}) - Sistema DIRSU
+¡Aprobación Total!
+
 Tu proyecto fue aprobado en la Oficina {{oficina_ultima}} el {{fecha_hora_aprobacion}}.
-El proceso de revision ha culminado exitosamente; no quedan tareas pendientes.
+Con esta aprobación, el proceso de revisión ha culminado exitosamente. No quedan tareas pendientes por realizar.
+
 Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
-Ingresar: {{url_login_proyecto}}</textarea>
+Ingresar al Sistema DIRSU: {{url_login_proyecto}}</textarea>
                         </div>
                     </div>
 
                     <div class="evt-msg-card">
                         <div class="evt-msg-card-head">
-                            <p class="evt-msg-card-title mb-0">Solicitud de revision</p>
-                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplSolicitudRevision" title="Copiar plantilla">
-                                <i class="fa fa-copy"></i>
-                            </button>
+                            <p class="evt-msg-card-title mb-0">Solicitud de revisión</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplSolicitudRevision" title="Copiar plantilla"><i class="fa fa-copy"></i></button>
                         </div>
                         <div class="evt-msg-card-body">
-                            <div class="evt-msg-subject">
-                                <strong>Asunto:</strong> Tienes un informe pendiente de revision - Sistema DIRSU
-                            </div>
-                            <pre class="evt-msg-sample mb-0">Tienes un proyecto por revisar.
+                            <div class="evt-msg-subject"><strong>Asunto:</strong> Solicitud de Revisión de <span class="evt-msg-var">{{tipo_informe_title}}</span> — <span class="evt-msg-var">{{nombre_formulario}}</span></div>
+                            <pre class="evt-msg-sample mb-0">Hola,
+
+Se solicitó la revisión del proyecto "<span class="evt-msg-var">{{titulo_proyecto}}</span>" para el formulario "<span class="evt-msg-var">{{nombre_formulario}}</span>" el día <span class="evt-msg-var">{{fecha_solicitud}}</span> a las <span class="evt-msg-var">{{hora_solicitud}}</span> (Lima-Perú).
+
 Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
 Coordinador: <span class="evt-msg-var">{{coordinador_nombre}}</span>
 Facultad: <span class="evt-msg-var">{{facultad}}</span> | Departamento: <span class="evt-msg-var">{{departamento}}</span>
 Oficina destino: <span class="evt-msg-var">{{oficina_destino}}</span>
-Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
-                            <textarea id="evtMsgTplSolicitudRevision" class="d-none">Asunto: Tienes un informe pendiente de revision - Sistema DIRSU
-Tienes un proyecto por revisar.
+
+Ingresar al Sistema DIRSU: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
+                            <textarea id="evtMsgTplSolicitudRevision" class="d-none">Asunto: Solicitud de Revisión de {{tipo_informe_title}} — {{nombre_formulario}}
+Hola,
+
+Se solicitó la revisión del proyecto "{{titulo_proyecto}}" para el formulario "{{nombre_formulario}}" el día {{fecha_solicitud}} a las {{hora_solicitud}} (Lima-Perú).
+
 Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
 Coordinador: {{coordinador_nombre}}
 Facultad: {{facultad}} | Departamento: {{departamento}}
 Oficina destino: {{oficina_destino}}
-Ingresar: {{url_login_proyecto}}</textarea>
+
+Ingresar al Sistema DIRSU: {{url_login_proyecto}}</textarea>
                         </div>
                     </div>
 
-                    <div class="evt-msg-card mb-0">
+                    <div class="evt-msg-card">
                         <div class="evt-msg-card-head">
-                            <p class="evt-msg-card-title mb-0">Subsanacion</p>
-                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplSubsanacion" title="Copiar plantilla">
-                                <i class="fa fa-copy"></i>
-                            </button>
+                            <p class="evt-msg-card-title mb-0">Subsanación</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm evt-msg-copy-btn" data-copy-target="evtMsgTplSubsanacion" title="Copiar plantilla"><i class="fa fa-copy"></i></button>
                         </div>
                         <div class="evt-msg-card-body">
-                            <div class="evt-msg-subject">
-                                <strong>Asunto:</strong> Subsanacion enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU
-                            </div>
-                            <pre class="evt-msg-sample mb-0">El coordinador registro subsanacion.
-Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> (ID <span class="evt-msg-var">{{id_py}}</span>) — <span class="evt-msg-var">{{periodo}}</span>
-Oficina actual: <span class="evt-msg-var">{{oficina_actual}}</span>
-Resumen de observaciones de rubrica (si aplica):
-| Aspecto | Nota | Observacion |
-| Estructura | 2 | Mejorar secuencia metodologica |
-| Contenido | 1 | Falta evidenciar linea base |
-| Propuesta de mejora | 2 | No detalla responsables |
-Puntaje total: <span class="evt-msg-var">{{puntaje_total}}</span> / 20
-Ingresar: <span class="evt-msg-var">{{url_login_proyecto}}</span></pre>
-                            <textarea id="evtMsgTplSubsanacion" class="d-none">Asunto: Subsanacion enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU
-El coordinador registro subsanacion.
-Proyecto: {{titulo_proyecto}} (ID {{id_py}}) — {{periodo}}
-Oficina actual: {{oficina_actual}}
-Resumen de observaciones de rubrica (si aplica):
-- Estructura (2): Mejorar secuencia metodologica
-- Contenido (1): Falta evidenciar linea base
-- Propuesta de mejora (2): No detalla responsables
-Puntaje total: {{puntaje_total}} / 20
-Ingresar: {{url_login_proyecto}}</textarea>
+                            <div class="evt-msg-subject"><strong>Asunto:</strong> Subsanación enviada de <span class="evt-msg-var">{{tipo_informe_lower}}</span> — Tienes un proyecto por revisar — PROYECTOS DIRSU</div>
+                            <pre class="evt-msg-sample mb-0">Hola,
+
+El proyecto con título: "<span class="evt-msg-var">{{titulo_proyecto}}</span>" del coordinador <span class="evt-msg-var">{{coordinador_nombre}}</span> que pertenece a la facultad <span class="evt-msg-var">{{facultad}}</span> y departamento <span class="evt-msg-var">{{departamento}}</span> ha registrado una subsanación de las observaciones hechas por tu oficina (<span class="evt-msg-var">{{oficina_actual}}</span>).
+
+El siguiente paso es ingresar a la plataforma y volver a revisar el proyecto para aprobarlo si las subsanaciones satisfacen lo requerido.
+
+Ingresar al Sistema DIRSU: <span class="evt-msg-var">{{url_login_proyecto}}</span>
+
+Este mensaje se envió automáticamente al/los evaluador(es) de la oficina correspondiente.</pre>
+                            <textarea id="evtMsgTplSubsanacion" class="d-none">Asunto: Subsanación enviada de {{tipo_informe_lower}} — Tienes un proyecto por revisar — PROYECTOS DIRSU
+Hola,
+
+El proyecto con título: "{{titulo_proyecto}}" del coordinador {{coordinador_nombre}} que pertenece a la facultad {{facultad}} y departamento {{departamento}} ha registrado una subsanación de las observaciones hechas por tu oficina ({{oficina_actual}}).
+
+El siguiente paso es ingresar a la plataforma y volver a revisar el proyecto para aprobarlo si las subsanaciones satisfacen lo requerido.
+
+Ingresar al Sistema DIRSU: {{url_login_proyecto}}
+
+Este mensaje se envió automáticamente al/los evaluador(es) de la oficina correspondiente.</textarea>
+                        </div>
+                    </div>
+
+                    <div class="evt-msg-card evt-msg-reserved mb-0">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Preflight de destinatarios (Reservado)</p>
+                            <span class="badge badge-secondary">Próxima activación</span>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <pre class="evt-msg-sample mb-0">Tu aprobación enviará un correo a:
+<span class="evt-msg-var">{{correo_1}}</span> — <span class="evt-msg-var">{{rol_destinatario_1}}</span>
+<span class="evt-msg-var">{{correo_2}}</span> — <span class="evt-msg-var">{{rol_destinatario_2}}</span>
+
+Estado: reservado para API centralizada de preflight.</pre>
+                            <p class="evt-msg-note">Esta plantilla está visible para auditoría funcional, pero su envío no está activo en esta etapa.</p>
                         </div>
                     </div>
                 </div>
-
                 <div class="text-muted small mt-3">
                     Ultima actualizacion global: <span id="evtMessagingUpdatedAt">-</span>
                 </div>

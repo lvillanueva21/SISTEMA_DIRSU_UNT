@@ -35,6 +35,12 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
         return false;
     }
 
+    $metaTipoInforme = _notif_resolver_tipo_informe($conexion, $eval_id);
+    if (empty($metaTipoInforme['ok'])) {
+        return false;
+    }
+    $tipoInformeTitle = (string)$metaTipoInforme['label_title'];
+
     /* ===== 1) Destinatarios (coordinadores activos con email) ===== */
     $sqlTo = "SELECT DISTINCT uc.email
                 FROM usuarios_proyectos up
@@ -244,7 +250,7 @@ function notif_observacion_personalizada(\mysqli $conexion, array $ctx): bool {
     }
 
     /* ===== 5) Cuerpo del correo ===== */
-    $subject  = "Recibiste una Observación en {$of_nom} - Sistema DIRSU";
+    $subject  = "Recibiste una Observación en {$of_nom} ({$tipoInformeTitle}) - Sistema DIRSU";
     $url_det  = "https://rsu.unitru.edu.pe/sistema_web/login.php?id_py={$id_py}&tipo={$tipo}";
     $tipo_txt = ($tipo === 'cotejo') ? 'Cotejo' : 'Rúbrica';
 
