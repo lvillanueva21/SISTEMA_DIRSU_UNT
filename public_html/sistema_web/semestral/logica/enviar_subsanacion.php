@@ -30,6 +30,39 @@ function jok(array $extra=[]){
 require_once __DIR__ . '/../../componentes/db.php';
 require_once __DIR__ . '/../../includes/evaluacion_v1/messaging_helpers.php';
 
+function registrar_auditoria_subsanacion_fallback(mysqli $conexion, int $idRespuesta, int $oficinaId, string $detalle): bool
+{
+  if ($idRespuesta <= 0) {
+    return false;
+  }
+  $asunto = 'Subsanación enviada — Tienes un informe por revisar — PROYECTOS DIRSU';
+  $detalle = trim($detalle) !== '' ? trim($detalle) : 'Fallo técnico en notificación de subsanación.';
+  $html = '<p><strong>Subsanación registrada con incidencia técnica.</strong></p>'
+        . '<p>Detalle: ' . htmlspecialchars($detalle, ENT_QUOTES, 'UTF-8') . '</p>';
+  $text = "Subsanación registrada con incidencia técnica.\nDetalle: {$detalle}\n";
+
+  return rsu_eval_v1_notify_mail(
+    $conexion,
+    [
+      'id_respuesta' => $idRespuesta,
+      'event_code'   => 'MAIL_SUBSANACION',
+      'office'       => $oficinaId > 0 ? $oficinaId : null,
+      'tipo'         => 3,
+      'to'           => [],
+      'subject'      => $asunto,
+      'message'      => $html,
+      'html'         => $html,
+      'text'         => $text,
+      'created_by'   => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
+      'ip'           => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+      'skip_reason'  => 'excepcion_tecnica',
+    ],
+    function (array $payload) {
+      return false;
+    }
+  );
+}
+
 $id_respuesta = (int)($_POST['id_respuesta'] ?? 0);
 if ($id_respuesta<=0) jfail(400,'ID de respuesta inválido');
 if (empty($_SESSION['usuario'])) jfail(401,'Sesión inválida');
@@ -90,7 +123,7 @@ if ($instId<=0) jfail(404,'No se encontró la instancia de oficina para esta eva
 // 3) Transacción: pasar a EN ESPERA lo observado + marcar timestamp de reenvío
 $conexion->begin_transaction();
 try {
-  // a) Reabrir calificaciones observadas → en_espera
+  // a) Reabrir calificaciones observadas -> en_espera
   $tipos = [];
   if ($obsCj) $tipos[] = 'cotejo';
   if ($obsRb) $tipos[] = 'rubrica';
@@ -110,7 +143,7 @@ try {
     $stUp->close();
   }
 
-  // b) Instancia de oficina → marcar reenvío y dejar en_espera
+  // b) Instancia de oficina -> marcar reenvío y dejar en_espera
   $stI = $conexion->prepare("
     UPDATE eva_oficina_instancias
        SET estado='en_espera',
@@ -150,6 +183,13 @@ try {
   } catch (Throwable $e) {
     $mailOk = false;
     $mailMsg = 'Subsanación registrada, pero ocurrió un error al notificar: ' . $e->getMessage();
+    $fallbackOk = registrar_auditoria_subsanacion_fallback(
+      $conexion,
+      $id_respuesta,
+      (int)($eval['id_ofi'] ?? 0),
+      $e->getMessage()
+    );
+    $mailDiag[] = $fallbackOk ? 'fallback_auditoria=ok' : 'fallback_auditoria=fallido';
   }
 
   jok([

@@ -8,6 +8,14 @@ declare(strict_types=1);
 date_default_timezone_set('America/Lima');
 require_once __DIR__ . '/../../includes/evaluacion_v1/messaging_helpers.php';
 
+function rsu_mail_wrap_subsanacion_html(string $innerHtml): string {
+  return '<div style="margin:0;padding:0;background:#f5f7fb;">'
+    . '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #dde5ef;font-family:Segoe UI,Arial,sans-serif;">'
+    . '<tr><td style="padding:22px 24px;color:#1f2d3d;font-size:14px;line-height:1.56;">'
+    . $innerHtml
+    . '</td></tr></table></div>';
+}
+
 /** Obtiene URL base de sistema_web segun host/ruta actual. */
 function sistema_web_base_url(): string {
   $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -74,6 +82,29 @@ function obtenerContextoProyecto(mysqli $cx, int $id_respuesta): array {
   return $out;
 }
 
+/** Semestre real del informe a partir de sm_respuestas.id_semestre. */
+function obtenerSemestreInformeLabel(mysqli $cx, int $id_respuesta): string {
+  $label = 'No determinado';
+  if ($id_respuesta <= 0) return $label;
+  $sql = "SELECT s.anio, s.periodo
+            FROM sm_respuestas r
+            LEFT JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
+           WHERE r.id = ?
+           LIMIT 1";
+  if ($st = $cx->prepare($sql)) {
+    $st->bind_param("i", $id_respuesta);
+    if ($st->execute() && ($row = $st->get_result()->fetch_assoc())) {
+      $anio = isset($row['anio']) ? (int)$row['anio'] : 0;
+      $periodo = trim((string)($row['periodo'] ?? ''));
+      if ($anio > 0 && $periodo !== '') {
+        $label = $anio . '-' . $periodo;
+      }
+    }
+    $st->close();
+  }
+  return $label;
+}
+
 /** Emails desde directorio (email + correo_asistente) para usuarios (logins). */
 function emailsDesdeDirectorio(mysqli $cx, array $usuarios): array {
   $dest = [];
@@ -108,7 +139,7 @@ function destinatariosPorOficina(mysqli $cx, int $rol_id, array $ctx): array {
       while ($r = $rs->fetch_assoc()) { $u = trim((string)$r['usuario']); if ($u) $usuarios[] = $u; }
       $rs->close();
     }
-  } elseif ($rol_id === 5) { // PCF por facultad (usuarios.id_escuela ≡ facultad)
+  } elseif ($rol_id === 5) { // PCF por facultad (usuarios.id_escuela = facultad)
     $fac = (int)($ctx['fac_id'] ?? 0);
     if ($fac > 0) {
       $st = $cx->prepare("SELECT usuario FROM usuarios WHERE id_rol=5 AND id_escuela=?");
@@ -141,7 +172,7 @@ function destinatariosPorOficina(mysqli $cx, int $rol_id, array $ctx): array {
   }
   return array_values(array_unique($usuarios));
 }
-/** Envío real con PHPMailer. Devuelve array con ok/error/detail y diag extra. */
+/** Envío de resumen de rúbrica para el correo de subsanación. */
 function obtenerResumenRubricaSubsanacion(mysqli $cx, int $eval_id, int $ofi_id): array {
   $out = ['html' => '', 'text' => ''];
   if ($eval_id <= 0 || $ofi_id <= 0) return $out;
@@ -225,76 +256,6 @@ function obtenerResumenRubricaSubsanacion(mysqli $cx, int $eval_id, int $ofi_id)
   return $out;
 }
 
-function enviarCorreoSubsanacion(array $payload, array &$diag): array {
-  if (empty($payload['emails']) || !is_array($payload['emails'])) {
-    return ['ok'=>false,'error'=>'Sin destinatarios (emails[])'];
-  }
-
-  $docroot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
-  $candidates = array_filter([
-    realpath(__DIR__ . '/../recursos/src') ?: (__DIR__ . '/../recursos/src'),
-    realpath(__DIR__ . '/../../evaluacion/recursos/src') ?: (__DIR__ . '/../../evaluacion/recursos/src'),
-    realpath(__DIR__ . '/../../recursos/src') ?: (__DIR__ . '/../../recursos/src'),
-  ]);
-  $diag[] = 'phpmailer_candidatos=' . implode(' | ', $candidates);
-
-  $base = null; $layout = null;
-  foreach ($candidates as $p) {
-    if (is_file($p.'/PHPMailer.php') && is_file($p.'/SMTP.php') && is_file($p.'/Exception.php')) {
-      $base = $p; $layout = 'flat'; break;
-    }
-    if (is_file($p.'/src/PHPMailer.php') && is_file($p.'/src/SMTP.php') && is_file($p.'/src/Exception.php')) {
-      $base = $p.'/src'; $layout = 'src'; break;
-    }
-  }
-
-  $autoloads = [
-    __DIR__ . '/../../../vendor/autoload.php',
-    __DIR__ . '/../../vendor/autoload.php',
-    __DIR__ . '/../../../../vendor/autoload.php',
-    $docroot ? $docroot.'/vendor/autoload.php' : null,
-  ];
-  $autoloads = array_filter($autoloads, fn($p)=> $p && is_file($p));
-
-  if (!$base && !empty($autoloads)) {
-    $try = reset($autoloads);
-    $diag[] = 'composer_autoload='.$try;
-    require_once $try;
-  } else {
-    $diag[] = 'phpmailer_base=' . ($base ?: 'no_encontrado') . ' layout=' . ($layout ?: '-');
-    if (!$base) return ['ok'=>false,'error'=>'PHPMailer no encontrado'];
-    require_once $base.'/Exception.php';
-    require_once $base.'/PHPMailer.php';
-    require_once $base.'/SMTP.php';
-  }
-
-  try {
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-    $mail->isSMTP();
-    $mail->Host       = 'smtp.gmail.com';
-    $mail->SMTPAuth   = true;
-    $mail->Username   = 'proyectosdirsu@unitru.edu.pe';
-    $mail->Password   = 'owmjcvzzurfnocgq';
-    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = 587;
-    $mail->CharSet    = 'UTF-8';
-
-    $mail->setFrom('proyectosdirsu@unitru.edu.pe','Sistema DIRSU');
-    $mail->addReplyTo('proyectosdirsu@unitru.edu.pe','Sistema DIRSU');
-    foreach ($payload['emails'] as $to) { $mail->addAddress($to); }
-
-    $mail->isHTML(true);
-    $mail->Subject = (string)$payload['asunto'];
-    $mail->Body    = (string)$payload['html'];
-    $mail->AltBody = (string)$payload['text'];
-
-    $ok = $mail->send();
-    if (!$ok) return ['ok'=>false,'error'=>'PHPMailer->send() devolvió false','detail'=>$mail->ErrorInfo];
-    return ['ok'=>true,'to'=>$payload['emails']];
-  } catch (\Throwable $e) {
-    return ['ok'=>false,'error'=>'Excepción al enviar','detail'=>$e->getMessage()];
-  }
-}
 /** Flujo principal. Devuelve array con ok/error/diag para que el caller lo muestre. */
 function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
   // $ctx: ['id_respuesta'=>int,'eval_id'=>int,'oficina_id'=>int,'oficina_cod'=>?,'oficina_nom'=>string]
@@ -306,15 +267,19 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
 
   $diag = [];
   if ($id_resp<=0 || $eval_id<=0 || $ofi_id<=0) {
-    return ['ok'=>false,'error'=>'Parámetros incompletos (id_respuesta/eval_id/oficina_id).','diag'=>$diag];
+    return ['ok'=>false,'error'=>html_entity_decode('Par&aacute;metros incompletos (id_respuesta/eval_id/oficina_id).', ENT_QUOTES, 'UTF-8'),'diag'=>$diag];
   }
 
   $metaTipoInforme = rsu_eval_v1_report_type($cx, $id_resp);
+  $tipoInformeLower = 'informe';
+  $tipoInformeError = '';
   if (empty($metaTipoInforme['ok'])) {
-    $msgTipo = isset($metaTipoInforme['message']) ? (string)$metaTipoInforme['message'] : 'No se pudo determinar el tipo de informe.';
-    return ['ok'=>false,'error'=>$msgTipo,'diag'=>$diag];
+    $tipoInformeError = isset($metaTipoInforme['message']) ? (string)$metaTipoInforme['message'] : 'No se pudo determinar el tipo de informe.';
+    $diag[] = 'tipo_informe_error=' . $tipoInformeError;
+  } else {
+    $tipoInformeLower = (string)$metaTipoInforme['label_lower'];
   }
-  $tipoInformeLower = (string)$metaTipoInforme['label_lower'];
+  $semestreLabel = obtenerSemestreInformeLabel($cx, $id_resp);
 
   // 1) Contexto
   $PX = obtenerContextoProyecto($cx, $id_resp);
@@ -329,43 +294,47 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
   $rol_id = rolIdDesdeOficina($ofi_cod, $ofi_nom);
   $diag[] = "rol_id=".((int)$rol_id)." ofi_cod=".($ofi_cod ?? '')." ofi_nom=".$ofi_nom;
   if (!$rol_id) {
-    return ['ok'=>false,'error'=>'No se pudo determinar el rol de la oficina (mapeo cod/nombre).','diag'=>$diag];
+    $diag[] = 'rol_no_determinado=1';
   }
 
   // 3) Usuarios y emails
-  $usuarios = destinatariosPorOficina($cx, (int)$rol_id, ['fac_id'=>$PX['fac_id'], 'depa_id'=>$PX['depa_id']]);
+  $usuarios = $rol_id ? destinatariosPorOficina($cx, (int)$rol_id, ['fac_id'=>$PX['fac_id'], 'depa_id'=>$PX['depa_id']]) : [];
   $diag[] = 'usuarios_count='.count($usuarios);
   $emails = emailsDesdeDirectorio($cx, $usuarios);
   if ($rol_id === 1 && empty($emails)) { $emails = ['lvillanueva@unitru.edu.pe']; $diag[]='rsu_fallback=1'; }
-  $diag[] = 'emails_count='.count($emails);
-  if (empty($emails)) {
-    return ['ok'=>false,'error'=>'No se encontraron correos en el directorio para los destinatarios.','diag'=>$diag];
+  if ($tipoInformeError !== '') {
+    $emails = [];
+    $diag[] = 'emails_forzados_vacios_por_tipo_informe=1';
   }
+  $diag[] = 'emails_count='.count($emails);
+  $sinDestinatarios = empty($emails);
 
   // 4) Contenido (link portable)
-  $asunto = "Subsanación enviada de {$tipoInformeLower} — Tienes un proyecto por revisar — PROYECTOS DIRSU";
-  $baseUrl = sistema_web_base_url();
-  $url    = $baseUrl !== '' ? ($baseUrl . '/login.php') : '../login.php';
+  $asunto = html_entity_decode("Subsanaci&oacute;n enviada de {$tipoInformeLower} &mdash; Tienes un informe por revisar &mdash; PROYECTOS DIRSU", ENT_QUOTES, 'UTF-8');
+  $url = 'https://rsu.unitru.edu.pe/sistema_web/login.php';
   $rubricaResumen = obtenerResumenRubricaSubsanacion($cx, $eval_id, $ofi_id);
 
   $facDepFraseHTML = '';
   $facDepFraseTXT  = '';
   if ((int)$rol_id !== 1) { // RSU no muestra fac/dep
     $facDepFraseHTML = " que pertenece a la facultad <strong>".htmlspecialchars($facNom,ENT_QUOTES,'UTF-8')."</strong> y departamento <strong>".htmlspecialchars($depNom,ENT_QUOTES,'UTF-8')."</strong>";
-    $facDepFraseTXT  = " — Facultad: {$facNom} — Departamento: {$depNom}";
+    $facDepFraseTXT  = html_entity_decode(" &mdash; Facultad: {$facNom} &mdash; Departamento: {$depNom}", ENT_QUOTES, 'UTF-8');
   }
 
-  $html = "
+  $htmlBody = "
     <p>Hola,</p>
-    <p>El proyecto con título: <strong>".htmlspecialchars($titulo,ENT_QUOTES,'UTF-8')."</strong> del coordinador <strong>".htmlspecialchars($coordNom,ENT_QUOTES,'UTF-8')."</strong>{$facDepFraseHTML} ha registrado una <strong>subsanación</strong> de las observaciones hechas por tu oficina (<strong>".htmlspecialchars($ofi_nom,ENT_QUOTES,'UTF-8')."</strong>).</p>
+    <p>El proyecto con t&iacute;tulo: <strong>".htmlspecialchars($titulo,ENT_QUOTES,'UTF-8')."</strong> del coordinador <strong>".htmlspecialchars($coordNom,ENT_QUOTES,'UTF-8')."</strong>{$facDepFraseHTML} ha registrado una <strong>subsanaci&oacute;n</strong> de las observaciones hechas por tu oficina (<strong>".htmlspecialchars($ofi_nom,ENT_QUOTES,'UTF-8')."</strong>).</p>
+    <p><strong>Semestre del informe:</strong> ".htmlspecialchars($semestreLabel, ENT_QUOTES, 'UTF-8')."</p>
     <p>El siguiente paso es ingresar a la plataforma y volver a revisar el proyecto para aprobarlo si las subsanaciones satisfacen lo requerido.</p>
     ".($rubricaResumen['html'] !== '' ? $rubricaResumen['html'] : '')."
-    <p><a href=\"{$url}\" target=\"_blank\">Ingresar al Sistema DIRSU</a></p>
-    <hr>
-    <p style=\"font-size:12px;color:#666\">Este mensaje se envió automáticamente al/los evaluador(es) de la oficina correspondiente.</p>
+    <p><a href=\"{$url}\" target=\"_blank\" style=\"color:#0a58ca;text-decoration:underline;\">Ingresar al Sistema DIRSU</a></p>
+    <hr style=\"border:none;border-top:1px solid #d8dde5;margin:14px 0;\">
+    <p style="font-size:12px;color:#666">Este mensaje se envi&oacute; autom&aacute;ticamente al/los evaluador(es) de la oficina correspondiente.</p>
   ";
+  $html = rsu_mail_wrap_subsanacion_html($htmlBody);
 
-  $text = "Hola,\nEl proyecto: {$titulo} (coordinador: {$coordNom}){$facDepFraseTXT} registró una subsanación a las observaciones de tu oficina ({$ofi_nom}).\n\n"
+  $text = html_entity_decode("Hola,\nEl proyecto: {$titulo} (coordinador: {$coordNom}){$facDepFraseTXT} registr&oacute; una subsanaci&oacute;n a las observaciones de tu oficina ({$ofi_nom}).\n", ENT_QUOTES, 'UTF-8')
+        . "Semestre del informe: {$semestreLabel}\n\n"
         . ($rubricaResumen['text'] !== '' ? $rubricaResumen['text'] : '')
         . "Ingresar: {$url}\n";
 
@@ -384,23 +353,40 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
       'text'         => $text,
       'created_by'   => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
       'ip'           => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+      'skip_reason'  => ($tipoInformeError !== '') ? 'error_validacion' : ($sinDestinatarios ? 'sin_destinatarios' : ''),
     ],
-    function(array $mailPayload) use (&$diag, $emails, $asunto, $html, $text) {
-      $send = enviarCorreoSubsanacion([
-        'asunto' => $asunto,
-        'html'   => $html,
-        'text'   => $text,
-        'emails' => $emails
-      ], $diag);
-      if (!$send['ok'] && !empty($send['detail'])) {
-        $diag[] = 'detail=' . (string)$send['detail'];
+    function(array $mailPayload) use (&$diag, $cx, $emails, $asunto, $html, $text) {
+      $errorDetail = '';
+      $ok = cor_mail_send_using_active_config(
+        $cx,
+        $emails,
+        $asunto,
+        $html,
+        $text,
+        $errorDetail
+      );
+      if (!$ok) {
+        $detalle = trim((string)$errorDetail);
+        if ($detalle !== '') {
+          $diag[] = 'detail=' . $detalle;
+          throw new RuntimeException($detalle);
+        }
+        throw new RuntimeException(html_entity_decode('El transportador de correo devolvi&oacute; false.', ENT_QUOTES, 'UTF-8'));
       }
-      return !empty($send['ok']);
+      return true;
     }
   );
 
   if (!$notifyOk) {
-    return ['ok'=>false,'error'=>'No se pudo enviar o auditar la mensajería de subsanación.','diag'=>$diag];
+    return ['ok'=>false,'error'=>html_entity_decode('No se pudo enviar o auditar la mensajer&iacute;a de subsanaci&oacute;n.', ENT_QUOTES, 'UTF-8'),'diag'=>$diag];
+  }
+
+  if ($tipoInformeError !== '') {
+    return ['ok'=>false,'error'=>$tipoInformeError,'diag'=>$diag];
+  }
+
+  if ($sinDestinatarios) {
+    return ['ok'=>false,'error'=>'No se encontraron correos en el directorio para los destinatarios. Se auditó el evento como no enviado.','diag'=>$diag];
   }
 
   return ['ok'=>true,'diag'=>$diag,'to'=>$emails];

@@ -5,6 +5,7 @@
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/NotificationWarnings.php';
+require_once __DIR__ . '/../correo_config_service.php';
 
 if (!function_exists('rsu_eval_v1_eval_to_respuesta')) {
     function rsu_eval_v1_eval_to_respuesta(mysqli $db, $eval_id)
@@ -76,6 +77,14 @@ if (!function_exists('rsu_eval_v1_notify_mail')) {
         $mode = isset($decision['mode']) ? (string)$decision['mode'] : 'log_only';
         if ($mode !== 'send_and_log') {
             $payload['skip_reason'] = isset($decision['reason']) ? (string)$decision['reason'] : 'mensajeria_desactivada';
+        } else {
+            $correoReason = '';
+            $correoMsg = '';
+            if (!cor_mail_can_send_notifications($db, $correoReason, $correoMsg)) {
+                $mode = 'log_only';
+                $payload['skip_reason'] = ($correoReason !== '') ? $correoReason : 'configuracion_correo_invalida';
+                rsu_eval_v1_notification_add_warning('La evaluación se guardó, pero el correo no se envió: ' . $correoMsg);
+            }
         }
         $payload['mail_sender'] = $sender;
         $result = $engine->notify($payload, $mode);

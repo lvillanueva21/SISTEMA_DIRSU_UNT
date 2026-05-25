@@ -116,7 +116,7 @@ Este es un correo automático de notificación de derivación.
 
 ### Metadatos
 - Remitente fijo: `Sistema DIRSU <proyectosdirsu@unitru.edu.pe>`
-- Asunto oficial observado: `Subsanación enviada — Tienes un proyecto por revisar — PROYECTOS DIRSU`
+- Asunto oficial observado: `Subsanación enviada — Tienes un informe por revisar — PROYECTOS DIRSU`
 
 ### Destinatario esperado
 - Evaluador(es) de la oficina que generó la observación.

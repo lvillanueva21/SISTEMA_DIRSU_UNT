@@ -3,6 +3,7 @@
 header('Content-Type: text/html; charset=utf-8');
 
 include_once __DIR__ . '/../funciones.php'; // testeo(), whereFiltroPorRol(), $conexion
+require_once __DIR__ . '/../../includes/evaluacion_v1/bootstrap.php';
 
 $usr        = testeo();
 $id_rol     = (int)$usr['id_rol'];
@@ -22,6 +23,7 @@ $id_respuesta = isset($_GET['id_respuesta']) ? (int)$_GET['id_respuesta'] : 0;
 $id_periodo = isset($_GET['semestral']) ? (int)$_GET['semestral'] : (isset($_GET['periodo']) ? (int)$_GET['periodo'] : 0);
 $periodo_sel_nombre = '';
 $forzar_sin_respuesta = false;
+$perm_error = '';
 
 if ($id_periodo > 0) {
     $sqlNomPeriodo = "SELECT nombre FROM periodos WHERE id = $id_periodo LIMIT 1";
@@ -113,6 +115,28 @@ if ($id_respuesta > 0) {
                 $id_respuesta = (int)($rUlt['id'] ?? 0);
             }
             mysqli_free_result($rsUlt);
+        }
+    }
+}
+
+if ($id_respuesta > 0 && !$forzar_sin_respuesta && in_array($accion, ['cotejo', 'rubrica', 'vb'], true)) {
+    $engine = rsu_eval_v1_engine($conexion);
+    if (!$engine) {
+        $perm_error = 'No se pudo validar permisos de evaluación.';
+    } else {
+        $oficina_codigo = function_exists('oficinaCodigoPorRol') ? (string)oficinaCodigoPorRol((int)$id_rol) : '';
+        $perm = $engine->authorizeEvaluation($id_rol, $accion, $oficina_codigo, $id_respuesta);
+        if (empty($perm['ok'])) {
+            $state = isset($perm['state']) && is_array($perm['state']) ? $perm['state'] : array();
+            $oficina_nom = trim((string)($state['oficina_nom'] ?? ''));
+            $why = trim((string)($perm['why'] ?? 'No autorizado para evaluar.'));
+            if ($oficina_nom !== '') {
+                $perm_error = 'Aún no te corresponde evaluar, el proyecto se encuentra en la Oficina ' . $oficina_nom . '.';
+            } elseif ($why !== '') {
+                $perm_error = $why;
+            } else {
+                $perm_error = 'Aún no te corresponde evaluar en esta etapa.';
+            }
         }
     }
 }
@@ -329,6 +353,8 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
     No existe informe semestral para el periodo seleccionado<?= $periodo_sel_nombre !== '' ? ' (' . htmlspecialchars($periodo_sel_nombre, ENT_QUOTES, 'UTF-8') . ')' : '' ?>.
     No se puede registrar evaluación sin informe del periodo activo.
   </div>
+<?php elseif ($perm_error !== ''): ?>
+  <div class="alert alert-warning mb-0"><?= htmlspecialchars($perm_error, ENT_QUOTES, 'UTF-8') ?></div>
 <?php elseif ($titulo === ''): ?>
   <div class="alert alert-danger mb-0">No se pudo obtener el contexto del proyecto o no tienes acceso.</div>
 <?php else: ?>
@@ -886,5 +912,4 @@ $ui_rb     = $pre_rb_estado     ? ($pre_rb_estado==='en_espera'     ? 'espera' :
   });
 })();
 </script>
-
 

@@ -209,10 +209,10 @@ function prj_link_limpiar_filtros()
   <thead class="thead-light">
     <tr>
       <th style="width: 4%;">#</th>
-      <th style="width: 30%;">T&iacute;tulo de proyecto</th>
-      <th style="width: 16%;">Coordinador</th>
-      <th style="width: 12%;">Fechas</th>
-      <th style="width: 38%;">Progreso</th>
+      <th style="width: 18%;">Proyecto</th>
+      <th style="width: 18%;">Coordinador</th>
+      <th style="width: 34%;">Progreso</th>
+      <th style="width: 26%;">Estado actual</th>
     </tr>
   </thead>
   <tbody>
@@ -232,6 +232,13 @@ function prj_link_limpiar_filtros()
           $codigo_pendiente = ($codigo_lower === '' || $codigo_lower === 'codigo pendiente' || $codigo_lower === 'código pendiente');
           $id_py = isset($it['id_py']) ? (int)$it['id_py'] : 0;
           $progress_items = isset($progress_map[$id_py]) && is_array($progress_map[$id_py]) ? $progress_map[$id_py] : array();
+          $periodo_presentacion = 'Primer semestre';
+          if (!empty($progress_items) && isset($progress_items[0]['periodo'])) {
+              $periodo_presentacion = trim((string)$progress_items[0]['periodo']);
+              if ($periodo_presentacion === '') {
+                  $periodo_presentacion = 'Primer semestre';
+              }
+          }
         ?>
         <tr class="prj-row-toggle" data-target="<?= prj_h($detail_id) ?>">
           <td><?= prj_h($idx) ?></td>
@@ -244,41 +251,42 @@ function prj_link_limpiar_filtros()
             <?php endif; ?>
             <br>
             <small class="prj-created-text"><em>Creado en: <?= prj_h($it['periodo_creacion']) ?></em></small>
+            <div class="prj-proyecto-fechas">
+              <small>
+                <strong>Inicio:</strong>
+                <?= ($fecha_inicio === '') ? '<span class="text-danger font-weight-bold">Sin fecha</span>' : prj_h($fecha_inicio) ?>
+              </small><br>
+              <small>
+                <strong>Fin:</strong>
+                <?= ($fecha_fin === '') ? '<span class="text-danger font-weight-bold">Sin fecha</span>' : prj_h($fecha_fin) ?>
+              </small>
+            </div>
           </td>
           <td><?= prj_h($it['coordinador']) ?></td>
           <td>
-            <div class="prj-date-block">
-              <strong>Inicio:</strong><br>
-              <?= ($fecha_inicio === '') ? '<span class="text-danger font-weight-bold">Sin fecha</span>' : prj_h($fecha_inicio) ?>
-            </div>
-            <div class="prj-date-block">
-              <strong>Fin:</strong><br>
-              <?= ($fecha_fin === '') ? '<span class="text-danger font-weight-bold">Sin fecha</span>' : prj_h($fecha_fin) ?>
-            </div>
-          </td>
-          <td>
             <div class="prj-progress-wrap">
-              <div class="prj-progress-line">
-                <span class="prj-deliver-period">Presentaci&oacute;n:</span>
+              <div class="prj-progress-line" data-line-key="presentacion">
+                <span class="prj-deliver-period"><?= prj_h($periodo_presentacion) ?>:</span>
                 <button
                   type="button"
                   class="prj-deliver-btn prj-deliver-btn-pres prj-btn-presentacion"
                   data-project-id="<?= prj_h($id_py) ?>"
                   title="Presentaci&oacute;n de proyecto"
-                >Pres. de Proyecto</button>
+                ><i class="fas fa-folder-open"></i> Pres. de Proyecto</button>
                 <button
                   type="button"
                   class="prj-eval-btn prj-eval-btn-pres"
                   title="Evaluaci&oacute;n de presentaci&oacute;n (pr&oacute;ximamente)"
-                >Evaluaci&oacute;n</button>
-                <span class="badge badge-secondary">Sin ruta</span>
+                ><i class="fas fa-clipboard-check"></i> Evaluaci&oacute;n</button>
               </div>
 
               <?php if (empty($progress_items)): ?>
-                <div class="prj-deliver-empty">Sin semestres calculados</div>
+                <div class="prj-progress-line" data-line-key="sin_semestres">
+                  <span class="prj-deliver-empty">Sin semestres calculados</span>
+                </div>
               <?php else: ?>
                 <?php foreach ($progress_items as $ent): ?>
-                  <div class="prj-progress-line">
+                  <div class="prj-progress-line" data-line-key="<?= prj_h($ent['periodo']) ?>">
                     <span class="prj-deliver-period"><?= prj_h($ent['periodo']) ?>:</span>
                     <?php if (!empty($ent['has_response'])): ?>
                       <button
@@ -287,24 +295,57 @@ function prj_link_limpiar_filtros()
                         data-project-id="<?= prj_h($id_py) ?>"
                         data-response-id="<?= prj_h($ent['response_id']) ?>"
                         title="<?= prj_h($ent['informe_label']) ?>"
-                      ><?= prj_h($ent['informe_label']) ?></button>
+                      ><i class="fas fa-file-alt"></i> <?= prj_h($ent['informe_label']) ?></button>
                       <button
                         type="button"
                         class="prj-eval-btn prj-btn-evaluacion"
                         data-project-id="<?= prj_h($id_py) ?>"
                         data-response-id="<?= prj_h($ent['response_id']) ?>"
                         title="Estado de evaluaci&oacute;n"
-                      >Evaluaci&oacute;n</button>
+                      ><i class="fas fa-clipboard-check"></i> Evaluaci&oacute;n</button>
+                    <?php else: ?>
+                      <span class="prj-deliver-empty-inline"><?= ($ent['tipo'] === 'final') ? 'Informe final pendiente' : 'Informe semestral pendiente' ?></span>
+                    <?php endif; ?>
+                  </div>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </div>
+          </td>
+          <td>
+            <div class="prj-status-wrap">
+              <div class="prj-status-line" data-line-key="presentacion">
+                <span class="badge badge-secondary">Sin ruta</span>
+              </div>
+              <?php if (empty($progress_items)): ?>
+                <div class="prj-status-line" data-line-key="sin_semestres">
+                  <span class="text-muted small">Sin semestres calculados</span>
+                </div>
+              <?php else: ?>
+                <?php foreach ($progress_items as $ent): ?>
+                  <div class="prj-status-line" data-line-key="<?= prj_h($ent['periodo']) ?>">
+                    <?php if (!empty($ent['has_response'])): ?>
                       <?php if (isset($ent['eval']['badge_text'])): ?>
                         <span class="<?= prj_h($ent['eval']['badge_class']) ?>"><?= prj_h($ent['eval']['badge_text']) ?></span>
                       <?php endif; ?>
-                      <?php if (isset($ent['eval']['office_badge']) && is_array($ent['eval']['office_badge'])): ?>
-                        <span class="<?= prj_h($ent['eval']['office_badge']['class']) ?>" title="Oficina actual">
-                          <?= prj_h($ent['eval']['office_badge']['text']) ?>
-                        </span>
+                      <?php
+                        $oficina_badge_class = '';
+                        $oficina_badge_text = '';
+                        if (isset($ent['eval']['office_badge']) && is_array($ent['eval']['office_badge'])) {
+                            $oficina_badge_class = trim((string)($ent['eval']['office_badge']['class'] ?? ''));
+                            $oficina_badge_text = trim((string)($ent['eval']['office_badge']['text'] ?? ''));
+                        }
+                        if ($oficina_badge_text === '' && isset($ent['eval']['summary']['oficina_nom'])) {
+                            $oficina_badge_text = trim((string)$ent['eval']['summary']['oficina_nom']);
+                        }
+                        if ($oficina_badge_class === '' && $oficina_badge_text !== '') {
+                            $oficina_badge_class = 'badge badge-secondary';
+                        }
+                      ?>
+                      <?php if ($oficina_badge_text !== ''): ?>
+                        <span class="<?= prj_h($oficina_badge_class) ?>" title="Oficina actual"><?= prj_h($oficina_badge_text) ?></span>
                       <?php endif; ?>
                     <?php else: ?>
-                      <span class="prj-deliver-empty-inline">vac&iacute;o</span>
+                      <span class="text-muted small">--</span>
                     <?php endif; ?>
                   </div>
                 <?php endforeach; ?>
@@ -379,7 +420,7 @@ function prj_link_limpiar_filtros()
   <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header bg-light">
-        <h5 class="modal-title">Estado de Evaluaci&oacute;n</h5>
+        <h5 class="modal-title" id="prjModalEvalTitle">Ruta de evaluaci&oacute;n</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -387,13 +428,47 @@ function prj_link_limpiar_filtros()
       <div class="modal-body">
         <div id="prjEvalAlert" class="alert d-none"></div>
         <div class="mb-2 border rounded p-2 bg-light" id="prjEvalResumen"></div>
+        <h6 class="mb-2">Ruta de evaluaci&oacute;n</h6>
         <div id="prjEvalTimeline" class="prj-eval-timeline"></div>
         <hr>
-        <h6 class="mb-2">Flujo del coordinador</h6>
-        <div id="prjCoordActions" class="prj-eval-actions"></div>
-        <hr>
-        <h6 class="mb-2">Acciones de evaluaci&oacute;n</h6>
-        <div id="prjEvalActions" class="prj-eval-actions"></div>
+        <div id="prjCoordSection">
+          <h6 class="mb-2">Flujo del coordinador</h6>
+          <div id="prjCoordActions" class="prj-eval-actions"></div>
+        </div>
+        <div id="prjEvalSection">
+          <hr>
+          <div class="prj-tabs-head">
+            <ul class="nav nav-tabs prj-eval-tabs" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link prj-tab-yellow active" id="prjTabObsLink" data-toggle="tab" href="#prjTabObs" role="tab" aria-controls="prjTabObs" aria-selected="true">
+                  Ver observaci&oacute;n
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link prj-tab-yellow" id="prjTabCotejoLink" data-toggle="tab" href="#prjTabCotejo" role="tab" aria-controls="prjTabCotejo" aria-selected="false">
+                  Calificar Cotejo
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link prj-tab-yellow" id="prjTabRubricaLink" data-toggle="tab" href="#prjTabRubrica" role="tab" aria-controls="prjTabRubrica" aria-selected="false">
+                  Calificar R&uacute;brica
+                </a>
+              </li>
+            </ul>
+            <strong id="prjEvalPendingText" class="prj-pending-text">Evaluaciones pendientes: 00</strong>
+          </div>
+          <div class="tab-content border border-top-0 rounded-bottom p-2 bg-white">
+            <div class="tab-pane fade show active" id="prjTabObs" role="tabpanel" aria-labelledby="prjTabObsLink">
+              <div id="prjEvalObsInlineBody" class="prj-eval-obs-pane">Sin detalle cargado.</div>
+            </div>
+            <div class="tab-pane fade" id="prjTabCotejo" role="tabpanel" aria-labelledby="prjTabCotejoLink">
+              <div id="prjEvalActionsCotejo" class="prj-eval-actions"></div>
+            </div>
+            <div class="tab-pane fade" id="prjTabRubrica" role="tabpanel" aria-labelledby="prjTabRubricaLink">
+              <div id="prjEvalActionsRubrica" class="prj-eval-actions"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

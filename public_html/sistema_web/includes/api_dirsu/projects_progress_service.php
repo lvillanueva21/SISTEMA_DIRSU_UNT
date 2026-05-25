@@ -85,18 +85,17 @@ if (!function_exists('rsu_projects_eval_office_badge_from_summary')) {
         if ($code === '') {
             return null;
         }
-
         if ($code === 'PCF') {
-            return array('text' => 'Comité', 'class' => 'badge prj-badge-ofic-pcf');
+            return array('text' => 'Comité de Facultad', 'class' => 'badge prj-badge-ofic-pcf');
         }
         if ($code === 'DD') {
-            return array('text' => 'Dir. Departamento', 'class' => 'badge prj-badge-ofic-dd');
+            return array('text' => 'Dirección de Departamento', 'class' => 'badge prj-badge-ofic-dd');
         }
         if ($code === 'DF') {
-            return array('text' => 'Decanato', 'class' => 'badge prj-badge-ofic-df');
+            return array('text' => 'Decanato de Facultad', 'class' => 'badge prj-badge-ofic-df');
         }
         if ($code === 'RSU') {
-            return array('text' => 'Dirección RSU', 'class' => 'badge prj-badge-ofic-rsu');
+            return array('text' => 'Dirección de RSU', 'class' => 'badge prj-badge-ofic-rsu');
         }
 
         return array(

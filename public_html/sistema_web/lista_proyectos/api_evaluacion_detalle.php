@@ -41,6 +41,17 @@ $sqlInfo = "
         o.codigo AS oficina_cod,
         o.nombre AS oficina_nom,
         p.p2 AS titulo_proyecto,
+        (
+            SELECT TRIM(CONCAT(u.nombres, ' ', u.apellidos))
+            FROM usuarios_proyectos up
+            INNER JOIN usuarios u
+                ON u.id = up.id_usuario
+            WHERE up.id_proyecto = r.id_py
+              AND up.activo = 1
+              AND u.id_rol = 2
+            ORDER BY up.id DESC
+            LIMIT 1
+        ) AS coordinador,
         s.anio,
         s.periodo,
         COALESCE(s.final, 0) AS es_final
@@ -116,17 +127,22 @@ $eval = isset($evalSummaryMap[$response_id]) ? $evalSummaryMap[$response_id] : n
 $badge = rsu_projects_eval_badge_from_summary($eval);
 
 $actionsPayload = array();
-    $labels = array(
+$actionsEnabledCount = 0;
+$labels = array(
     'cotejo' => 'Calificar Cotejo',
     'rubrica' => 'Calificar Rúbrica',
     'vb' => 'Visto Bueno',
 );
 foreach (rsu_projects_eval_visible_actions($id_rol) as $accion) {
     $state = rsu_projects_eval_action_state($id_rol, $accion, $eval);
+    $enabled = !empty($state['enabled']);
+    if ($enabled) {
+        $actionsEnabledCount++;
+    }
     $actionsPayload[] = array(
         'key' => $accion,
         'label' => isset($labels[$accion]) ? $labels[$accion] : $accion,
-        'enabled' => !empty($state['enabled']),
+        'enabled' => $enabled,
         'reason' => isset($state['reason']) ? (string)$state['reason'] : '',
     );
 }
@@ -299,10 +315,22 @@ if ($id_rol === 2) {
     }
 }
 
+$ui_mode = 'read_only';
+if ($id_rol === 2) {
+    $ui_mode = 'coordinador';
+} elseif (!empty(rsu_projects_eval_visible_actions($id_rol))) {
+    $ui_mode = 'evaluador';
+}
+
+$has_obs_cotejo = is_array($eval) && ((string)($eval['cotejo_estado'] ?? '') === 'observado');
+$has_obs_rubrica = is_array($eval) && ((string)($eval['rubrica_estado'] ?? '') === 'observado');
+$has_observation = ($has_obs_cotejo || $has_obs_rubrica);
+
 lp_eval_json_exit(true, 'OK', array(
     'response_id' => $response_id,
     'id_py' => $id_py_info,
     'titulo_proyecto' => (string)($info['titulo_proyecto'] ?? 'Sin título'),
+    'coordinador' => (string)($info['coordinador'] ?? ''),
     'periodo' => $periodo_txt,
     'tipo_informe' => $tipo_txt,
     'eval_badge' => array(
@@ -311,6 +339,19 @@ lp_eval_json_exit(true, 'OK', array(
     ),
     'timeline' => $timeline,
     'actions' => $actionsPayload,
+    'actions_enabled_count' => $actionsEnabledCount,
     'coordinator_flow' => $coordinator_flow,
-    'formulario_nombre' => $formulario_nombre
+    'formulario_nombre' => $formulario_nombre,
+    'ui' => array(
+        'mode' => $ui_mode,
+        'is_coordinator' => ($id_rol === 2),
+        'show_coordinator_flow' => ($id_rol === 2),
+        'show_eval_actions' => ($id_rol !== 2 && !empty(rsu_projects_eval_visible_actions($id_rol))),
+    ),
+    'observation' => array(
+        'has_observation' => $has_observation,
+        'has_cotejo' => $has_obs_cotejo,
+        'has_rubrica' => $has_obs_rubrica,
+        'instancia_estado' => is_array($eval) ? (string)($eval['instancia_estado'] ?? '') : ''
+    )
 ));

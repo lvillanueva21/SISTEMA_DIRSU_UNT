@@ -484,15 +484,11 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'children' => array(
                             array(
                                 'label' => '3.1. Informe semestral',
-                                'href' => '../semestral/index.php',
-                                'href_by_app_path' => array(
-                                    'semestral/index.php' => 'index.php'
-                                ),
-                                'href_by_page' => array(
-                                    'inicio.php' => 'semestral/index.php',
-                                    'index.php' => 'index.php'
-                                ),
-                                'active_on' => array('index.php', 'informe_final.php')
+                                'href_dynamic' => 'semestral/index.php',
+                                'active_on_dynamic' => array(
+                                    'semestral/index.php',
+                                    'vistas/informe_final.php'
+                                )
                             ),
                             array(
                                 'label' => '3.2. Revisión de informe',

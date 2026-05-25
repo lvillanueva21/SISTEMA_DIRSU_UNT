@@ -7,6 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/../../includes/evt_mantenimiento.php';
+require_once __DIR__ . '/../../includes/correo_config_service.php';
 
 function evt_mto_api_exit($success, $msg, $data = null, $httpCode = 200)
 {
@@ -123,7 +124,7 @@ function evt_mto_api_parse_deadline_datetime($input, &$errorMessage = null)
         $value .= ':00';
     }
     if (!preg_match('/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/', $value)) {
-        $errorMessage = 'Formato de fecha limite invalido.';
+        $errorMessage = 'Formato de fecha límite inválido.';
         return false;
     }
 
@@ -190,12 +191,12 @@ function evt_mto_api_get_inicio_deadline_state(mysqli $conexion)
 function evt_mto_api_messaging_events_catalog()
 {
     return array(
-        'evaluacion_mensajeria' => 'Mensajeria global de evaluacion',
+        'evaluacion_mensajeria' => 'Mensajería global de evaluación',
         'evaluacion_mail_derivacion' => 'Correo: derivacion entre oficinas',
         'evaluacion_mail_observacion' => 'Correo: observacion (cotejo/rubrica)',
         'evaluacion_mail_aprob_total' => 'Correo: aprobacion total',
-        'evaluacion_mail_solicitud_revision' => 'Correo: solicitud de revision',
-        'evaluacion_mail_subsanacion' => 'Correo: subsanacion',
+        'evaluacion_mail_solicitud_revision' => 'Correo: solicitud de revisión',
+        'evaluacion_mail_subsanacion' => 'Correo: subsanación',
     );
 }
 
@@ -257,12 +258,171 @@ function evt_mto_api_get_messaging_state(mysqli $conexion)
     return $state;
 }
 
+function evt_mto_api_get_correo_config_state(mysqli $conexion)
+{
+    return cor_mail_get_ui_state($conexion);
+}
+
+function evt_mto_api_preview_templates_catalog()
+{
+    return array(
+        'PREVIEW_DERIVACION' => 'Derivación entre oficinas',
+        'PREVIEW_OBS_COTEJO' => 'Observación por Cotejo',
+        'PREVIEW_OBS_RUBRICA' => 'Observación por Rúbrica',
+        'PREVIEW_APROB_TOTAL' => 'Aprobación total',
+        'PREVIEW_SOLICITUD_REVISION' => 'Solicitud de revisión',
+        'PREVIEW_SUBSANACION' => 'Subsanación',
+    );
+}
+
+function evt_mto_api_mail_esc($value)
+{
+    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function evt_mto_api_mail_format_line($line)
+{
+    $line = trim((string)$line);
+    if ($line === '') {
+        return '';
+    }
+    if (preg_match('/^presiona\s+para\s+ir\s+al\s+sistema\s+dirsu\s+y\s+subsanar\.$/iu', $line)) {
+        return '<a href="https://rsu.unitru.edu.pe/sistema_web/login.php" target="_blank" style="color:#0a58ca;text-decoration:underline;">Presiona para ir al Sistema DIRSU y subsanar.</a>';
+    }
+    if (preg_match('/^([A-Za-zÁÉÍÓÚáéíóúÑñüÜ0-9()\/\-\s]+):(.*)$/u', $line, $m)) {
+        $label = evt_mto_api_mail_esc(trim((string)$m[1]));
+        $value = trim((string)$m[2]);
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return '<strong>' . $label . ':</strong> <a href="' . evt_mto_api_mail_esc($value) . '" target="_blank" style="color:#0a58ca;text-decoration:underline;">' . evt_mto_api_mail_esc($value) . '</a>';
+        }
+        return '<strong>' . $label . ':</strong>' . ($value !== '' ? ' ' . evt_mto_api_mail_esc($value) : '');
+    }
+    return evt_mto_api_mail_esc($line);
+}
+
+function evt_mto_api_mail_table_from_pipe_lines(array $lines)
+{
+    if (empty($lines)) {
+        return '';
+    }
+    $rows = array();
+    foreach ($lines as $line) {
+        $parts = array_map('trim', explode('|', (string)$line));
+        if (count($parts) < 3) {
+            return '';
+        }
+        $rows[] = $parts;
+    }
+    if (count($rows) < 2) {
+        return '';
+    }
+
+    $html = '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #d7dee7;margin:8px 0 14px 0;">';
+    $html .= '<thead><tr style="background:#f3f7fb;">';
+    foreach ($rows[0] as $cell) {
+        $html .= '<th align="left" style="border:1px solid #d7dee7;padding:9px 10px;font-size:13px;font-weight:700;color:#1f2d3d;">' . evt_mto_api_mail_esc($cell) . '</th>';
+    }
+    $html .= '</tr></thead><tbody>';
+
+    for ($i = 1; $i < count($rows); $i++) {
+        $html .= '<tr>';
+        foreach ($rows[$i] as $idx => $cell) {
+            $align = ($idx === 1) ? 'center' : 'left';
+            $html .= '<td align="' . $align . '" style="border:1px solid #d7dee7;padding:9px 10px;font-size:13px;line-height:1.45;color:#1f2d3d;">' . evt_mto_api_mail_esc($cell) . '</td>';
+        }
+        $html .= '</tr>';
+    }
+    $html .= '</tbody></table>';
+    return $html;
+}
+
+function evt_mto_api_render_template_test_html($templateLabel, $bodyBase)
+{
+    $text = trim((string)$bodyBase);
+    if ($text === '') {
+        return '';
+    }
+
+    $lines = preg_split('/\r\n|\r|\n/', $text);
+    if (!is_array($lines)) {
+        $lines = array($text);
+    }
+
+    $tableRows = array();
+    $tableMode = false;
+    $tableInserted = false;
+    $partsHtml = array();
+    $paragraph = array();
+
+    $flushParagraph = function () use (&$paragraph, &$partsHtml) {
+        if (empty($paragraph)) {
+            return;
+        }
+        $partsHtml[] = '<p style="margin:0 0 13px 0;font-size:14px;line-height:1.55;color:#1f2d3d;">' . implode('<br>', $paragraph) . '</p>';
+        $paragraph = array();
+    };
+
+    foreach ($lines as $rawLine) {
+        $line = trim((string)$rawLine);
+        if (!$tableMode && preg_match('/^\s*Aspecto\s*\|/iu', $line)) {
+            $tableMode = true;
+            $tableRows[] = $line;
+            continue;
+        }
+        if ($tableMode && $line !== '' && substr_count($line, '|') >= 2) {
+            $tableRows[] = $line;
+            continue;
+        }
+        if ($tableMode && !empty($tableRows) && !$tableInserted) {
+            $flushParagraph();
+            $tableHtml = evt_mto_api_mail_table_from_pipe_lines($tableRows);
+            if ($tableHtml !== '') {
+                $partsHtml[] = $tableHtml;
+                $tableInserted = true;
+            } else {
+                foreach ($tableRows as $tblLine) {
+                    $paragraph[] = evt_mto_api_mail_format_line($tblLine);
+                }
+            }
+            $tableRows = array();
+            $tableMode = false;
+        }
+        if ($line === '') {
+            $flushParagraph();
+            continue;
+        }
+        $paragraph[] = evt_mto_api_mail_format_line($line);
+    }
+
+    if ($tableMode && !empty($tableRows) && !$tableInserted) {
+        $flushParagraph();
+        $tableHtml = evt_mto_api_mail_table_from_pipe_lines($tableRows);
+        if ($tableHtml !== '') {
+            $partsHtml[] = $tableHtml;
+        } else {
+            foreach ($tableRows as $tblLine) {
+                $paragraph[] = evt_mto_api_mail_format_line($tblLine);
+            }
+        }
+    }
+    $flushParagraph();
+
+    $intro = '<p style="margin:0 0 16px 0;font-size:13px;line-height:1.45;color:#4b5d6f;">Este es un envío de prueba de la plantilla: <strong>' . evt_mto_api_mail_esc($templateLabel) . '</strong>.</p>';
+
+    return '<div style="margin:0;padding:0;background:#f5f7fb;">'
+        . '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #dde5ef;font-family:Segoe UI,Arial,sans-serif;">'
+        . '<tr><td style="padding:22px 24px;">'
+        . $intro
+        . implode("\n", $partsHtml)
+        . '</td></tr></table></div>';
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    evt_mto_api_exit(false, 'Metodo no permitido.', null, 405);
+    evt_mto_api_exit(false, 'Método no permitido.', null, 405);
 }
 
 if (!isset($_SESSION['usuario'])) {
-    evt_mto_api_exit(false, 'Sesion no valida.', null, 401);
+    evt_mto_api_exit(false, 'Sesión no válida.', null, 401);
 }
 
 if (!isset($_SESSION['id_rol']) || (int)$_SESSION['id_rol'] !== 1) {
@@ -271,7 +431,7 @@ if (!isset($_SESSION['id_rol']) || (int)$_SESSION['id_rol'] !== 1) {
 
 $csrfToken = isset($_POST['csrf_token']) ? (string)$_POST['csrf_token'] : '';
 if (!evt_mto_validate_csrf_token($csrfToken, 'evt_mantenimiento_admin_csrf')) {
-    evt_mto_api_exit(false, 'Token CSRF invalido.', null, 403);
+    evt_mto_api_exit(false, 'Token CSRF inválido.', null, 403);
 }
 
 $conexion = evt_mto_db_connect();
@@ -295,8 +455,8 @@ if (!evt_mto_api_ensure_inicio_deadline_event($conexion, $userId > 0 ? $userId :
     evt_mto_api_exit(false, 'No se pudo inicializar el control de fecha limite.', null, 500);
 }
 if (!evt_mto_api_ensure_messaging_events($conexion, $userId > 0 ? $userId : null)) {
-    error_log('evt_mantenimiento_api: fallo al inicializar eventos de mensajeria');
-    evt_mto_api_exit(false, 'No se pudo inicializar el control de mensajeria.', null, 500);
+    error_log('evt_mantenimiento_api: fallo al inicializar eventos de mensajería');
+    evt_mto_api_exit(false, 'No se pudo inicializar el control de mensajería.', null, 500);
 }
 
 $action = isset($_POST['action']) ? trim((string)$_POST['action']) : '';
@@ -305,10 +465,176 @@ if ($action === 'get_state') {
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
     evt_mto_api_exit(true, 'Estado cargado.', $state);
 }
 
+if ($action === 'save_correo_config') {
+    $remitenteEmail = isset($_POST['remitente_email']) ? (string)$_POST['remitente_email'] : '';
+    $remitenteNombre = isset($_POST['remitente_nombre']) ? (string)$_POST['remitente_nombre'] : 'Sistema DIRSU';
+    $smtpUsuario = isset($_POST['smtp_usuario']) ? (string)$_POST['smtp_usuario'] : $remitenteEmail;
+    $correoVerificador = isset($_POST['correo_verificador']) ? (string)$_POST['correo_verificador'] : '';
+    $appKey = isset($_POST['app_key']) ? (string)$_POST['app_key'] : '';
+    $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : 1;
+
+    $saveError = '';
+    $ok = cor_mail_save_config(
+        $conexion,
+        array(
+            'remitente_email' => $remitenteEmail,
+            'remitente_nombre' => $remitenteNombre,
+            'smtp_usuario' => $smtpUsuario,
+            'correo_verificador' => $correoVerificador,
+            'app_key' => $appKey,
+            'estado' => $estado,
+        ),
+        isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
+        $saveError
+    );
+
+    if (!$ok) {
+        evt_mto_api_exit(false, $saveError !== '' ? $saveError : 'No se pudo guardar la configuracion de correo.', null, 422);
+    }
+
+    $state = evt_mto_fetch_state();
+    $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
+    evt_mto_api_exit(true, 'Configuración de correo guardada correctamente.', $state);
+}
+
+if ($action === 'test_correo_config') {
+    $test = cor_mail_run_test(
+        $conexion,
+        isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
+        isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null
+    );
+    $state = evt_mto_fetch_state();
+    $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
+
+    if (!empty($test['ok'])) {
+        evt_mto_api_exit(true, isset($test['msg']) ? (string)$test['msg'] : 'Prueba enviada.', array(
+            'test' => $test,
+            'state' => $state,
+        ));
+    }
+    evt_mto_api_exit(false, isset($test['msg']) ? (string)$test['msg'] : 'No se pudo enviar la prueba.', array(
+        'test' => $test,
+        'state' => $state,
+    ), 422);
+}
+
+if ($action === 'send_messaging_template_test') {
+    $catalog = evt_mto_api_preview_templates_catalog();
+    $templateCode = isset($_POST['template_code']) ? strtoupper(trim((string)$_POST['template_code'])) : '';
+    if ($templateCode === '' || !isset($catalog[$templateCode])) {
+        evt_mto_api_exit(false, 'Plantilla de prueba no válida.', null, 422);
+    }
+    $templateLabel = (string)$catalog[$templateCode];
+    $templateText = isset($_POST['template_text']) ? trim((string)$_POST['template_text']) : '';
+    if ($templateText === '') {
+        evt_mto_api_exit(false, 'No se recibio contenido de plantilla para la prueba.', null, 422);
+    }
+
+    $correoReason = '';
+    $correoMsg = '';
+    if (!cor_mail_can_send_notifications($conexion, $correoReason, $correoMsg)) {
+        evt_mto_api_exit(false, 'Primero configura tu Key en Configuración de correo. Detalle: ' . $correoMsg, null, 422);
+    }
+
+    $cfgResult = cor_mail_get_active_config($conexion, false);
+    if (empty($cfgResult['ok']) || empty($cfgResult['config']) || !is_array($cfgResult['config'])) {
+        $msg = isset($cfgResult['message']) ? (string)$cfgResult['message'] : 'No hay configuracion de correo activa.';
+        evt_mto_api_exit(false, $msg, null, 422);
+    }
+    $cfg = $cfgResult['config'];
+    $destino = isset($cfg['correo_verificador']) ? trim((string)$cfg['correo_verificador']) : '';
+    if ($destino === '' || !filter_var($destino, FILTER_VALIDATE_EMAIL)) {
+        evt_mto_api_exit(false, 'El correo verificador configurado no es valido.', null, 422);
+    }
+
+    $lines = preg_split('/\r\n|\r|\n/', $templateText);
+    if (!is_array($lines)) {
+        $lines = array($templateText);
+    }
+    $subject = '';
+    if (!empty($lines) && preg_match('/^\s*Asunto\s*:\s*(.+)\s*$/iu', (string)$lines[0], $m)) {
+        $subject = trim((string)$m[1]);
+        array_shift($lines);
+    }
+    if ($subject === '') {
+        $subject = 'Prueba de plantilla - Sistema DIRSU';
+    }
+    $subject .= ' [Prueba ' . date('Y-m-d H:i:s') . ']';
+
+    $bodyBase = trim(implode("\n", $lines));
+    if ($bodyBase === '') {
+        $bodyBase = $templateText;
+    }
+    $bodyBase = str_replace('{{url_login_proyecto}}', 'https://rsu.unitru.edu.pe/sistema_web/login.php', $bodyBase);
+    $intro = "Este es un envío de prueba de la plantilla: {$templateLabel}.";
+    $bodyText = $intro . "\n\n" . $bodyBase;
+    $bodyHtml = evt_mto_api_render_template_test_html($templateLabel, $bodyBase);
+    if ($bodyHtml === '') {
+        $bodyHtml = nl2br(htmlspecialchars($bodyText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+    }
+
+    $errorDetail = '';
+    $ok = cor_mail_send_using_active_config($conexion, array($destino), $subject, $bodyHtml, $bodyText, $errorDetail);
+    $estado = $ok ? 'enviado' : 'error';
+    $detalle = $ok
+        ? 'Prueba enviada correctamente a ' . $destino . '.'
+        : (($errorDetail !== '') ? $errorDetail : 'Fallo desconocido al enviar la prueba.');
+
+    cor_mail_update_last_test($conexion, $estado, $detalle);
+    cor_mail_log_test($conexion, array(
+        'config_id' => isset($cfg['id']) ? (int)$cfg['id'] : 1,
+        'remitente_email' => isset($cfg['remitente_email']) ? (string)$cfg['remitente_email'] : '',
+        'destino_email' => $destino,
+        'asunto' => $subject,
+        'estado' => $estado,
+        'detalle' => '[Plantilla: ' . $templateCode . '] ' . $detalle,
+        'created_by' => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
+        'ip' => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+    ));
+
+    $state = evt_mto_fetch_state();
+    $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
+    $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
+    $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
+    $test = array(
+        'template_code' => $templateCode,
+        'template_label' => $templateLabel,
+        'estado' => $estado,
+        'destino' => $destino,
+        'asunto' => $subject,
+        'detalle' => $detalle,
+    );
+
+    if ($ok) {
+        evt_mto_api_exit(true, 'Prueba enviada: ' . $templateLabel . '.', array(
+            'test' => $test,
+            'state' => $state,
+        ));
+    }
+    evt_mto_api_exit(false, 'No se pudo enviar la prueba de plantilla.', array(
+        'test' => $test,
+        'state' => $state,
+    ), 422);
+}
+
 if ($action === 'save_messaging') {
+    $correoReason = '';
+    $correoMsg = '';
+    if (!cor_mail_can_send_notifications($conexion, $correoReason, $correoMsg)) {
+        evt_mto_api_exit(false, 'Primero configura tu Key en Configuración de correo. Detalle: ' . $correoMsg, null, 422);
+    }
+
     $catalog = evt_mto_api_messaging_events_catalog();
     $updates = array();
     foreach ($catalog as $code => $name) {
@@ -319,7 +645,7 @@ if ($action === 'save_messaging') {
         $updates[$code] = $raw;
     }
     if (empty($updates)) {
-        evt_mto_api_exit(false, 'No se recibieron cambios de mensajeria.', null, 422);
+        evt_mto_api_exit(false, 'No se recibieron cambios de mensajería.', null, 422);
     }
 
     mysqli_begin_transaction($conexion);
@@ -333,12 +659,12 @@ if ($action === 'save_messaging') {
                      LIMIT 1";
             $st = mysqli_prepare($conexion, $sql);
             if (!$st) {
-                throw new Exception('No se pudo preparar actualizacion de mensajeria.');
+                throw new Exception('No se pudo preparar actualización de mensajería.');
             }
             mysqli_stmt_bind_param($st, 'iis', $status, $userId, $code);
             if (!mysqli_stmt_execute($st)) {
                 mysqli_stmt_close($st);
-                throw new Exception('No se pudo guardar estado de mensajeria.');
+                throw new Exception('No se pudo guardar estado de mensajería.');
             }
             mysqli_stmt_close($st);
         }
@@ -346,20 +672,21 @@ if ($action === 'save_messaging') {
     } catch (Exception $e) {
         mysqli_rollback($conexion);
         error_log('evt_mantenimiento_api save_messaging: ' . $e->getMessage());
-        evt_mto_api_exit(false, 'No se pudo guardar la mensajeria.', null, 500);
+        evt_mto_api_exit(false, 'No se pudo guardar la mensajería.', null, 500);
     }
 
     $state = evt_mto_fetch_state();
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
-    evt_mto_api_exit(true, 'Mensajeria actualizada correctamente.', $state);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
+    evt_mto_api_exit(true, 'Mensajería actualizada correctamente.', $state);
 }
 
 if ($action === 'save_db_manager_access') {
     $dbManagerEstado = isset($_POST['estado']) ? (int)$_POST['estado'] : -1;
     if ($dbManagerEstado !== 0 && $dbManagerEstado !== 1) {
-        evt_mto_api_exit(false, 'Estado de acceso al gestor DB invalido.', null, 422);
+        evt_mto_api_exit(false, 'Estado de acceso al gestor DB inválido.', null, 422);
     }
 
     $sql = "UPDATE evt_eventos
@@ -370,7 +697,7 @@ if ($action === 'save_db_manager_access') {
              LIMIT 1";
     $st = mysqli_prepare($conexion, $sql);
     if (!$st) {
-        evt_mto_api_exit(false, 'No se pudo preparar la actualizacion del gestor DB.', null, 500);
+        evt_mto_api_exit(false, 'No se pudo preparar la actualización del gestor DB.', null, 500);
     }
     mysqli_stmt_bind_param($st, 'ii', $dbManagerEstado, $userId);
     $ok = mysqli_stmt_execute($st);
@@ -383,13 +710,14 @@ if ($action === 'save_db_manager_access') {
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
     evt_mto_api_exit(true, 'Acceso a gestor DB actualizado correctamente.', $state);
 }
 
 if ($action === 'save_inicio_deadline') {
     $visible = isset($_POST['visible']) ? (int)$_POST['visible'] : -1;
     if ($visible !== 0 && $visible !== 1) {
-        evt_mto_api_exit(false, 'Estado de visibilidad invalido.', null, 422);
+        evt_mto_api_exit(false, 'Estado de visibilidad inválido.', null, 422);
     }
 
     $titulo = evt_mto_trim_limit(isset($_POST['titulo']) ? $_POST['titulo'] : '', 120);
@@ -431,7 +759,7 @@ if ($action === 'save_inicio_deadline') {
                     LIMIT 1";
         $stEvt = mysqli_prepare($conexion, $sqlEvt);
         if (!$stEvt) {
-            throw new Exception('No se pudo preparar la actualizacion de visibilidad.');
+            throw new Exception('No se pudo preparar la actualización de visibilidad.');
         }
         mysqli_stmt_bind_param($stEvt, 'ii', $visible, $userId);
         if (!mysqli_stmt_execute($stEvt)) {
@@ -450,7 +778,7 @@ if ($action === 'save_inicio_deadline') {
                      updated_at = NOW()";
         $stCfg = mysqli_prepare($conexion, $sqlCfg);
         if (!$stCfg) {
-            throw new Exception('No se pudo preparar la actualizacion del contenido.');
+            throw new Exception('No se pudo preparar la actualización del contenido.');
         }
         mysqli_stmt_bind_param($stCfg, 'ssss', $titulo, $mensaje, $deadline, $username);
         if (!mysqli_stmt_execute($stCfg)) {
@@ -470,7 +798,8 @@ if ($action === 'save_inicio_deadline') {
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
-    evt_mto_api_exit(true, 'Configuracion de fecha limite guardada correctamente.', $state);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
+    evt_mto_api_exit(true, 'Configuración de fecha límite guardada correctamente.', $state);
 }
 
 if ($action !== 'save_config') {
@@ -479,7 +808,7 @@ if ($action !== 'save_config') {
 
 $sistemaActivo = isset($_POST['sistema_activo']) ? (int)$_POST['sistema_activo'] : -1;
 if ($sistemaActivo !== 0 && $sistemaActivo !== 1) {
-    evt_mto_api_exit(false, 'Estado de sistema invalido.', null, 422);
+        evt_mto_api_exit(false, 'Estado de sistema inválido.', null, 422);
 }
 
 $titulo = evt_mto_trim_limit(isset($_POST['titulo']) ? $_POST['titulo'] : '', 180);
@@ -532,7 +861,7 @@ try {
                  WHERE evento_id = ?";
         $st = mysqli_prepare($conexion, $sql);
         if (!$st) {
-            throw new Exception('No se pudo preparar la actualizacion.');
+            throw new Exception('No se pudo preparar la actualización.');
         }
         mysqli_stmt_bind_param($st, 'isssii', $sistemaActivo, $titulo, $mensaje, $hash, $userId, $eventoId);
     } else {
@@ -544,7 +873,7 @@ try {
                  WHERE evento_id = ?";
         $st = mysqli_prepare($conexion, $sql);
         if (!$st) {
-            throw new Exception('No se pudo preparar la actualizacion.');
+            throw new Exception('No se pudo preparar la actualización.');
         }
         mysqli_stmt_bind_param($st, 'issii', $sistemaActivo, $titulo, $mensaje, $userId, $eventoId);
     }
@@ -565,7 +894,8 @@ try {
     $state['db_manager_access'] = evt_mto_api_get_db_manager_state($conexion);
     $state['inicio_deadline'] = evt_mto_api_get_inicio_deadline_state($conexion);
     $state['messaging'] = evt_mto_api_get_messaging_state($conexion);
-    evt_mto_api_exit(true, 'Configuracion guardada correctamente.', $state);
+    $state['correo_config'] = evt_mto_api_get_correo_config_state($conexion);
+    evt_mto_api_exit(true, 'Configuración guardada correctamente.', $state);
 } catch (Exception $e) {
     mysqli_rollback($conexion);
     error_log('evt_mantenimiento_api save_config: ' . $e->getMessage());

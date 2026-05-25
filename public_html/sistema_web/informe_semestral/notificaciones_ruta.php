@@ -8,6 +8,15 @@ namespace {
 
 date_default_timezone_set('America/Lima');
 require_once __DIR__ . '/../includes/evaluacion_v1/messaging_helpers.php';
+require_once __DIR__ . '/../includes/correo_config_service.php';
+
+function _notif_mail_wrap_html(string $innerHtml): string {
+    return '<div style="margin:0;padding:0;background:#f5f7fb;">'
+        . '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #dde5ef;font-family:Segoe UI,Arial,sans-serif;">'
+        . '<tr><td style="padding:22px 24px;color:#1f2d3d;font-size:14px;line-height:1.56;">'
+        . $innerHtml
+        . '</td></tr></table></div>';
+}
 
 /**
  * Obtiene emails de coordinadores (id_rol=2) del proyecto.
@@ -64,6 +73,93 @@ function _notif_info_proyecto(\mysqli $db, int $id_py): array {
 }
 
 /**
+ * Obtiene el código del proyecto (último registrado).
+ */
+function _notif_codigo_proyecto(\mysqli $db, int $id_py): string {
+    if ($id_py <= 0) return '';
+    $codigo = '';
+    $st = $db->prepare("SELECT codigo FROM proyecto_codigos WHERE id_py = ? ORDER BY id DESC LIMIT 1");
+    if ($st) {
+        $st->bind_param('i', $id_py);
+        if ($st->execute() && ($row = $st->get_result()->fetch_assoc())) {
+            $codigo = trim((string)($row['codigo'] ?? ''));
+        }
+        $st->close();
+    }
+    return $codigo;
+}
+
+function _notif_proyecto_line_html(string $titulo, string $periodo, string $codigo): string {
+    $line = '<strong>Proyecto:</strong> ' . htmlspecialchars($titulo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    if ($periodo !== '') {
+        $line .= ' — ' . htmlspecialchars($periodo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    if ($codigo !== '') {
+        $line .= ' <span style="color:#4a5568;">(Código: ' . htmlspecialchars($codigo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ')</span>';
+    }
+    return $line;
+}
+
+function _notif_proyecto_line_text(string $titulo, string $periodo, string $codigo): string {
+    $line = 'Proyecto: ' . $titulo;
+    if ($periodo !== '') {
+        $line .= ' — ' . $periodo;
+    }
+    if ($codigo !== '') {
+        $line .= ' (Código: ' . $codigo . ')';
+    }
+    return $line;
+}
+
+/**
+ * Resuelve el semestre real del informe vinculado a la evaluación.
+ * Fuente: eva_evaluaciones -> sm_respuestas.id_semestre -> sm_proyecto_semestres.
+ */
+function _notif_info_semestre_informe(\mysqli $db, int $eval_id): array {
+    $meta = array(
+        'ok' => false,
+        'id_semestre' => 0,
+        'anio' => null,
+        'periodo' => '',
+        'numero' => null,
+        'final' => 0,
+        'titulo' => '',
+        'label' => 'No determinado',
+    );
+
+    $sql = "SELECT s.id, s.anio, s.periodo, s.numero, COALESCE(s.final,0) AS final, s.titulo
+              FROM eva_evaluaciones e
+              INNER JOIN sm_respuestas r ON r.id = e.id_respuesta
+              LEFT JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
+             WHERE e.id = ?
+             LIMIT 1";
+    $st = $db->prepare($sql);
+    if (!$st) {
+        return $meta;
+    }
+    $st->bind_param('i', $eval_id);
+    if ($st->execute() && ($row = $st->get_result()->fetch_assoc())) {
+        $meta['ok'] = true;
+        $meta['id_semestre'] = isset($row['id']) ? (int)$row['id'] : 0;
+        $meta['anio'] = isset($row['anio']) ? (int)$row['anio'] : null;
+        $meta['periodo'] = (string)($row['periodo'] ?? '');
+        $meta['numero'] = isset($row['numero']) ? (int)$row['numero'] : null;
+        $meta['final'] = isset($row['final']) ? (int)$row['final'] : 0;
+        $meta['titulo'] = trim((string)($row['titulo'] ?? ''));
+
+        $base = '';
+        if (!empty($meta['anio']) && $meta['periodo'] !== '') {
+            $base = $meta['anio'] . '-' . $meta['periodo'];
+        } elseif ($meta['titulo'] !== '') {
+            $base = $meta['titulo'];
+        }
+        $meta['label'] = $base !== '' ? $base : 'No determinado';
+    }
+    $st->close();
+    return $meta;
+}
+
+/**
  * Nombre/codigo de oficina por ID.
  */
 function _notif_oficina(\mysqli $db, int $oficina_id): array {
@@ -113,42 +209,14 @@ function _notif_resolver_tipo_informe(\mysqli $db, int $eval_id): array {
 /**
  * Envio via PHPMailer.
  */
-function _notif_mail_send(array $to, string $subject, string $html, string $text): bool {
+function _notif_mail_send(\mysqli $db, array $to, string $subject, string $html, string $text): bool {
     if (empty($to)) return false;
-
-    $base = realpath(__DIR__ . '/../recursos/src') ?: (__DIR__ . '/../recursos/src');
-    foreach ([$base . '/PHPMailer.php', $base . '/SMTP.php', $base . '/Exception.php'] as $p) {
-        if (!file_exists($p)) { error_log('PHPMailer no encontrado: ' . $p); return false; }
+    $errorDetail = '';
+    $ok = cor_mail_send_using_active_config($db, $to, $subject, $html, $text, $errorDetail);
+    if (!$ok) {
+        error_log('Mailer ruta error: ' . $errorDetail);
     }
-    require_once $base . '/Exception.php';
-    require_once $base . '/PHPMailer.php';
-    require_once $base . '/SMTP.php';
-
-    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-    try {
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'proyectosdirsu@unitru.edu.pe';
-        $mail->Password   = 'owmjcvzzurfnocgq';
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-        $mail->CharSet    = 'UTF-8';
-
-        $mail->setFrom('proyectosdirsu@unitru.edu.pe', 'Sistema DIRSU');
-        $mail->addReplyTo('proyectosdirsu@unitru.edu.pe', 'Sistema DIRSU');
-        foreach ($to as $addr) { $mail->addAddress($addr); }
-
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $html;
-        $mail->AltBody = $text;
-
-        return $mail->send();
-    } catch (\Throwable $e) {
-        error_log('Mailer ruta error: ' . $e->getMessage());
-        return false;
-    }
+    return $ok;
 }
 
 /**
@@ -186,8 +254,8 @@ function _notif_mail_controlado(
             'created_by' => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
             'ip' => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
         ),
-        function (array $mailPayload) use ($to, $subject, $html, $text) {
-            return _notif_mail_send($to, $subject, $html, $text);
+        function (array $mailPayload) use ($db, $to, $subject, $html, $text) {
+            return _notif_mail_send($db, $to, $subject, $html, $text);
         }
     );
 }
@@ -210,28 +278,34 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
         return false;
     }
     $tipoLower = (string)$metaTipo['label_lower'];
+    $semMeta = _notif_info_semestre_informe($db, $eval_id);
+    $semLabel = (string)$semMeta['label'];
 
     [$titulo, $periodo] = _notif_info_proyecto($db, $id_py);
+    $codigoProyecto = _notif_codigo_proyecto($db, $id_py);
     [$codOri, $nomOri]  = _notif_oficina($db, $of_origen);
     [$codDes, $nomDes]  = _notif_oficina($db, $of_destino);
     $ts = _notif_ts_instancia($db, $inst_id);
     $when = $ts ? date('d/m/Y H:i', $ts) : '';
 
     $subject = "Tu {$tipoLower} fue derivado a {$nomDes} - Sistema DIRSU";
-    $url     = "https://rsu.unitru.edu.pe/sistema_web/login.php?id_py={$id_py}";
+    $url     = "https://rsu.unitru.edu.pe/sistema_web/login.php";
 
-    $html = "
+    $htmlBody = "
       <p><strong>Tu proyecto fue aprobado en la Oficina {$nomOri}</strong> y ha sido <strong>derivado</strong> a la Oficina {$nomDes}.</p>
       <p>" . ($when ? "<strong>Fecha y hora:</strong> {$when}<br>" : "") . "</p>
-      <p><strong>Proyecto:</strong> " . htmlspecialchars($titulo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . " (ID {$id_py}) " . ($periodo ? "— " . htmlspecialchars($periodo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '') . "</p>
-      <p><a href=\"{$url}\" target=\"_blank\">Ingresar al Sistema DIRSU</a></p>
-      <hr>
+      <p>" . _notif_proyecto_line_html($titulo, $periodo, $codigoProyecto) . "</p>
+      <p><strong>Semestre del informe:</strong> " . htmlspecialchars($semLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>
+      <p><a href=\"{$url}\" target=\"_blank\" style=\"color:#0a58ca;text-decoration:underline;\">Ingresar al Sistema DIRSU</a></p>
+      <hr style=\"border:none;border-top:1px solid #d8dde5;margin:14px 0;\">
       <p style=\"font-size:12px;color:#666\">Este es un correo automático de notificación de derivación.</p>
     ";
+    $html = _notif_mail_wrap_html($htmlBody);
 
     $text  = "Tu proyecto fue aprobado en la Oficina {$nomOri} y ha sido derivado a la Oficina {$nomDes}.\n";
     if ($when) $text .= "Fecha y hora: {$when}\n";
-    $text .= "Proyecto: {$titulo} (ID {$id_py})" . ($periodo ? " — {$periodo}" : '') . "\n";
+    $text .= _notif_proyecto_line_text($titulo, $periodo, $codigoProyecto) . "\n";
+    $text .= "Semestre del informe: {$semLabel}\n";
     $text .= "Ingresar: {$url}\n";
 
     return _notif_mail_controlado(
@@ -264,29 +338,35 @@ function notif_aprobacion_total(\mysqli $db, array $ctx): bool {
         return false;
     }
     $tipoTitle = (string)$metaTipo['label_title'];
+    $semMeta = _notif_info_semestre_informe($db, $eval_id);
+    $semLabel = (string)$semMeta['label'];
 
     [$titulo, $periodo] = _notif_info_proyecto($db, $id_py);
+    $codigoProyecto = _notif_codigo_proyecto($db, $id_py);
     [$codUlt, $nomUlt]  = _notif_oficina($db, $of_ult);
     $ts = _notif_ts_instancia($db, $inst_id);
     $when = $ts ? date('d/m/Y H:i', $ts) : '';
 
     $subject = "Aprobación Total ({$tipoTitle}) - Sistema DIRSU";
-    $url     = "https://rsu.unitru.edu.pe/sistema_web/login.php?id_py={$id_py}";
+    $url     = "https://rsu.unitru.edu.pe/sistema_web/login.php";
 
-    $html = "
+    $htmlBody = "
       <p><strong>¡Aprobación Total!</strong></p>
       <p>Tu proyecto fue <strong>aprobado</strong> en la Oficina {$nomUlt} el " . ($when ?: '—') . ".</p>
       <p>Con esta aprobación, el proceso de revisión ha culminado exitosamente. <strong>No quedan tareas pendientes por realizar.</strong></p>
-      <p><strong>Proyecto:</strong> " . htmlspecialchars($titulo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . " (ID {$id_py}) " . ($periodo ? "— " . htmlspecialchars($periodo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : '') . "</p>
-      <p><a href=\"{$url}\" target=\"_blank\">Ingresar al Sistema DIRSU</a></p>
-      <hr>
+      <p>" . _notif_proyecto_line_html($titulo, $periodo, $codigoProyecto) . "</p>
+      <p><strong>Semestre del informe:</strong> " . htmlspecialchars($semLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>
+      <p><a href=\"{$url}\" target=\"_blank\" style=\"color:#0a58ca;text-decoration:underline;\">Ingresar al Sistema DIRSU</a></p>
+      <hr style=\"border:none;border-top:1px solid #d8dde5;margin:14px 0;\">
       <p style=\"font-size:12px;color:#666\">Este es un correo automático de notificación de Aprobación Total.</p>
     ";
+    $html = _notif_mail_wrap_html($htmlBody);
 
     $text  = "¡Aprobación Total!\n";
     $text .= "Tu proyecto fue aprobado en la Oficina {$nomUlt}" . ($when ? " el {$when}" : "") . ".\n";
     $text .= "El proceso de revisión ha culminado exitosamente; no quedan tareas pendientes.\n";
-    $text .= "Proyecto: {$titulo} (ID {$id_py})" . ($periodo ? " — {$periodo}" : '') . "\n";
+    $text .= _notif_proyecto_line_text($titulo, $periodo, $codigoProyecto) . "\n";
+    $text .= "Semestre del informe: {$semLabel}\n";
     $text .= "Ingresar: {$url}\n";
 
     return _notif_mail_controlado(

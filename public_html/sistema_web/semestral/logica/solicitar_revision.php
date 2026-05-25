@@ -83,63 +83,32 @@ function sm_item_completo($row, $tipo)
     }
 }
 
-function sm_enviar_correo_confirmacion($destino, $asunto, $textoPlano)
+function sm_enviar_correo_confirmacion(mysqli $conexion, $destino, $asunto, $textoPlano)
 {
     $destino = trim((string)$destino);
     if ($destino === '' || !filter_var($destino, FILTER_VALIDATE_EMAIL)) {
         return array('ok' => false, 'msg' => 'Correo de destino inválido.');
     }
 
-    $baseMailer = realpath(__DIR__ . '/../../recursos/src');
-    if ($baseMailer === false) {
-        $baseMailer = __DIR__ . '/../../recursos/src';
-    }
-    $archivos = array(
-        $baseMailer . '/PHPMailer.php',
-        $baseMailer . '/SMTP.php',
-        $baseMailer . '/Exception.php'
-    );
-    foreach ($archivos as $archivoMailer) {
-        if (!file_exists($archivoMailer)) {
-            return array('ok' => false, 'msg' => 'PHPMailer no disponible.');
-        }
-    }
 
-    require_once $baseMailer . '/Exception.php';
-    require_once $baseMailer . '/PHPMailer.php';
-    require_once $baseMailer . '/SMTP.php';
+    $htmlBody = nl2br(htmlspecialchars((string)$textoPlano, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+    $html = '<div style="margin:0;padding:0;background:#f5f7fb;">'
+        . '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #dde5ef;font-family:Segoe UI,Arial,sans-serif;">'
+        . '<tr><td style="padding:22px 24px;color:#1f2d3d;font-size:14px;line-height:1.56;">'
+        . '<p style="margin:0;">' . $htmlBody . '</p>'
+        . '</td></tr></table></div>';
 
-    $html = nl2br(htmlspecialchars((string)$textoPlano, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
-
-    try {
-        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-        $mail->isSMTP();
-        $mail->Host = 'smtp.gmail.com';
-        $mail->SMTPAuth = true;
-        $mail->Username = 'proyectosdirsu@unitru.edu.pe';
-        $mail->Password = 'owmjcvzzurfnocgq';
-        $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587;
-        $mail->CharSet = 'UTF-8';
-
-        $mail->setFrom('proyectosdirsu@unitru.edu.pe', 'Sistema DIRSU');
-        $mail->addReplyTo('proyectosdirsu@unitru.edu.pe', 'Sistema DIRSU');
-        $mail->addAddress($destino);
-
-        $mail->isHTML(true);
-        $mail->Subject = (string)$asunto;
-        $mail->Body = $html;
-        $mail->AltBody = (string)$textoPlano;
-        $mail->send();
-
+    $errorDetail = '';
+    $ok = cor_mail_send_using_active_config($conexion, array($destino), (string)$asunto, $html, (string)$textoPlano, $errorDetail);
+    if ($ok) {
         return array('ok' => true, 'msg' => 'Correo enviado.');
-    } catch (Throwable $e) {
-        return array('ok' => false, 'msg' => 'No se pudo enviar correo: ' . $e->getMessage());
     }
+    return array('ok' => false, 'msg' => 'No se pudo enviar correo: ' . ($errorDetail !== '' ? $errorDetail : 'Fallo desconocido.'));
 }
 
 require_once __DIR__ . '/../../componentes/db.php';
 require_once __DIR__ . '/../../includes/evaluacion_v1/messaging_helpers.php';
+require_once __DIR__ . '/../../includes/correo_config_service.php';
 
 $id_respuesta = isset($_POST['id_respuesta']) ? (int)$_POST['id_respuesta'] : 0;
 $usuario = isset($_SESSION['usuario']) ? trim((string)$_SESSION['usuario']) : '';
@@ -191,6 +160,25 @@ if (empty($metaTipoInforme['ok'])) {
     sm_json_error(409, $msgTipo);
 }
 $tipoInformeTitle = (string)$metaTipoInforme['label_title'];
+$semestreInformeLabel = 'No determinado';
+$stSem = $conexion->prepare("
+    SELECT s.anio, s.periodo
+      FROM sm_respuestas r
+      LEFT JOIN sm_proyecto_semestres s ON s.id = r.id_semestre
+     WHERE r.id = ?
+     LIMIT 1
+");
+if ($stSem) {
+    $stSem->bind_param('i', $id_respuesta);
+    if ($stSem->execute() && ($rowSem = $stSem->get_result()->fetch_assoc())) {
+        $anioSem = isset($rowSem['anio']) ? (int)$rowSem['anio'] : 0;
+        $periodoSem = trim((string)($rowSem['periodo'] ?? ''));
+        if ($anioSem > 0 && $periodoSem !== '') {
+            $semestreInformeLabel = $anioSem . '-' . $periodoSem;
+        }
+    }
+    $stSem->close();
+}
 
 $estadoActual = (int)$resp['estado'];
 if (!in_array($estadoActual, array(0, 1, 3), true)) {
@@ -475,44 +463,50 @@ if ($nombreFormulario === '') {
     }
 }
 
-if ($correoDestino !== '') {
-    $fecha = date('d/m/Y');
-    $hora = date('H:i');
-    $asunto = 'Solicitud de Revisión de ' . $tipoInformeTitle . ' — ' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario');
-    $mensaje = 'Se solicitó la revisión del proyecto "' . ($tituloProyecto !== '' ? $tituloProyecto : 'Proyecto') . '"'
-        . ' para el formulario "' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario') . '"'
-        . ' el día ' . $fecha . ' a las ' . $hora . ' (Lima-Perú).';
-    $mailOk = rsu_eval_v1_notify_mail(
-        $conexion,
-        array(
-            'id_respuesta' => $id_respuesta,
-            'event_code' => 'MAIL_SOLICITUD_REVISION',
-            'office' => $oficinaId,
-            'tipo' => 3,
-            'to' => array($correoDestino),
-            'subject' => $asunto,
-            'message' => nl2br(htmlspecialchars($mensaje, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
-            'html' => nl2br(htmlspecialchars($mensaje, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
-            'text' => $mensaje,
-            'created_by' => $usuario,
-            'ip' => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
-        ),
-        function (array $mailPayload) use ($correoDestino) {
-            $res = sm_enviar_correo_confirmacion(
-                $correoDestino,
-                isset($mailPayload['subject']) ? (string)$mailPayload['subject'] : '',
-                isset($mailPayload['text']) ? (string)$mailPayload['text'] : ''
-            );
-            return !empty($res['ok']);
-        }
-    );
-    if ($mailOk) {
-        $mailInfo = array('ok' => true, 'msg' => 'Notificación registrada correctamente.');
-    } else {
-        $mailInfo = array('ok' => false, 'msg' => 'La solicitud se registró, pero no se pudo enviar/notificar el correo.');
-    }
-}
+$fecha = date('d/m/Y');
+$hora = date('H:i');
+$asunto = 'Solicitud de Revisión de ' . $tipoInformeTitle . ' — ' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario');
+$mensaje = 'Se solicitó la revisión del proyecto "' . ($tituloProyecto !== '' ? $tituloProyecto : 'Proyecto') . '"'
+    . ' para el formulario "' . ($nombreFormulario !== '' ? $nombreFormulario : 'Formulario') . '"'
+    . ' el día ' . $fecha . ' a las ' . $hora . ' (Lima-Perú).';
+$mensaje .= "\nSemestre del informe: " . $semestreInformeLabel;
+$mensaje .= "\n\nIngresar al Sistema DIRSU: https://rsu.unitru.edu.pe/sistema_web/login.php";
+$toList = ($correoDestino !== '') ? array($correoDestino) : array();
 
+$mailNotifyOk = rsu_eval_v1_notify_mail(
+    $conexion,
+    array(
+        'id_respuesta' => $id_respuesta,
+        'event_code' => 'MAIL_SOLICITUD_REVISION',
+        'office' => $oficinaId,
+        'tipo' => 3,
+        'to' => $toList,
+        'subject' => $asunto,
+        'message' => nl2br(htmlspecialchars($mensaje, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
+        'html' => nl2br(htmlspecialchars($mensaje, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')),
+        'text' => $mensaje,
+        'created_by' => $usuario,
+        'ip' => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+        'skip_reason' => empty($toList) ? 'sin_destinatarios' : '',
+    ),
+    function (array $mailPayload) use ($conexion, $correoDestino) {
+        $res = sm_enviar_correo_confirmacion(
+            $conexion,
+            $correoDestino,
+            isset($mailPayload['subject']) ? (string)$mailPayload['subject'] : '',
+            isset($mailPayload['text']) ? (string)$mailPayload['text'] : ''
+        );
+        return !empty($res['ok']);
+    }
+);
+
+if ($mailNotifyOk && !empty($toList)) {
+    $mailInfo = array('ok' => true, 'msg' => 'Notificación registrada correctamente.');
+} elseif (empty($toList)) {
+    $mailInfo = array('ok' => false, 'msg' => 'La solicitud se registró. No se encontró destinatario y el evento quedó auditado como no enviado.');
+} else {
+    $mailInfo = array('ok' => false, 'msg' => 'La solicitud se registró, pero no se pudo enviar/notificar el correo.');
+}
 sm_json_ok(array(
     'msg' => 'Solicitud enviada correctamente.',
     'completados' => $completados,
