@@ -33,6 +33,7 @@ require_once DIR_COMPONENTES . '/configSesion.php';
 require_once DIR_COMPONENTES . '/db.php';
 require_once DIR_COMPONENTES . '/cronograma/visibilidad_fase1.php';
 require_once __DIR__ . '/../includes/access/project_interface_guard.php';
+require_once __DIR__ . '/../includes/access/project_initial_data_gate.php';
 
 ?>
 <!DOCTYPE html>
@@ -119,12 +120,20 @@ endif;
 
 
 // ================== LÓGICA PRINCIPAL ==================
-$rsu_access_eval = rsu_project_interface_guard($conexion, 'F3-SEMESTRAL');
-
-// Si hubo error
-if (empty($rsu_access_eval['allow'])) {
-    include __DIR__ . '/../integrados/mensaje_fuera_tiempo.php';
+$rsu_initial_data_status = rsu_project_initial_data_get_status($conexion, isset($id_py) ? (int)$id_py : 0);
+if ((int)$id_py > 0 && !empty($rsu_initial_data_status['needs_block'])) {
+    rsu_project_initial_data_render_modal($rsu_initial_data_status, array(
+        'save_url' => '../componentes/proyecto/guardar_datos_iniciales.php',
+        'preview_api_url' => '../includes/api_dirsu/api.php',
+        'fallback_return' => '../semestral/index.php'
+    ));
 } else {
+    $rsu_access_eval = rsu_project_interface_guard($conexion, 'F3-SEMESTRAL');
+
+    // Si hubo error
+    if (empty($rsu_access_eval['allow'])) {
+        include __DIR__ . '/../integrados/mensaje_fuera_tiempo.php';
+    } else {
     require_once DIR_LOGICA . '/funciones.php';
     $sm_info = obtenerInfoSemestral($conexion, $id_py, is_array($rsu_access_eval) ? $rsu_access_eval : null);
     if (isset($sm_info['error'])) {

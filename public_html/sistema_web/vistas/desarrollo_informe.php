@@ -5,6 +5,7 @@
    include('../componentes/db.php');
    include_once('../componentes/cronograma/visibilidad_fase1.php');
    include_once('../includes/access/project_interface_guard.php');
+   include_once('../includes/access/project_initial_data_gate.php');
    // Incluir el archivo que carga los datos del proyecto
    include('../componentes/proyecto/cargar_proyecto.php'); 
 
@@ -111,6 +112,14 @@
 if ($id_py == 0) {
     include '../integrados/mensaje_registrar_py.php';
 } else {
+    $rsu_initial_data_status = rsu_project_initial_data_get_status($conexion, $id_py);
+    if (!empty($rsu_initial_data_status['needs_block'])) {
+        rsu_project_initial_data_render_modal($rsu_initial_data_status, array(
+            'save_url' => '../componentes/proyecto/guardar_datos_iniciales.php',
+            'preview_api_url' => '../includes/api_dirsu/api.php',
+            'fallback_return' => '../vistas/desarrollo_informe.php'
+        ));
+    } else {
     // Control de acceso centralizado por período activo, cronograma e interfaz.
     $rsu_access_eval = rsu_project_interface_guard($conexion, 'F1-PLAN');
     $result = false;
@@ -575,6 +584,7 @@ if ($id_py == 0) {
     } else {
         // Si no se encontró un cronograma que cumpla las condiciones
         include '../integrados/mensaje_fuera_tiempo.php';
+    }
     }
 }
 ?>

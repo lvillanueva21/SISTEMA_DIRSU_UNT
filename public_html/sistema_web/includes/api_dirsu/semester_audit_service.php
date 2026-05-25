@@ -537,3 +537,56 @@ if (!function_exists('rsu_api_project_semesters_audit_get')) {
         );
     }
 }
+
+if (!function_exists('rsu_api_project_semesters_preview_get')) {
+    function rsu_api_project_semesters_preview_get($fecha_inicio, $fecha_fin)
+    {
+        $fecha_inicio = trim((string)$fecha_inicio);
+        $fecha_fin = trim((string)$fecha_fin);
+
+        if ($fecha_inicio === '' || $fecha_fin === '') {
+            return array(
+                'ok' => false,
+                'error_code' => 'missing_dates',
+                'error_message' => 'Debes enviar fecha_inicio y fecha_fin.'
+            );
+        }
+
+        $expected = rsu_api_semester_audit_build_expected_rows($fecha_inicio, $fecha_fin);
+        if (!is_array($expected) || empty($expected['ok']) || !isset($expected['rows']) || !is_array($expected['rows'])) {
+            $reason = is_array($expected) && isset($expected['reason']) ? (string)$expected['reason'] : 'invalid_dates';
+            $message = 'No se pudo calcular los semestres para ese rango de fechas.';
+            if ($reason === 'inverted_dates') {
+                $message = 'La fecha de fin debe ser posterior a la fecha de inicio.';
+            }
+
+            return array(
+                'ok' => false,
+                'error_code' => $reason,
+                'error_message' => $message
+            );
+        }
+
+        $total_semestres = 0;
+        foreach ($expected['rows'] as $row) {
+            if (isset($row['tipo']) && (string)$row['tipo'] === 'semestral') {
+                $total_semestres++;
+            }
+        }
+
+        return array(
+            'ok' => true,
+            'data' => array(
+                'rows' => $expected['rows'],
+                'summary' => array(
+                    'total_rows' => count($expected['rows']),
+                    'total_semestres' => $total_semestres
+                )
+            ),
+            'meta' => array(
+                'fecha_inicio' => $fecha_inicio,
+                'fecha_fin' => $fecha_fin
+            )
+        );
+    }
+}

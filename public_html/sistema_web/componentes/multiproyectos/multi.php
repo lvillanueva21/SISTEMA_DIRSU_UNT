@@ -173,6 +173,27 @@ if (!function_exists('rsu_modal_coordinator_extract_route')) {
     }
 }
 
+if (!function_exists('rsu_modal_coordinator_build_in_clause')) {
+    function rsu_modal_coordinator_build_in_clause($ids)
+    {
+        $clean = array();
+        $source = is_array($ids) ? $ids : array();
+        $i = 0;
+        for ($i = 0; $i < count($source); $i++) {
+            $id = (int)$source[$i];
+            if ($id > 0) {
+                $clean[$id] = $id;
+            }
+        }
+
+        if (empty($clean)) {
+            return '';
+        }
+
+        return implode(',', array_values($clean));
+    }
+}
+
 if (!function_exists('rsu_modal_coordinator_is_final_delivery')) {
     function rsu_modal_coordinator_is_final_delivery($f3_access)
     {
@@ -421,6 +442,7 @@ if (function_exists('rsu_api_periods_active_snapshot_get')) {
 
                 $formulario = isset($cron['formulario']) && is_array($cron['formulario']) ? $cron['formulario'] : array();
                 $cron_filtrados[] = array(
+                    'tipo_id' => $tipo_id,
                     'tipo_nombre' => isset($cron['tipo_nombre']) ? (string)$cron['tipo_nombre'] : (($tipo_id === 1) ? 'Presentación de proyecto' : 'Informe semestral'),
                     'apertura' => isset($cron['apertura']) ? (string)$cron['apertura'] : '',
                     'cierre' => isset($cron['cierre']) ? (string)$cron['cierre'] : '',
@@ -443,6 +465,130 @@ if (function_exists('rsu_api_periods_active_snapshot_get')) {
     }
 } else {
     $periodos_activos_error = 'No se encontró el servicio de períodos activos para mostrar esta información.';
+}
+
+$has_convocatoria_presentacion = false;
+$idx_periodo_conv = 0;
+for ($idx_periodo_conv = 0; $idx_periodo_conv < count($periodos_activos); $idx_periodo_conv++) {
+    $periodo_item = is_array($periodos_activos[$idx_periodo_conv]) ? $periodos_activos[$idx_periodo_conv] : array();
+    $cronogramas_item = isset($periodo_item['cronogramas']) && is_array($periodo_item['cronogramas'])
+        ? $periodo_item['cronogramas']
+        : array();
+
+    $idx_cron_conv = 0;
+    for ($idx_cron_conv = 0; $idx_cron_conv < count($cronogramas_item); $idx_cron_conv++) {
+        $cron_item = is_array($cronogramas_item[$idx_cron_conv]) ? $cronogramas_item[$idx_cron_conv] : array();
+        $tipo_id = isset($cron_item['tipo_id']) ? (int)$cron_item['tipo_id'] : 0;
+        $ventana = isset($cron_item['ventana_estado']) ? strtolower(trim((string)$cron_item['ventana_estado'])) : '';
+        $formulario_ok = isset($cron_item['formulario_existe']) ? ((int)$cron_item['formulario_existe'] === 1) : false;
+        if ($tipo_id === 1 && $ventana === 'abierto' && $formulario_ok) {
+            $has_convocatoria_presentacion = true;
+            break 2;
+        }
+    }
+}
+
+$project_ids_gate = array();
+$idx_gate = 0;
+for ($idx_gate = 0; $idx_gate < count($proyectos); $idx_gate++) {
+    $project_id_gate = isset($proyectos[$idx_gate]['id']) ? (int)$proyectos[$idx_gate]['id'] : 0;
+    if ($project_id_gate > 0) {
+        $project_ids_gate[$project_id_gate] = $project_id_gate;
+    }
+}
+$project_ids_gate = array_values($project_ids_gate);
+
+$final_approval_map = array();
+$all_projects_final_approved = false;
+$pending_final_projects = array();
+
+if (!empty($project_ids_gate) && isset($conexion) && $conexion instanceof mysqli) {
+    $in_clause_gate = rsu_modal_coordinator_build_in_clause($project_ids_gate);
+    if ($in_clause_gate !== '') {
+        $sql_gate = "
+            SELECT
+                s.id_py,
+                MAX(1) AS has_final_semester,
+                MAX(CASE WHEN e.situacion = 'aprobado' THEN 1 ELSE 0 END) AS has_final_approved
+            FROM sm_proyecto_semestres s
+            LEFT JOIN sm_respuestas r
+                ON r.id_semestre = s.id
+            LEFT JOIN eva_evaluaciones e
+                ON e.id_respuesta = r.id
+            WHERE s.id_py IN (" . $in_clause_gate . ")
+              AND s.tipo = 'semestral'
+              AND COALESCE(s.vigente, 1) = 1
+              AND COALESCE(s.final, 0) = 1
+            GROUP BY s.id_py
+        ";
+        $rs_gate = mysqli_query($conexion, $sql_gate);
+        if ($rs_gate instanceof mysqli_result) {
+            while ($row_gate = mysqli_fetch_assoc($rs_gate)) {
+                $id_gate = isset($row_gate['id_py']) ? (int)$row_gate['id_py'] : 0;
+                if ($id_gate <= 0) {
+                    continue;
+                }
+                $has_final_sem = isset($row_gate['has_final_semester']) ? ((int)$row_gate['has_final_semester'] === 1) : false;
+                $has_final_apr = isset($row_gate['has_final_approved']) ? ((int)$row_gate['has_final_approved'] === 1) : false;
+                $final_approval_map[$id_gate] = array(
+                    'has_final_semester' => $has_final_sem,
+                    'has_final_approved' => $has_final_apr
+                );
+            }
+            mysqli_free_result($rs_gate);
+        }
+    }
+}
+
+if (!empty($project_ids_gate)) {
+    $all_projects_final_approved = true;
+    $idx_pending = 0;
+    for ($idx_pending = 0; $idx_pending < count($proyectos); $idx_pending++) {
+        $project_item = is_array($proyectos[$idx_pending]) ? $proyectos[$idx_pending] : array();
+        $project_id_item = isset($project_item['id']) ? (int)$project_item['id'] : 0;
+        if ($project_id_item <= 0) {
+            continue;
+        }
+
+        $final_info = isset($final_approval_map[$project_id_item]) ? $final_approval_map[$project_id_item] : null;
+        $is_approved = is_array($final_info)
+            && !empty($final_info['has_final_semester'])
+            && !empty($final_info['has_final_approved']);
+
+        if (!$is_approved) {
+            $all_projects_final_approved = false;
+            $titulo_pending = trim((string)(isset($project_item['nombre']) ? $project_item['nombre'] : ''));
+            if ($titulo_pending === '') {
+                $titulo_pending = 'Proyecto ID ' . $project_id_item;
+            }
+            $pending_final_projects[] = $titulo_pending;
+        }
+    }
+}
+
+$show_create_project_cta = false;
+$create_project_enabled = false;
+$create_project_message = '';
+$create_project_button_title = '';
+
+if ($has_convocatoria_presentacion) {
+    $show_create_project_cta = true;
+    if (empty($proyectos)) {
+        $create_project_enabled = true;
+        $create_project_message = 'RSU tiene disponible un cronograma de creación de proyectos. ¿Deseas crear tu primer proyecto? Presiona el botón.';
+    } elseif ($all_projects_final_approved) {
+        $create_project_enabled = true;
+        $create_project_message = 'RSU tiene disponible un cronograma de creación de proyectos. ¿Deseas crear un nuevo proyecto? Presiona el botón.';
+    } else {
+        $create_project_enabled = false;
+        $create_project_message = 'RSU tiene disponible un cronograma de creación de proyectos. Cuando completes tus informes finales pendientes podrás crear un nuevo proyecto.';
+        $pending_count = count($pending_final_projects);
+        if ($pending_count === 1) {
+            $create_project_button_title = 'La creación de proyecto se desbloquea al completar tus informes finales pendientes de proyecto pasado.';
+        } else {
+            $create_project_button_title = 'La creación de proyecto se desbloquea al completar tus informes finales pendientes de proyectos pasados.';
+        }
+    }
 }
 ?>
 
@@ -538,6 +684,10 @@ if (function_exists('rsu_api_periods_active_snapshot_get')) {
     padding: 0.75rem;
     margin-top: 0.75rem;
   }
+  .btn-crear-proyecto-modal[data-disabled="1"] {
+    cursor: not-allowed;
+    opacity: 0.85;
+  }
 </style>
 
 <div class="modal fade" id="modalMultiproyectos" tabindex="-1" role="dialog" aria-labelledby="modalMultiproyectosLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false" data-auto-show="<?php echo $rsu_modal_auto_show ? '1' : '0'; ?>">
@@ -598,13 +748,30 @@ if (function_exists('rsu_api_periods_active_snapshot_get')) {
           <div class="small text-muted mt-2">Consulta tus semestres, para ver si te corresponde completar el formulario asignado.</div>
         </div>
 
-        <?php if (empty($proyectos)): ?>
-          <div class="alert alert-info mb-0">
-            <p class="mb-2"><strong>Aún no tienes proyectos vinculados para ingresar al sistema.</strong></p>
-            <p class="mb-2">Por ahora, la creación de proyectos no está disponible en esta ventana.</p>
-            <p class="mb-1">Correo de contacto: <strong>proyectosdirsu@unitru.edu.pe</strong></p>
-            <p class="mb-0">Puedes consultar a este correo si existen fechas disponibles o próximas convocatorias para la presentación de nuevos proyectos.</p>
+        <?php if ($show_create_project_cta): ?>
+          <div class="alert <?php echo $create_project_enabled ? 'alert-success' : 'alert-warning'; ?> mb-3">
+            <p class="mb-2"><strong><?php echo htmlspecialchars($create_project_message, ENT_QUOTES, 'UTF-8'); ?></strong></p>
+            <button
+              type="button"
+              class="btn <?php echo $create_project_enabled ? 'btn-primary' : 'btn-secondary'; ?> btn-sm btn-crear-proyecto-modal"
+              data-target-route="vistas/datos_principales.php"
+              data-disabled="<?php echo $create_project_enabled ? '0' : '1'; ?>"
+              title="<?php echo htmlspecialchars($create_project_button_title, ENT_QUOTES, 'UTF-8'); ?>"
+            >
+              Crear proyecto
+            </button>
           </div>
+        <?php endif; ?>
+
+        <?php if (empty($proyectos)): ?>
+          <?php if (!$show_create_project_cta): ?>
+            <div class="alert alert-info mb-0">
+              <p class="mb-2"><strong>Aún no tienes proyectos vinculados para ingresar al sistema.</strong></p>
+              <p class="mb-2">Por ahora, la creación de proyectos no está disponible en esta ventana.</p>
+              <p class="mb-1">Correo de contacto: <strong>proyectosdirsu@unitru.edu.pe</strong></p>
+              <p class="mb-0">Puedes consultar a este correo si existen fechas disponibles o próximas convocatorias para la presentación de nuevos proyectos.</p>
+            </div>
+          <?php endif; ?>
         <?php else: ?>
           <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="mb-0"><strong>Proyectos vinculados al coordinador</strong></h6>
@@ -854,6 +1021,27 @@ if (function_exists('rsu_api_periods_active_snapshot_get')) {
             button.disabled = false;
             button.textContent = originalText;
           });
+      });
+    }
+
+    var createButtons = document.querySelectorAll('.btn-crear-proyecto-modal');
+    for (i = 0; i < createButtons.length; i++) {
+      createButtons[i].addEventListener('click', function () {
+        var button = this;
+        var isDisabled = button.getAttribute('data-disabled') === '1';
+        var targetRoute = button.getAttribute('data-target-route');
+        var disabledMessage = button.getAttribute('title') || 'La creación de proyecto está temporalmente bloqueada.';
+
+        if (isDisabled) {
+          alert(disabledMessage);
+          return;
+        }
+
+        if (!targetRoute) {
+          return;
+        }
+
+        window.location.href = targetRoute;
       });
     }
 

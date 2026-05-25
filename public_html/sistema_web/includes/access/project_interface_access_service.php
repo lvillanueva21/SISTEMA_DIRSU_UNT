@@ -269,6 +269,8 @@ if (!function_exists('rsu_project_interface_access_evaluate')) {
         $result['proyecto'] = array('id' => (int)$project['id'], 'titulo' => (string)$project['p2'], 'fecha_inicio' => (string)$project['fecha_inicio'], 'fecha_fin' => (string)$project['fecha_fin']);
         $project_semesters = rsu_access_build_project_semesters($project['fecha_inicio'], $project['fecha_fin']);
         $result['semestres_proyecto'] = $project_semesters;
+        $has_project_semesters = !empty($project_semesters);
+        $project_has_blank_dates = (trim((string)$project['fecha_inicio']) === '' && trim((string)$project['fecha_fin']) === '');
 
         $periods = array(); $res_periods = mysqli_query($conexion, "SELECT id, nombre, DATE_FORMAT(fecha_inicio, '%Y-%m-%d') AS fecha_inicio, DATE_FORMAT(fecha_fin, '%Y-%m-%d') AS fecha_fin FROM periodos WHERE activo = 1 ORDER BY fecha_inicio DESC, id DESC");
         if (!($res_periods instanceof mysqli_result)) { $result['ok'] = false; $result['reason_code'] = 'db_query_error'; $result['reason_message'] = 'No se pudo consultar períodos activos.'; return $result; }
@@ -307,6 +309,16 @@ if (!function_exists('rsu_project_interface_access_evaluate')) {
             $rule = isset($rules[$period_name][$interface_code]) ? $rules[$period_name][$interface_code] : null;
             $window = rsu_access_window_status(is_array($rule) ? $rule['inicio'] : '', is_array($rule) ? $rule['fin'] : '', $tz_name);
             $match = is_array($parsed) ? rsu_access_has_project_semester($project_semesters, $parsed['anio'], $parsed['periodo'], (string)$def['tipo_semestre']) : false;
+            $fallback_presentacion_blank_dates = false;
+            if (
+                !$match
+                && !$has_project_semesters
+                && (string)$def['tipo_semestre'] === 'presentacion'
+                && $project_has_blank_dates
+            ) {
+                $match = true;
+                $fallback_presentacion_blank_dates = true;
+            }
 
             $active_interfaces = array();
             $ordered_defs = $defs;
@@ -318,7 +330,7 @@ if (!function_exists('rsu_project_interface_access_evaluate')) {
                 $active_interfaces[] = array('codigo' => $code, 'nombre' => (string)$d['nombre'], 'ruta' => (string)$d['ruta'], 'descripcion' => (string)$rw['descripcion'], 'inicio' => (string)$rw['inicio'], 'fin' => (string)$rw['fin'], 'ventana_estado' => $w);
             }
 
-            $snapshots[] = array('periodo' => $period, 'sort_key' => rsu_access_period_sort_key($period_name), 'cron' => (count($cron_items) > 0 ? $cron_items[0] : null), 'rule' => $rule, 'window' => $window, 'match' => $match, 'candidate' => (count($cron_items) > 0 && is_array($rule)), 'interfaces_activas' => $active_interfaces);
+            $snapshots[] = array('periodo' => $period, 'sort_key' => rsu_access_period_sort_key($period_name), 'cron' => (count($cron_items) > 0 ? $cron_items[0] : null), 'rule' => $rule, 'window' => $window, 'match' => $match, 'candidate' => (count($cron_items) > 0 && is_array($rule)), 'interfaces_activas' => $active_interfaces, 'fallback_presentacion_blank_dates' => $fallback_presentacion_blank_dates);
         }
 
         usort($snapshots, function ($a, $b) {
@@ -357,7 +369,7 @@ if (!function_exists('rsu_project_interface_access_evaluate')) {
         }
 
         $result['reason_message'] = rsu_access_reason_message($result['reason_code'], $result);
-        $result['trace'] = array('total_periodos_activos' => count($periods), 'snapshots' => count($snapshots), 'has_candidate' => $has_candidate, 'has_cron_type' => $has_cron_type);
+        $result['trace'] = array('total_periodos_activos' => count($periods), 'snapshots' => count($snapshots), 'has_candidate' => $has_candidate, 'has_cron_type' => $has_cron_type, 'has_project_semesters' => $has_project_semesters, 'project_has_blank_dates' => $project_has_blank_dates, 'used_fallback_presentacion_blank_dates' => (is_array($ref) && !empty($ref['fallback_presentacion_blank_dates'])));
         return $result;
     }
 }

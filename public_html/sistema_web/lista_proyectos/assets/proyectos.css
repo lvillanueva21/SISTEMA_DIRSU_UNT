@@ -348,9 +348,44 @@
 }
 
 #prjInformeDetalleBody {
-  max-height: 78vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+  height: 78vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: .25rem;
+}
+
+#prjInformeDetalleBody .form-body {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+#prjInformeDetalleBody .rsu-split-row {
+  display: flex !important;
+  align-items: stretch;
+  min-height: 0;
+}
+
+#prjInformeDetalleBody .rsu-left,
+#prjInformeDetalleBody .rsu-right {
+  max-height: calc(78vh - 170px);
+  min-height: 240px;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+#prjInformeDetalleBody .rsu-left {
+  overflow-x: hidden !important;
+}
+
+#prjInformeDetalleBody .rsu-right {
+  overflow-x: auto !important;
+  scrollbar-gutter: stable both-edges;
+}
+
+#prjInformeDetalleBody .form-card .form-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 #modalPresentacionDetalle .modal-body {
@@ -363,6 +398,7 @@
   overflow-y: auto !important;
   overflow-x: hidden !important;
   padding: .75rem;
+  overscroll-behavior: contain;
 }
 
 #prjPresentacionDetalleBody .contenedor-scroll {

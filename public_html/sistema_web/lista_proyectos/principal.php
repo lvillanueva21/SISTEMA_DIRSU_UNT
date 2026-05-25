@@ -402,15 +402,19 @@ function prj_link_limpiar_filtros()
 
 <div class="modal fade" id="modalPresentacionDetalle" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-light">
-        <h5 class="modal-title">Formulaci&oacute;n y Presentaci&oacute;n de Proyecto</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+    <div class="modal-content border-info">
+      <div class="modal-header bg-primary text-white py-2">
+        <h5 class="modal-title mb-0 d-flex align-items-center">
+          <i class="fas fa-info-circle mr-2"></i> Formulaci&oacute;n y presentaci&oacute;n de Proyecto
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body" id="prjPresentacionDetalleBody">
-        <div class="text-muted">Cargando...</div>
+      <div class="modal-body p-0">
+        <div id="prjPresentacionDetalleBody">
+          <p class="text-center text-muted my-4">Cargando datos del proyecto...</p>
+        </div>
       </div>
     </div>
   </div>

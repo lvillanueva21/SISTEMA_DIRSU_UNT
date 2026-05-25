@@ -164,6 +164,29 @@ if ($action === 'project.semesters.audit') {
     rsu_api_json_ok($result['data'], 'Auditoria de semestres completada.', $meta);
 }
 
+if ($action === 'project.semesters.preview') {
+    $fecha_inicio = isset($_GET['fecha_inicio']) ? trim((string)$_GET['fecha_inicio']) : '';
+    $fecha_fin = isset($_GET['fecha_fin']) ? trim((string)$_GET['fecha_fin']) : '';
+
+    $result = rsu_api_project_semesters_preview_get($fecha_inicio, $fecha_fin);
+    if (!is_array($result) || !isset($result['ok']) || !$result['ok']) {
+        $error_code = isset($result['error_code']) ? (string)$result['error_code'] : 'internal_error';
+        $error_message = isset($result['error_message']) ? (string)$result['error_message'] : 'No se pudo calcular la vista previa.';
+
+        if ($error_code === 'missing_dates' || $error_code === 'invalid_dates' || $error_code === 'inverted_dates') {
+            rsu_api_json_error(422, $error_code, $error_message, array());
+        }
+
+        rsu_api_json_error(400, $error_code, $error_message, array());
+    }
+
+    $meta = isset($result['meta']) && is_array($result['meta']) ? $result['meta'] : array();
+    $meta['requested_at'] = date('Y-m-d H:i:s');
+    $meta['requested_by'] = isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null;
+
+    rsu_api_json_ok($result['data'], 'Vista previa de semestres calculada.', $meta);
+}
+
 if ($action === 'periods.active.snapshot.get') {
     $role_id = isset($_SESSION['id_rol']) ? (int)$_SESSION['id_rol'] : 0;
     if ($role_id !== 1) {

@@ -473,6 +473,57 @@
     if (!body) return;
     var rows = body.querySelectorAll('.rsu-split-row');
     for (var i = 0; i < rows.length; i++) rows[i].style.display = 'flex';
+    bindInformeScrollGuards(body);
+    bindInformeNavLinks(body);
+  }
+
+  function bindInformeScrollGuards(root) {
+    if (!root) return;
+    var panes = root.querySelectorAll('.rsu-left, .rsu-right');
+    for (var i = 0; i < panes.length; i++) {
+      var pane = panes[i];
+      if (pane.getAttribute('data-wheel-guard') === '1') continue;
+      pane.setAttribute('data-wheel-guard', '1');
+      pane.addEventListener('wheel', function (ev) {
+        var delta = ev.deltaY || 0;
+        if (!delta) return;
+        var top = this.scrollTop;
+        var max = this.scrollHeight - this.clientHeight;
+        var goingDown = delta > 0;
+        var canScrollDown = top < max;
+        var canScrollUp = top > 0;
+        if ((goingDown && canScrollDown) || (!goingDown && canScrollUp)) {
+          ev.stopPropagation();
+        }
+      }, { passive: true });
+      pane.addEventListener('touchmove', function (ev) {
+        ev.stopPropagation();
+      }, { passive: true });
+    }
+  }
+
+  function bindInformeNavLinks(root) {
+    if (!root) return;
+    var anchors = root.querySelectorAll('.rsu-left a[href^="#"]');
+    for (var i = 0; i < anchors.length; i++) {
+      var a = anchors[i];
+      if (a.getAttribute('data-nav-bound') === '1') continue;
+      a.setAttribute('data-nav-bound', '1');
+      a.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        var hash = this.getAttribute('href') || '';
+        if (!hash || hash.charAt(0) !== '#') return;
+        var split = this.closest('.rsu-split-row');
+        if (!split) return;
+        var right = split.querySelector('.rsu-right');
+        if (!right) return;
+        var target = right.querySelector(hash);
+        if (!target) target = split.querySelector(hash);
+        if (!target) return;
+        var offset = target.offsetTop - right.offsetTop - 8;
+        right.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+      });
+    }
   }
 
   function openInformeModal(projectId, responseId) {
@@ -502,11 +553,76 @@
       body.innerHTML = '<div class="alert alert-danger mb-0">No hay motor AJAX disponible.</div>';
       return;
     }
-    window.jQuery.get('../includes/api_dirsu/presentacion_modal_api.php', { id_py: projectId }, function (html) {
+    window.jQuery.get('../comite_facultad/calificacion/presentacion.php', { id_py: projectId }, function (html) {
       body.innerHTML = html;
+      loadPresentacionAdjuntos(projectId, body);
     }, 'html').fail(function () {
       body.innerHTML = '<div class="alert alert-danger mb-0">No se pudo cargar la presentación del proyecto.</div>';
     });
+  }
+
+  function loadPresentacionAdjuntos(projectId, root) {
+    if (!projectId || !root) return;
+    var cont = root.querySelector('#contenedor-archivos');
+    if (!cont) return;
+    fetch('../comite_facultad/calificacion/gestion_archivos.php?id_py=' + encodeURIComponent(projectId), { credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var label = {
+          lista_docentes: '1. Lista de Docentes',
+          lista_alumnos: '2. Lista de Alumnos',
+          diagrama: '3. Diagrama',
+          compromiso: '4. Compromiso Etico',
+          carta: '5. Carta de Intencion'
+        };
+        var navId = {
+          lista_docentes: 'anitem1',
+          lista_alumnos: 'anitem2',
+          diagrama: 'anitem3',
+          compromiso: 'anitem4',
+          carta: 'anitem5'
+        };
+        for (var cat in data) {
+          if (!Object.prototype.hasOwnProperty.call(data, cat)) continue;
+          var files = data[cat];
+          var sec = document.createElement('div');
+          sec.className = 'mb-3';
+          sec.id = navId[cat] || '';
+          var titulo = '<strong>' + esc(label[cat] || cat) + '</strong><br>';
+          if (!Array.isArray(files) || !files.length) {
+            sec.innerHTML = titulo + '<span class="text-danger">No hay archivo</span>';
+          } else {
+            var cards = files.map(function (f) {
+              var name = String(f || '');
+              var ext = name.split('.').pop().toLowerCase();
+              var isPdf = ext === 'pdf';
+              var isXls = (ext === 'xls' || ext === 'xlsx');
+              var icon = isPdf ? 'file-pdf text-danger' : (isXls ? 'file-excel text-success' : 'file-alt text-secondary');
+              var btn = isPdf ? 'btn-outline-danger' : (isXls ? 'btn-outline-success' : 'btn-outline-secondary');
+              var url = '../comite_facultad/calificacion/descarga_archivos.php?categoria='
+                + encodeURIComponent(cat)
+                + '&id_py=' + encodeURIComponent(projectId)
+                + '&archivo=' + encodeURIComponent(name)
+                + (isPdf ? '&ver=1' : '');
+              return ''
+                + '<div class="archivo-card d-flex align-items-center justify-content-between p-3 mb-2 border rounded shadow-sm bg-white">'
+                + '  <div class="d-flex align-items-center" style="gap:10px;">'
+                + '    <i class="fas fa-' + icon + '" style="font-size:1.5rem;"></i>'
+                + '    <div title="' + esc(name) + '" style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+                +        esc(name)
+                + '    </div>'
+                + '  </div>'
+                + '  <a href="' + url + '" target="_blank" rel="noopener" class="btn ' + btn + ' btn-sm">Descargar</a>'
+                + '</div>';
+            }).join('');
+            sec.innerHTML = titulo + cards;
+          }
+          cont.appendChild(sec);
+        }
+      })
+      .catch(function () {
+        cont.innerHTML = '<div class="text-danger">Error al cargar archivos.</div>';
+      });
   }
 
   function postCoordinatorAction(actionKey) {
