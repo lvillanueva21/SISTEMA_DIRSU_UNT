@@ -518,7 +518,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                         </div>
                         <div class="evt-msg-card-body">
                             <div class="evt-msg-subject"><strong>Asunto:</strong> Tu <span class="evt-msg-var">{{tipo_informe_lower}}</span> fue derivado a <span class="evt-msg-var">{{oficina_destino}}</span> - Sistema DIRSU</div>
-                            <pre class="evt-msg-sample mb-0">Tu proyecto fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_origen}}</span> y ha sido derivado a la Oficina <span class="evt-msg-var">{{oficina_destino}}</span>.
+                            <pre class="evt-msg-sample mb-0">Tu <span class="evt-msg-var">{{tipo_informe_lower}}</span> fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_origen}}</span> y ha sido derivado a la Oficina <span class="evt-msg-var">{{oficina_destino}}</span>.
 
 Fecha y hora: <span class="evt-msg-var">{{fecha_hora_derivacion}}</span>
 Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> — <span class="evt-msg-var">{{periodo}}</span> <span class="evt-msg-var">{{codigo_proyecto_opcional}}</span>
@@ -526,7 +526,7 @@ Ingresar al Sistema DIRSU: <span class="evt-msg-var">{{url_login_proyecto}}</spa
 
 Este es un correo automático de notificación de derivación.</pre>
                             <textarea id="evtMsgTplDerivacion" class="d-none">Asunto: Tu {{tipo_informe_lower}} fue derivado a {{oficina_destino}} - Sistema DIRSU
-Tu proyecto fue aprobado en la Oficina {{oficina_origen}} y ha sido derivado a la Oficina {{oficina_destino}}.
+Tu {{tipo_informe_lower}} fue aprobado en la Oficina {{oficina_origen}} y ha sido derivado a la Oficina {{oficina_destino}}.
 
 Fecha y hora: {{fecha_hora_derivacion}}
 Proyecto: {{titulo_proyecto}} — {{periodo}} {{codigo_proyecto_opcional}}
@@ -626,7 +626,7 @@ Presiona para ir al Sistema DIRSU y subsanar.</textarea>
                             <div class="evt-msg-subject"><strong>Asunto:</strong> Aprobación Total (<span class="evt-msg-var">{{tipo_informe_title}}</span>) - Sistema DIRSU</div>
                             <pre class="evt-msg-sample mb-0">¡Aprobación Total!
 
-Tu proyecto fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_ultima}}</span> el <span class="evt-msg-var">{{fecha_hora_aprobacion}}</span>.
+Tu <span class="evt-msg-var">{{tipo_informe_title}}</span> fue aprobado en la Oficina <span class="evt-msg-var">{{oficina_ultima}}</span> el <span class="evt-msg-var">{{fecha_hora_aprobacion}}</span>.
 Con esta aprobación, el proceso de revisión ha culminado exitosamente. No quedan tareas pendientes por realizar.
 
 Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> — <span class="evt-msg-var">{{periodo}}</span> <span class="evt-msg-var">{{codigo_proyecto_opcional}}</span>
@@ -634,7 +634,7 @@ Ingresar al Sistema DIRSU: <span class="evt-msg-var">{{url_login_proyecto}}</spa
                             <textarea id="evtMsgTplAprobTotal" class="d-none">Asunto: Aprobación Total ({{tipo_informe_title}}) - Sistema DIRSU
 ¡Aprobación Total!
 
-Tu proyecto fue aprobado en la Oficina {{oficina_ultima}} el {{fecha_hora_aprobacion}}.
+Tu {{tipo_informe_title}} fue aprobado en la Oficina {{oficina_ultima}} el {{fecha_hora_aprobacion}}.
 Con esta aprobación, el proceso de revisión ha culminado exitosamente. No quedan tareas pendientes por realizar.
 
 Proyecto: {{titulo_proyecto}} — {{periodo}} {{codigo_proyecto_opcional}}

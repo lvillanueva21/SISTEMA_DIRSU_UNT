@@ -292,7 +292,7 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
     $url     = "https://rsu.unitru.edu.pe/sistema_web/login.php";
 
     $htmlBody = "
-      <p><strong>Tu proyecto fue aprobado en la Oficina {$nomOri}</strong> y ha sido <strong>derivado</strong> a la Oficina {$nomDes}.</p>
+      <p><strong>Tu {$tipoLower} fue aprobado en la Oficina {$nomOri}</strong> y ha sido <strong>derivado</strong> a la Oficina {$nomDes}.</p>
       <p>" . ($when ? "<strong>Fecha y hora:</strong> {$when}<br>" : "") . "</p>
       <p>" . _notif_proyecto_line_html($titulo, $periodo, $codigoProyecto) . "</p>
       <p><strong>Semestre del informe:</strong> " . htmlspecialchars($semLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>
@@ -302,7 +302,7 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
     ";
     $html = _notif_mail_wrap_html($htmlBody);
 
-    $text  = "Tu proyecto fue aprobado en la Oficina {$nomOri} y ha sido derivado a la Oficina {$nomDes}.\n";
+    $text  = "Tu {$tipoLower} fue aprobado en la Oficina {$nomOri} y ha sido derivado a la Oficina {$nomDes}.\n";
     if ($when) $text .= "Fecha y hora: {$when}\n";
     $text .= _notif_proyecto_line_text($titulo, $periodo, $codigoProyecto) . "\n";
     $text .= "Semestre del informe: {$semLabel}\n";
@@ -352,7 +352,7 @@ function notif_aprobacion_total(\mysqli $db, array $ctx): bool {
 
     $htmlBody = "
       <p><strong>¡Aprobación Total!</strong></p>
-      <p>Tu proyecto fue <strong>aprobado</strong> en la Oficina {$nomUlt} el " . ($when ?: '—') . ".</p>
+      <p>Tu {$tipoTitle} fue <strong>aprobado</strong> en la Oficina {$nomUlt} el " . ($when ?: '—') . ".</p>
       <p>Con esta aprobación, el proceso de revisión ha culminado exitosamente. <strong>No quedan tareas pendientes por realizar.</strong></p>
       <p>" . _notif_proyecto_line_html($titulo, $periodo, $codigoProyecto) . "</p>
       <p><strong>Semestre del informe:</strong> " . htmlspecialchars($semLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>
@@ -363,7 +363,7 @@ function notif_aprobacion_total(\mysqli $db, array $ctx): bool {
     $html = _notif_mail_wrap_html($htmlBody);
 
     $text  = "¡Aprobación Total!\n";
-    $text .= "Tu proyecto fue aprobado en la Oficina {$nomUlt}" . ($when ? " el {$when}" : "") . ".\n";
+    $text .= "Tu {$tipoTitle} fue aprobado en la Oficina {$nomUlt}" . ($when ? " el {$when}" : "") . ".\n";
     $text .= "El proceso de revisión ha culminado exitosamente; no quedan tareas pendientes.\n";
     $text .= _notif_proyecto_line_text($titulo, $periodo, $codigoProyecto) . "\n";
     $text .= "Semestre del informe: {$semLabel}\n";
