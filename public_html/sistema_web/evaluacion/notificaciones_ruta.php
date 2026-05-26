@@ -48,6 +48,184 @@ function _notif_destinatarios(\mysqli $db, int $id_py): array {
 }
 
 /**
+ * Obtiene contexto (facultad/departamento) del proyecto para resolver evaluadores destino.
+ */
+function _notif_contexto_proyecto(\mysqli $db, int $id_py): array {
+    $ctx = array(
+        'id_py' => $id_py,
+        'fac_id' => 0,
+        'dep_id' => 0,
+    );
+    if ($id_py <= 0) {
+        return $ctx;
+    }
+
+    $sql = "SELECT u.id_depa AS dep_id, d.id_facultad AS fac_id
+              FROM usuarios_proyectos up
+              INNER JOIN usuarios u ON u.id = up.id_usuario
+              LEFT JOIN departamentos d ON d.id = u.id_depa
+             WHERE up.id_proyecto = ?
+               AND up.activo = 1
+               AND u.id_rol = 2
+             ORDER BY up.id ASC
+             LIMIT 1";
+    $st = $db->prepare($sql);
+    if (!$st) {
+        return $ctx;
+    }
+    $st->bind_param('i', $id_py);
+    if ($st->execute() && ($row = $st->get_result()->fetch_assoc())) {
+        $ctx['dep_id'] = isset($row['dep_id']) ? (int)$row['dep_id'] : 0;
+        $ctx['fac_id'] = isset($row['fac_id']) ? (int)$row['fac_id'] : 0;
+    }
+    $st->close();
+    return $ctx;
+}
+
+/**
+ * Detalle de contactos por usuario desde directorio (email + correo_asistente).
+ */
+function _notif_contactos_directorio_por_usuario(\mysqli $db, array $usuarios): array {
+    $out = array();
+    $usuarios = array_values(array_unique(array_filter(array_map('strval', $usuarios))));
+    if (empty($usuarios)) {
+        return $out;
+    }
+
+    $place = implode(',', array_fill(0, count($usuarios), '?'));
+    $types = str_repeat('s', count($usuarios));
+    $sql = "SELECT usuario, email, correo_asistente FROM directorio WHERE usuario IN ($place)";
+    $st = $db->prepare($sql);
+    if (!$st) {
+        return $out;
+    }
+    $st->bind_param($types, ...$usuarios);
+    if ($st->execute()) {
+        $rs = $st->get_result();
+        while ($row = $rs->fetch_assoc()) {
+            $u = trim((string)($row['usuario'] ?? ''));
+            if ($u === '') {
+                continue;
+            }
+            $out[$u] = array(
+                'email' => trim((string)($row['email'] ?? '')),
+                'correo_asistente' => trim((string)($row['correo_asistente'] ?? '')),
+            );
+        }
+    }
+    $st->close();
+    return $out;
+}
+
+/**
+ * Destinatarios evaluadores por oficina destino (solo DD y DF).
+ * Devuelve:
+ * - emails: correos validados (email + asistente)
+ * - roles: logins de usuarios evaluadores en alcance
+ * - diag: razones de faltantes para auditoria
+ */
+function _notif_destinatarios_oficina_destino(\mysqli $db, int $id_py, int $of_destino, string $codDestino): array {
+    $result = array(
+        'emails' => array(),
+        'roles' => array(),
+        'diag' => array(),
+    );
+    $codigo = strtoupper(trim($codDestino));
+    if ($codigo !== 'DD' && $codigo !== 'DF') {
+        $result['diag'][] = 'oficina_destino_sin_notificacion=' . ($codigo !== '' ? $codigo : (string)$of_destino);
+        return $result;
+    }
+
+    $ctx = _notif_contexto_proyecto($db, $id_py);
+    $depId = (int)($ctx['dep_id'] ?? 0);
+    $facId = (int)($ctx['fac_id'] ?? 0);
+    $rolId = ($codigo === 'DD') ? 4 : 3;
+
+    if ($codigo === 'DD' && $depId <= 0) {
+        $result['diag'][] = 'sin_departamento_proyecto';
+        return $result;
+    }
+    if ($codigo === 'DF' && $facId <= 0) {
+        $result['diag'][] = 'sin_facultad_proyecto';
+        return $result;
+    }
+
+    if ($codigo === 'DD') {
+        $sql = "SELECT usuario FROM usuarios WHERE id_rol = 4 AND id_depa = ?";
+        $st = $db->prepare($sql);
+        if (!$st) {
+            $result['diag'][] = 'prepare_destinatarios_dd_error';
+            return $result;
+        }
+        $st->bind_param('i', $depId);
+    } else {
+        $sql = "SELECT usuario FROM usuarios WHERE id_rol = 3 AND id_escuela = ?";
+        $st = $db->prepare($sql);
+        if (!$st) {
+            $result['diag'][] = 'prepare_destinatarios_df_error';
+            return $result;
+        }
+        $st->bind_param('i', $facId);
+    }
+
+    $roles = array();
+    if ($st->execute()) {
+        $rs = $st->get_result();
+        while ($row = $rs->fetch_assoc()) {
+            $u = trim((string)($row['usuario'] ?? ''));
+            if ($u !== '') {
+                $roles[$u] = true;
+            }
+        }
+    } else {
+        $result['diag'][] = 'execute_destinatarios_error=' . $st->error;
+    }
+    $st->close();
+
+    $usuarios = array_keys($roles);
+    $result['roles'] = $usuarios;
+    if (empty($usuarios)) {
+        $result['diag'][] = ($codigo === 'DD') ? 'sin_director_departamento_asignado' : 'sin_decano_facultad_asignado';
+        return $result;
+    }
+
+    $contactos = _notif_contactos_directorio_por_usuario($db, $usuarios);
+    $emails = array();
+    $faltantes = array();
+    foreach ($usuarios as $usuario) {
+        $email = '';
+        $asistente = '';
+        if (isset($contactos[$usuario])) {
+            $email = trim((string)($contactos[$usuario]['email'] ?? ''));
+            $asistente = trim((string)($contactos[$usuario]['correo_asistente'] ?? ''));
+        }
+
+        $has = false;
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $emails[$email] = true;
+            $has = true;
+        }
+        if ($asistente !== '' && filter_var($asistente, FILTER_VALIDATE_EMAIL)) {
+            $emails[$asistente] = true;
+            $has = true;
+        }
+        if (!$has) {
+            $faltantes[] = $usuario;
+        }
+    }
+
+    if (!empty($faltantes)) {
+        $result['diag'][] = 'sin_correos_directorio=' . implode(',', $faltantes);
+    }
+    if (empty($emails)) {
+        $result['diag'][] = ($codigo === 'DD') ? 'sin_destinatarios_dd' : 'sin_destinatarios_df';
+    }
+
+    $result['emails'] = array_keys($emails);
+    return $result;
+}
+
+/**
  * Info basica del proyecto.
  */
 function _notif_info_proyecto(\mysqli $db, int $id_py): array {
@@ -231,7 +409,8 @@ function _notif_mail_controlado(
     array $to,
     string $subject,
     string $html,
-    string $text
+    string $text,
+    string $skipReason = ''
 ): bool {
     $id_respuesta = rsu_eval_v1_eval_to_respuesta($db, $eval_id);
     if ($id_respuesta <= 0) {
@@ -253,6 +432,7 @@ function _notif_mail_controlado(
             'text' => $text,
             'created_by' => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
             'ip' => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
+            'skip_reason' => $skipReason,
         ),
         function (array $mailPayload) use ($db, $to, $subject, $html, $text) {
             return _notif_mail_send($db, $to, $subject, $html, $text);
@@ -261,7 +441,7 @@ function _notif_mail_controlado(
 }
 
 /**
- * Notifica derivacion: aprobado en origen y derivado a destino.
+ * Notifica derivación: aprobado en origen y derivado a destino.
  * ctx: ['id_py','eval_id','of_origen_id','of_destino_id','instancia_id']
  */
 function notif_derivacion(\mysqli $db, array $ctx): bool {
@@ -308,7 +488,7 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
     $text .= "Semestre del informe: {$semLabel}\n";
     $text .= "Ingresar: {$url}\n";
 
-    return _notif_mail_controlado(
+    $okCoord = _notif_mail_controlado(
         $db,
         $eval_id,
         $of_destino,
@@ -319,6 +499,62 @@ function notif_derivacion(\mysqli $db, array $ctx): bool {
         $html,
         $text
     );
+
+    $codigoDestino = strtoupper(trim((string)$codDes));
+    if ($codigoDestino !== 'DD' && $codigoDestino !== 'DF') {
+        return $okCoord;
+    }
+
+    // Notificación adicional a la oficina destino solo cuando es DD/DF.
+    $destInfo = _notif_destinatarios_oficina_destino($db, $id_py, $of_destino, $codDes);
+    $toOffice = isset($destInfo['emails']) && is_array($destInfo['emails']) ? $destInfo['emails'] : array();
+    $diag = isset($destInfo['diag']) && is_array($destInfo['diag']) ? $destInfo['diag'] : array();
+    $skipReason = '';
+    if (empty($toOffice)) {
+        if (!empty($diag)) {
+            $skipReason = implode(' | ', $diag);
+        } else {
+            $skipReason = 'sin_destinatarios_oficina_destino';
+        }
+    }
+
+    $subjectOffice = "Tienes un {$tipoLower} derivado para visto bueno ({$nomDes}) - Sistema DIRSU";
+    $htmlBodyOffice = "
+      <p>Hola,</p>
+      <p>Ha llegado un <strong>{$tipoLower}</strong> a tu oficina (<strong>{$nomDes}</strong>) para revisión y visto bueno.</p>
+      <p>" . ($when ? "<strong>Fecha y hora de derivación:</strong> {$when}<br>" : "") . "</p>
+      <p><strong>Oficina origen:</strong> " . htmlspecialchars($nomOri, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>
+      <p>" . _notif_proyecto_line_html($titulo, $periodo, $codigoProyecto) . "</p>
+      <p><strong>Semestre del informe:</strong> " . htmlspecialchars($semLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</p>
+      <p><a href=\"{$url}\" target=\"_blank\" style=\"color:#0a58ca;text-decoration:underline;\">Ingresar al Sistema DIRSU</a></p>
+      <hr style=\"border:none;border-top:1px solid #d8dde5;margin:14px 0;\">
+      <p style=\"font-size:12px;color:#666\">Este es un correo automático de derivación a oficina destino.</p>
+    ";
+    $htmlOffice = _notif_mail_wrap_html($htmlBodyOffice);
+    $textOffice = "Hola,\n";
+    $textOffice .= "Ha llegado un {$tipoLower} a tu oficina ({$nomDes}) para revisión y visto bueno.\n";
+    if ($when) {
+        $textOffice .= "Fecha y hora de derivación: {$when}\n";
+    }
+    $textOffice .= "Oficina origen: {$nomOri}\n";
+    $textOffice .= _notif_proyecto_line_text($titulo, $periodo, $codigoProyecto) . "\n";
+    $textOffice .= "Semestre del informe: {$semLabel}\n";
+    $textOffice .= "Ingresar: {$url}\n";
+
+    $okOffice = _notif_mail_controlado(
+        $db,
+        $eval_id,
+        $of_destino,
+        3,
+        'MAIL_DERIVACION_OFICINA',
+        $toOffice,
+        $subjectOffice,
+        $htmlOffice,
+        $textOffice,
+        $skipReason
+    );
+
+    return ($okCoord || $okOffice);
 }
 
 /**

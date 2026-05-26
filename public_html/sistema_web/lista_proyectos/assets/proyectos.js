@@ -6,12 +6,23 @@
     actionsState: {},
     ui: {},
     observation: null,
+    coordinatorStatus: null,
     tipoInforme: '',
     periodo: ''
   };
 
   function hasJquery() {
     return !!(window.jQuery && window.jQuery.fn);
+  }
+
+  function isEvaluadorPage() {
+    var p = String((window.location && window.location.pathname) || '').toLowerCase();
+    return p.indexOf('/lista_proyectos/evaluador.php') !== -1;
+  }
+
+  function isCoordinadorPage() {
+    var p = String((window.location && window.location.pathname) || '').toLowerCase();
+    return p.indexOf('/lista_proyectos/coordinador.php') !== -1;
   }
 
   function esc(value) {
@@ -134,6 +145,281 @@
     el.textContent = 'Evaluaciones pendientes: ' + txt;
   }
 
+  function setEvalTabLabel(id, text) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+  }
+
+  function scrollEvalSectionToBottom(actionPaneId) {
+    var modalBody = document.querySelector('#modalEvaluacionDetalle .modal-body');
+    var pane = document.getElementById(actionPaneId || '');
+    if (!modalBody || !pane) return;
+    var bodyRect = modalBody.getBoundingClientRect();
+    var paneRect = pane.getBoundingClientRect();
+    var to = modalBody.scrollTop + (paneRect.top - bodyRect.top) - 10;
+    if (to < 0) to = 0;
+    modalBody.scrollTo({ top: to, behavior: 'smooth' });
+  }
+
+  function buildIndicacionesHtml(roleId, hasVistoBuenoOnly) {
+    var isVb = !!hasVistoBuenoOnly;
+    var html = '<div class="prj-indicaciones-text">';
+    if (!isVb) {
+      if (roleId === 5) {
+        html += '<p>Eres el evaluador <strong>Presidente de comité de tu facultad</strong>, perteneces a la primera oficina de la <strong>ruta de evaluación</strong>, te corresponde <strong>Calificar por Cotejo</strong> y <strong>Calificar por Rúbrica</strong> a los informes semestrales o finales.</p>';
+      } else {
+        html += '<p>Eres el evaluador <strong>Director de RSU</strong>, perteneces a la cuarta y última oficina de la <strong>ruta de evaluación</strong>, te corresponde <strong>Calificar por Cotejo</strong> y <strong>Calificar por Rúbrica</strong> a los informes semestrales o finales.</p>';
+      }
+      html += '<p>1. Para calificar por <strong>Cotejo</strong>, deberás revisar el ANEXO 9_LISTA DE COTEJO PARA EVALUAR EL ESQUEMA DE INFORME DEL PROYECTO DE RSU.</p>';
+      html += '<p>2. Para calificar por <strong>Rúbrica</strong>, deberás revisar el ANEXO 10_RÚBRICA DE CALIFICACIÓN PARA EL INFORME DEL PROYECTO DE RSU.</p>';
+      if (roleId === 5) {
+        html += '<p>Para que el informe pase a la siguiente oficina es fundamental darle la Aprobación en la Calificación de Cotejo y en la Calificación por Rúbrica.</p>';
+      } else {
+        html += '<p>Para que el informe reciba la aprobación total es fundamental darle la Aprobación en la Calificación de Cotejo y en la Calificación por Rúbrica.</p>';
+      }
+      html += '</div>';
+      html += '<div class="prj-indicaciones-actions">';
+      html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="pdf_cotejo" data-resource-kind="pdf">Ver Anexo 9 - Lista de Cotejo</button>';
+      html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="pdf_rubrica" data-resource-kind="pdf">Ver Anexo 10 - Rúbrica</button>';
+      html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_calificar" data-resource-kind="video">Video - Calificar por cotejo y rúbrica</button>';
+      html += '</div>';
+      return html;
+    }
+
+    if (roleId === 4) {
+      html += '<p>Eres el evaluador <strong>Director de Departamento</strong>, perteneces a la segunda oficina de la <strong>ruta de evaluación</strong>, te corresponde <strong>otorgar el Visto Bueno</strong> a los informes semestrales o finales, antes de pasar al Decanato de Facultad.</p>';
+    } else {
+      html += '<p>Eres el evaluador <strong>Decano de Facultad</strong>, perteneces a la tercera oficina de la <strong>ruta de evaluación</strong>, te corresponde <strong>otorgar el Visto Bueno</strong> a los informes semestrales o finales, antes de pasar a la Dirección de RSU.</p>';
+    }
+    html += '<p>1. Para otorgar el <strong>Visto Bueno</strong>, deberás ir a la pestaña 1. Otorgar Visto Bueno.</p>';
+    html += '<p>Para que el informe pase a la siguiente oficina es fundamental darle el Visto Bueno.</p>';
+    html += '</div>';
+    html += '<div class="prj-indicaciones-actions">';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_calificar" data-resource-kind="video">Video sobre cómo otorgar el visto bueno</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function buildCoordinatorIndicacionesHtml() {
+    var html = '<div class="prj-indicaciones-text">';
+    html += '<p>Eres coordinador de proyecto y responsable de subir la información correspondiente: presentación del proyecto, informes semestrales e informe final.</p>';
+    html += '<p>El proyecto debe durar como mínimo 2 años, equivalente a 4 semestres, y como máximo 5 años, equivalente a 10 semestres.</p>';
+    html += '<p>En el primer semestre deberás subir la presentación del proyecto y el primer informe semestral. Luego, en cada semestre, subirás un informe semestral, excepto en el último, donde corresponde presentar el informe final.</p>';
+    html += '<p>Los informes semestrales y finales serán evaluados mediante la Ruta de Evaluación, que incluye: Comité de Facultad, Dirección de Departamento, Decanato de Facultad y Dirección de RSU. El Comité de Facultad y la Dirección de RSU evaluarán mediante Lista de Cotejo y Rúbrica. La Dirección de Departamento y el Decanato otorgarán sus respectivos vistos buenos.</p>';
+    html += '<p>Tu proyecto puede recibir observaciones en el Comité de Facultad o en la Dirección de RSU. En ese caso, podrás subsanarlas en un plazo de 1 o 2 días, según criterio del evaluador. La notificación llegará a tu correo registrado en el sistema. Al subsanar la observación, el evaluador será notificado para revisarla y aprobarla.</p>';
+    html += '<p>Cada paso de la evaluación, subsanación y aprobación se realiza dentro del sistema. Además, cada avance será notificado a tu correo UNITRU.</p>';
+    html += '</div>';
+    html += '<div class="prj-indicaciones-actions">';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="pdf_cotejo" data-resource-kind="pdf">Ver Anexo 9 - Lista de Cotejo</button>';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="doc_anexo08" data-resource-kind="download">Ver Anexo 08 - Esquema de Informe Semestral y Final</button>';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="pdf_rubrica" data-resource-kind="pdf">Ver Anexo 10 - Rúbrica</button>';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_coord_revision_subsanacion" data-resource-kind="video">Video - Solicitar revisión y subsanar observación.</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function renderCoordinatorPendientes(status, observation, tipoInforme) {
+    var wrap = document.getElementById('prjEvalActionsCotejo');
+    if (!wrap) return;
+
+    var st = status || {};
+    var obs = observation || {};
+    var tipoTxt = String(tipoInforme || 'Informe');
+    var isFinal = tipoTxt.toLowerCase().indexOf('final') !== -1;
+    var lower = isFinal ? 'final' : 'semestral';
+    var btnTxt = isFinal ? 'Ir a Informe Final' : 'Ir a Informe Semestral';
+    var btnCls = isFinal ? 'btn btn-dark btn-lg prj-coord-pending-btn' : 'btn btn-success btn-lg prj-coord-pending-btn';
+    var gotoHref = '../semestral/index.php';
+
+    var responseState = Number(st.response_state || 0);
+    var evalId = Number(st.eval_id || 0);
+    var situacion = String(st.situacion || '').toLowerCase();
+    var oficinaNom = String(st.oficina_actual_nombre || '').trim();
+    var hasObs = !!obs.has_observation;
+
+    var html = '<div class="prj-coord-pending-wrap">';
+    if (hasObs) {
+      html += '<p>Tu informe ' + lower + ' está observado, presiona el botón y ve al formulario para subsanar las observaciones y solicitar una nueva revisión a tu evaluador.</p>';
+      html += '<a href="' + esc(gotoHref) + '" class="' + esc(btnCls) + '">' + esc(btnTxt) + '</a>';
+      html += '</div>';
+      wrap.innerHTML = html;
+      return;
+    }
+
+    if (situacion === 'aprobado' || responseState === 2) {
+      html += '<p>Tu informe ' + lower + ' fue APROBADO TOTALMENTE, no quedan tareas pendientes.</p>';
+      html += '</div>';
+      wrap.innerHTML = html;
+      return;
+    }
+
+    if (responseState === 1) {
+      if (oficinaNom !== '') {
+        html += '<p>Tu informe ' + lower + ' está en revisión en <strong>' + esc(oficinaNom) + '</strong>. No tienes tareas pendientes por ahora; espera la notificación de avance en tu correo UNITRU.</p>';
+      } else {
+        html += '<p>Tu informe ' + lower + ' ya fue enviado a revisión. No tienes tareas pendientes por ahora; espera la notificación de avance en tu correo UNITRU.</p>';
+      }
+      html += '</div>';
+      wrap.innerHTML = html;
+      return;
+    }
+
+    if (evalId <= 0 || responseState === 0 || responseState === 3) {
+      html += '<p>Aún no has creado tu informe ' + lower + ' correspondiente a este semestre, puedes crearlo presionando el botón.</p>';
+      html += '<a href="' + esc(gotoHref) + '" class="' + esc(btnCls) + '">Crear Informe ' + (isFinal ? 'Final' : 'Semestral') + '</a>';
+      html += '</div>';
+      wrap.innerHTML = html;
+      return;
+    }
+
+    if (oficinaNom !== '') {
+      html += '<p>Tu informe ' + lower + ' se encuentra actualmente en <strong>' + esc(oficinaNom) + '</strong>. No tienes tareas pendientes en este momento.</p>';
+    } else {
+      html += '<p>No se detectan tareas pendientes para tu informe ' + lower + ' en este momento.</p>';
+    }
+    html += '</div>';
+    wrap.innerHTML = html;
+  }
+
+  function setupIndicacionesTab(actions, ui) {
+    var item = document.getElementById('prjTabIndicacionesItem');
+    var pane = document.getElementById('prjTabIndicaciones');
+    var link = document.getElementById('prjTabIndicacionesLink');
+    var body = document.getElementById('prjEvalIndicacionesBody');
+    var tabRItem = document.getElementById('prjTabRubricaLink');
+    var tabRLi = tabRItem && tabRItem.parentNode ? tabRItem.parentNode : null;
+    var tabRPane = document.getElementById('prjTabRubrica');
+    var pendingText = document.getElementById('prjEvalPendingText');
+    if (!item || !pane || !link || !body) return;
+
+    var coordinadorVista = isCoordinadorPage();
+    var evaluadorVista = isEvaluadorPage();
+    var showEval = !!(ui && ui.show_eval_actions);
+    if ((!evaluadorVista && !coordinadorVista) || !showEval) {
+      item.classList.add('d-none');
+      pane.classList.remove('show', 'active');
+      if (tabRLi) tabRLi.classList.remove('d-none');
+      if (tabRPane) tabRPane.classList.remove('d-none');
+      if (pendingText) pendingText.classList.remove('d-none');
+      setEvalTabLabel('prjTabObsLink', 'Ver observación');
+      setEvalTabLabel('prjTabCotejoLink', 'Calificar Cotejo');
+      setEvalTabLabel('prjTabRubricaLink', 'Calificar Rúbrica');
+      return;
+    }
+
+    if (coordinadorVista && (ui && ui.mode === 'coordinador')) {
+      item.classList.remove('d-none');
+      if (tabRLi) tabRLi.classList.add('d-none');
+      if (tabRPane) tabRPane.classList.add('d-none');
+      if (pendingText) pendingText.classList.add('d-none');
+
+      setEvalTabLabel('prjTabObsLink', 'Ver observación');
+      setEvalTabLabel('prjTabCotejoLink', 'Mis pendientes');
+      body.innerHTML = buildCoordinatorIndicacionesHtml();
+      renderCoordinatorPendientes(currentEvalContext.coordinatorStatus, currentEvalContext.observation, currentEvalContext.tipoInforme);
+
+      if (hasJquery()) {
+        window.jQuery('#prjTabIndicacionesLink').tab('show');
+      }
+      return;
+    }
+
+    var map = {};
+    if (Array.isArray(actions)) {
+      for (var i = 0; i < actions.length; i++) {
+        var ac = actions[i] || {};
+        if (ac.key) map[ac.key] = ac;
+      }
+    }
+    var hasC = !!map.cotejo;
+    var hasR = !!map.rubrica;
+    var hasVb = !!map.vb;
+    var vbOnly = (hasVb && !hasC && !hasR);
+
+    item.classList.remove('d-none');
+    if (tabRLi) tabRLi.classList.remove('d-none');
+    if (tabRPane) tabRPane.classList.remove('d-none');
+    if (pendingText) pendingText.classList.remove('d-none');
+    setEvalTabLabel('prjTabObsLink', 'Ver observación');
+    if (vbOnly) {
+      setEvalTabLabel('prjTabCotejoLink', '1. Otorgar Visto Bueno');
+    } else {
+      setEvalTabLabel('prjTabCotejoLink', '1. Calificar cotejo');
+      setEvalTabLabel('prjTabRubricaLink', '2. Calificar rúbrica');
+    }
+
+    var roleId = Number((ui && ui.role_id) || 0);
+    body.innerHTML = buildIndicacionesHtml(roleId, vbOnly);
+
+    if (hasJquery()) {
+      window.jQuery('#prjTabIndicacionesLink').tab('show');
+    }
+  }
+
+  function showRsuRecursoInfo(msg) {
+    var txt = String(msg || 'No se encontró el recurso consulte a RSU');
+    var body = document.getElementById('prjRsuRecursoInfoBody');
+    if (body) body.textContent = txt;
+    if (hasJquery()) window.jQuery('#modalRsuRecursoInfo').modal('show');
+    else window.alert(txt);
+  }
+
+  function openRsuVideoModal(url) {
+    var video = document.getElementById('prjRsuVideoPlayer');
+    if (!video) return;
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    video.src = url;
+    if (hasJquery()) window.jQuery('#modalRsuVideoRecurso').modal('show');
+  }
+
+  function closeRsuVideoModalAndStop() {
+    var video = document.getElementById('prjRsuVideoPlayer');
+    if (!video) return;
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+  }
+
+  function openRsuResource(resourceKey, kind) {
+    if (!resourceKey) return;
+    if (!(window.jQuery && window.jQuery.ajax)) {
+      showRsuRecursoInfo('No hay motor AJAX disponible.');
+      return;
+    }
+    window.jQuery.ajax({
+      url: '../lista_proyectos/api_recursos_rsu.php',
+      method: 'GET',
+      dataType: 'json',
+      cache: false,
+      data: {
+        action: 'get',
+        resource: resourceKey
+      }
+    }).done(function (json) {
+      if (!json || !json.ok || !json.data || !json.data.url) {
+        showRsuRecursoInfo((json && json.msg) ? json.msg : 'No se encontró el recurso consulte a RSU');
+        return;
+      }
+      var url = String(json.data.url || '');
+      if (url === '') {
+        showRsuRecursoInfo('No se encontró el recurso consulte a RSU');
+        return;
+      }
+      if (kind === 'video') {
+        openRsuVideoModal(url);
+      } else if (kind === 'download') {
+        window.location.href = url;
+      } else {
+        window.open(url, '_blank', 'noopener');
+      }
+    }).fail(function () {
+      showRsuRecursoInfo('No se encontró el recurso consulte a RSU');
+    });
+  }
+
   function updateEvalModalTitle(tipoInforme, periodo) {
     var t = document.getElementById('prjModalEvalTitle');
     if (!t) return;
@@ -187,9 +473,7 @@
 
   function buildDisabledActionHtml(reason) {
     var msg = String(reason || 'Aún no te corresponde evaluar, el informe está en otra oficina.');
-    var cls = msg.toLowerCase().indexOf('pendiente de subsanaci') !== -1
-      ? 'prj-pending-soft-alert mb-0'
-      : 'alert alert-warning mb-0';
+    var cls = 'prj-pending-soft-alert mb-0';
     return '<div class="' + cls + '">' + esc(msg) + '</div>';
   }
 
@@ -295,6 +579,9 @@
       }).done(function (html) {
         injectHtmlWithScripts(wrap, '<div id="contenidoEval">' + html + '</div>');
         wrap.setAttribute('data-form-loaded', '1');
+        if (isEvaluadorPage()) {
+          scrollEvalSectionToBottom(actionKey === 'rubrica' ? 'prjTabRubrica' : 'prjTabCotejo');
+        }
       }).fail(function () {
         wrap.innerHTML = '<div class="alert alert-danger mb-0">No se pudo cargar el formulario de calificación.</div>';
       });
@@ -374,13 +661,17 @@
       }
       var data = json.data || {};
       if (!data.has_observation) {
-        body.innerHTML = '<div class="alert alert-warning mb-0">No hay observaciones activas para este informe.</div>';
+        body.innerHTML = isEvaluadorPage()
+          ? '<div class="prj-pending-soft-alert mb-0">No hay observaciones activas para este informe.</div>'
+          : '<div class="alert alert-warning mb-0">No hay observaciones activas para este informe.</div>';
         return;
       }
       var html = '';
       if (data.cotejo) html += renderObsDetailBlock('Observación por lista de cotejo', data.cotejo, false);
       if (data.rubrica) html += renderObsDetailBlock('Observación por evaluación de rúbrica', data.rubrica, true);
-      body.innerHTML = html || '<div class="alert alert-warning mb-0">No hay observaciones activas.</div>';
+      body.innerHTML = html || (isEvaluadorPage()
+        ? '<div class="prj-pending-soft-alert mb-0">No hay observaciones activas para este informe.</div>'
+        : '<div class="alert alert-warning mb-0">No hay observaciones activas para este informe.</div>');
     }).fail(function () {
       body.innerHTML = '<div class="alert alert-danger mb-0">No se pudo cargar el detalle de observación.</div>';
     });
@@ -390,7 +681,9 @@
     var body = document.getElementById('prjEvalObsInlineBody');
     if (!body) return;
     if (!obsInfo || !obsInfo.has_observation) {
-      body.innerHTML = '<div class="prj-eval-inline-help">No hay observaciones activas para este informe.</div>';
+      body.innerHTML = isEvaluadorPage()
+        ? '<div class="prj-pending-soft-alert mb-0">No hay observaciones activas para este informe.</div>'
+        : '<div class="prj-eval-inline-help">No hay observaciones activas para este informe.</div>';
       return;
     }
     loadInlineObservation();
@@ -406,12 +699,15 @@
     var actionsR = document.getElementById('prjEvalActionsRubrica');
     var coord = document.getElementById('prjCoordActions');
     var obs = document.getElementById('prjEvalObsInlineBody');
+    var indic = document.getElementById('prjEvalIndicacionesBody');
     if (resumen) resumen.innerHTML = '<span class="text-muted">Cargando...</span>';
     if (timeline) timeline.innerHTML = '';
     if (actionsC) actionsC.innerHTML = '';
     if (actionsR) actionsR.innerHTML = '';
     if (coord) coord.innerHTML = '';
     if (obs) obs.innerHTML = 'Sin detalle cargado.';
+    if (indic) indic.innerHTML = '<p class="mb-0 text-muted">Cargando indicaciones...</p>';
+    currentEvalContext.coordinatorStatus = null;
 
     if (window.jQuery && window.jQuery.fn) window.jQuery('#modalEvaluacionDetalle').modal('show');
     if (!(window.jQuery && window.jQuery.ajax)) {
@@ -437,6 +733,7 @@
       currentEvalContext.actionsState = {};
       currentEvalContext.ui = data.ui || {};
       currentEvalContext.observation = data.observation || null;
+      currentEvalContext.coordinatorStatus = data.coordinator_status || null;
       currentEvalContext.tipoInforme = data.tipo_informe || '';
       currentEvalContext.periodo = data.periodo || '';
       if (Array.isArray(data.actions)) {
@@ -462,6 +759,7 @@
       renderEvalTimeline(data.timeline || []);
       renderInlineObservationToggle(currentEvalContext.observation);
       renderEvalActions(data.actions || []);
+      setupIndicacionesTab(data.actions || [], currentEvalContext.ui || {});
       renderCoordinatorActions(data.coordinator_flow || null);
     }).fail(function () {
       showEvalAlert('danger', 'No se pudo cargar evaluación.');
@@ -471,8 +769,24 @@
   function syncModalInformeLayout() {
     var body = document.getElementById('prjInformeDetalleBody');
     if (!body) return;
+    var bodyRect = body.getBoundingClientRect();
     var rows = body.querySelectorAll('.rsu-split-row');
-    for (var i = 0; i < rows.length; i++) rows[i].style.display = 'flex';
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].style.display = 'flex';
+      var left = rows[i].querySelector('.rsu-left');
+      var right = rows[i].querySelector('.rsu-right');
+      var rowRect = rows[i].getBoundingClientRect();
+      var usedTop = Math.max(0, rowRect.top - bodyRect.top);
+      var available = Math.max(220, (body.clientHeight || 0) - usedTop - 12);
+      if (left) {
+        left.style.height = available + 'px';
+        left.style.maxHeight = available + 'px';
+      }
+      if (right) {
+        right.style.height = available + 'px';
+        right.style.maxHeight = available + 'px';
+      }
+    }
     bindInformeScrollGuards(body);
     bindInformeNavLinks(body);
   }
@@ -526,9 +840,24 @@
     }
   }
 
-  function openInformeModal(projectId, responseId) {
+  function setInformeModalHeader(tipoInforme) {
+    var header = document.getElementById('prjInformeHeader');
+    var icon = document.getElementById('prjInformeModalIcon');
+    var titleText = document.getElementById('prjInformeModalTitleText');
+    if (!header || !icon || !titleText) return;
+
+    var tipo = String(tipoInforme || '').toLowerCase();
+    var isFinal = (tipo === 'final');
+    header.classList.remove('prj-informe-header-semestral', 'prj-informe-header-final');
+    header.classList.add(isFinal ? 'prj-informe-header-final' : 'prj-informe-header-semestral');
+    icon.className = isFinal ? 'fas fa-flag-checkered mr-2' : 'fas fa-file-alt mr-2';
+    titleText.textContent = isFinal ? 'Informe final' : 'Informe semestral';
+  }
+
+  function openInformeModal(projectId, responseId, tipoInforme) {
     var body = document.getElementById('prjInformeDetalleBody');
     if (!body) return;
+    setInformeModalHeader(tipoInforme);
     body.innerHTML = '<div class="text-muted">Cargando...</div>';
     if (window.jQuery && window.jQuery.fn) window.jQuery('#modalInformeDetalle').modal('show');
     if (!(window.jQuery && window.jQuery.get)) {
@@ -687,7 +1016,8 @@
       event.preventDefault(); event.stopPropagation();
       var responseId = window.jQuery(this).attr('data-response-id');
       var projectId = window.jQuery(this).attr('data-project-id');
-      if (responseId && projectId) openInformeModal(projectId, responseId);
+      var tipoInforme = window.jQuery(this).attr('data-informe-tipo') || '';
+      if (responseId && projectId) openInformeModal(projectId, responseId, tipoInforme);
     });
     $doc.off('click.prjPresentacion').on('click.prjPresentacion', '.prj-btn-presentacion', function (event) {
       event.preventDefault(); event.stopPropagation();
@@ -716,16 +1046,33 @@
       loadInlineObservation();
       window.jQuery('#prjTabObsLink').tab('show');
     });
+    $doc.off('click.prjRsuRecurso').on('click.prjRsuRecurso', '.prj-btn-recurso-rsu', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      var resource = window.jQuery(this).attr('data-resource') || '';
+      var kind = window.jQuery(this).attr('data-resource-kind') || '';
+      openRsuResource(resource, kind);
+    });
     $doc.off('shown.bs.tab.prjEvalTabs').on('shown.bs.tab.prjEvalTabs', '#prjTabCotejoLink, #prjTabRubricaLink', function (event) {
+      if (currentEvalContext.ui && currentEvalContext.ui.mode === 'coordinador') {
+        return;
+      }
       var targetId = window.jQuery(event.target).attr('id') || '';
       if (targetId === 'prjTabCotejoLink') {
         var keyC = window.jQuery('#prjEvalActionsCotejo').attr('data-action-key') || 'cotejo';
+        if (isEvaluadorPage()) scrollEvalSectionToBottom('prjTabCotejo');
         if (currentEvalContext.actionsState[keyC] && currentEvalContext.actionsState[keyC].enabled) loadEvalActionForm(keyC);
       } else if (targetId === 'prjTabRubricaLink') {
         var keyR = window.jQuery('#prjEvalActionsRubrica').attr('data-action-key') || 'rubrica';
+        if (isEvaluadorPage()) scrollEvalSectionToBottom('prjTabRubrica');
         if (currentEvalContext.actionsState[keyR] && currentEvalContext.actionsState[keyR].enabled) loadEvalActionForm(keyR);
       }
     });
+    if (hasJquery()) {
+      window.jQuery('#modalRsuVideoRecurso')
+        .off('hidden.bs.modal.prjRsuVideo')
+        .on('hidden.bs.modal.prjRsuVideo', closeRsuVideoModalAndStop);
+    }
     return true;
   }
 

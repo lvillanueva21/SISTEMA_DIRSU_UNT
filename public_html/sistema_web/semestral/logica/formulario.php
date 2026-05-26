@@ -235,7 +235,7 @@ if ($idProyecto > 0) {
         $entregasSem = (isset($semItem['entregas']) && is_array($semItem['entregas'])) ? $semItem['entregas'] : [];
         $coincideTipoFallback = false;
         if ($tipoSemestreEsperadoActual === 'presentacion') {
-          $coincideTipoFallback = in_array('PresentaciÃ³n de proyecto', $entregasSem, true);
+          $coincideTipoFallback = in_array('Presentación de proyecto', $entregasSem, true);
         } else {
           $coincideTipoFallback = in_array('Informe semestral', $entregasSem, true) || in_array('Informe final', $entregasSem, true);
         }

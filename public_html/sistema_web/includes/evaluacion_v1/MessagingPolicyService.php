@@ -131,6 +131,7 @@ class RSUEvaluacionV1MessagingPolicyService
     {
         $map = array(
             'MAIL_DERIVACION' => 'evaluacion_mail_derivacion',
+            'MAIL_DERIVACION_OFICINA' => 'evaluacion_mail_derivacion',
             'MAIL_OBSERVACION' => 'evaluacion_mail_observacion',
             'MAIL_APROB_TOTAL' => 'evaluacion_mail_aprob_total',
             'MAIL_SOLICITUD_REVISION' => 'evaluacion_mail_solicitud_revision',

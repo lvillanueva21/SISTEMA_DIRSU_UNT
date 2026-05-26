@@ -128,7 +128,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
         <ul class="navbar-nav ml-auto">
             <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                 <a href="https://rsu.unitru.edu.pe" class="nav-link" target="_blank">
-                    <p style="color: white;">Ir a pagina DIRSU</p>
+                    <p style="color: white;">Ir a página DIRSU</p>
                 </a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
@@ -245,7 +245,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                         </div>
                                         <div>
                                             <h5 class="mb-1">Mensajería</h5>
-                                            <small id="evtMessagingHint" class="text-muted">Controla que eventos de evaluacion envian correo.</small>
+                                            <small id="evtMessagingHint" class="text-muted">Controla qué eventos de evaluación envían correo.</small>
                                         </div>
                                     </div>
                                     <div class="mb-2">
@@ -533,6 +533,42 @@ Proyecto: {{titulo_proyecto}} — {{periodo}} {{codigo_proyecto_opcional}}
 Ingresar al Sistema DIRSU: {{url_login_proyecto}}
 
 Este es un correo automático de notificación de derivación.</textarea>
+                        </div>
+                    </div>
+
+                    <div class="evt-msg-card">
+                        <div class="evt-msg-card-head">
+                            <p class="evt-msg-card-title mb-0">Derivación a oficina destino (DD/DF)</p>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary evt-msg-copy-btn" data-copy-target="evtMsgTplDerivacionOficina" title="Copiar plantilla"><i class="fa fa-copy"></i></button>
+                                <button type="button" class="btn btn-outline-primary evt-msg-send-test-btn" data-template-code="PREVIEW_DERIVACION_OFICINA" data-copy-target="evtMsgTplDerivacionOficina" data-template-label="Derivación a oficina destino (DD/DF)" title="Enviar prueba al correo verificador"><i class="fa fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                        <div class="evt-msg-card-body">
+                            <div class="evt-msg-subject"><strong>Asunto:</strong> Tienes un <span class="evt-msg-var">{{tipo_informe_lower}}</span> derivado para visto bueno (<span class="evt-msg-var">{{oficina_destino}}</span>) - Sistema DIRSU</div>
+                            <pre class="evt-msg-sample mb-0">Hola,
+
+Ha llegado un <span class="evt-msg-var">{{tipo_informe_lower}}</span> a tu oficina (<span class="evt-msg-var">{{oficina_destino}}</span>) para revisión y visto bueno.
+
+Fecha y hora de derivación: <span class="evt-msg-var">{{fecha_hora_derivacion}}</span>
+Oficina origen: <span class="evt-msg-var">{{oficina_origen}}</span>
+Proyecto: <span class="evt-msg-var">{{titulo_proyecto}}</span> — <span class="evt-msg-var">{{periodo}}</span> <span class="evt-msg-var">{{codigo_proyecto_opcional}}</span>
+Semestre del informe: <span class="evt-msg-var">{{semestre_informe}}</span>
+Ingresar al Sistema DIRSU: <span class="evt-msg-var">{{url_login_proyecto}}</span>
+
+Este es un correo automático de derivación a oficina destino.</pre>
+                            <textarea id="evtMsgTplDerivacionOficina" class="d-none">Asunto: Tienes un {{tipo_informe_lower}} derivado para visto bueno ({{oficina_destino}}) - Sistema DIRSU
+Hola,
+
+Ha llegado un {{tipo_informe_lower}} a tu oficina ({{oficina_destino}}) para revisión y visto bueno.
+
+Fecha y hora de derivación: {{fecha_hora_derivacion}}
+Oficina origen: {{oficina_origen}}
+Proyecto: {{titulo_proyecto}} — {{periodo}} {{codigo_proyecto_opcional}}
+Semestre del informe: {{semestre_informe}}
+Ingresar al Sistema DIRSU: {{url_login_proyecto}}
+
+Este es un correo automático de derivación a oficina destino.</textarea>
                         </div>
                     </div>
 

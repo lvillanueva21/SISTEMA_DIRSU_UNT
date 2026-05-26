@@ -325,6 +325,17 @@ if ($id_rol === 2) {
 $has_obs_cotejo = is_array($eval) && ((string)($eval['cotejo_estado'] ?? '') === 'observado');
 $has_obs_rubrica = is_array($eval) && ((string)($eval['rubrica_estado'] ?? '') === 'observado');
 $has_observation = ($has_obs_cotejo || $has_obs_rubrica);
+$tipo_key = ((int)($info['es_final'] ?? 0) === 1) ? 'final' : 'semestral';
+
+$coordinator_status = array(
+    'response_state' => $response_state,
+    'eval_id' => $eval_id,
+    'situacion' => isset($info['situacion']) ? (string)$info['situacion'] : '',
+    'id_oficina_actual' => isset($info['id_oficina_actual']) ? (int)$info['id_oficina_actual'] : 0,
+    'oficina_actual_codigo' => isset($info['oficina_cod']) ? (string)$info['oficina_cod'] : '',
+    'oficina_actual_nombre' => isset($info['oficina_nom']) ? (string)$info['oficina_nom'] : '',
+    'tipo_informe_key' => $tipo_key,
+);
 
 lp_eval_json_exit(true, 'OK', array(
     'response_id' => $response_id,
@@ -344,10 +355,12 @@ lp_eval_json_exit(true, 'OK', array(
     'formulario_nombre' => $formulario_nombre,
     'ui' => array(
         'mode' => $ui_mode,
+        'role_id' => $id_rol,
         'is_coordinator' => ($id_rol === 2),
-        'show_coordinator_flow' => ($id_rol === 2),
-        'show_eval_actions' => ($id_rol !== 2 && !empty(rsu_projects_eval_visible_actions($id_rol))),
+        'show_coordinator_flow' => false,
+        'show_eval_actions' => (($id_rol === 2) || ($id_rol !== 2 && !empty(rsu_projects_eval_visible_actions($id_rol)))),
     ),
+    'coordinator_status' => $coordinator_status,
     'observation' => array(
         'has_observation' => $has_observation,
         'has_cotejo' => $has_obs_cotejo,

@@ -282,18 +282,18 @@ if (!preg_match('/^9\d{8}$/', $telefono)) {
 }
 
 if ($tituloProyecto === '') {
-    cp_set_flash('danger', 'Debes completar el campo 2. Titulo del Proyecto.');
+    cp_set_flash('danger', 'Debes completar el campo 2. Título del Proyecto.');
     cp_redirect_datos_principales();
 }
 $tituloLen = function_exists('mb_strlen') ? mb_strlen($tituloProyecto, 'UTF-8') : strlen($tituloProyecto);
 if ($tituloLen > 300) {
-    cp_set_flash('danger', 'El titulo del proyecto supera el maximo permitido de 300 caracteres.');
+    cp_set_flash('danger', 'El título del proyecto supera el máximo permitido de 300 caracteres.');
     cp_redirect_datos_principales();
 }
 $fechaInicio = cp_valid_ymd($fechaInicioRaw);
 $fechaFin = cp_valid_ymd($fechaFinRaw);
 if (!($fechaInicio instanceof DateTimeImmutable) || !($fechaFin instanceof DateTimeImmutable)) {
-    cp_set_flash('danger', 'Debes registrar fechas validas de inicio y fin del proyecto.');
+    cp_set_flash('danger', 'Debes registrar fechas válidas de inicio y fin del proyecto.');
     cp_redirect_datos_principales();
 }
 if ($fechaInicioRaw === $fechaFinRaw) {
@@ -321,7 +321,7 @@ foreach ($previewSem['rows'] as $rowSem) {
     }
 }
 if ($totalSemestres < 4 || $totalSemestres > 10) {
-    cp_set_flash('danger', 'La duracion del proyecto debe estar entre 4 y 10 semestres (de 2 a 5 anos).');
+    cp_set_flash('danger', 'La duración del proyecto debe estar entre 4 y 10 semestres (de 2 a 5 años).');
     cp_redirect_datos_principales();
 }
 

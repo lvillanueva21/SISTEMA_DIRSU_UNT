@@ -198,6 +198,171 @@ if (!function_exists('rsu_menu_ensure_dirsu_informes_item')) {
     }
 }
 
+if (!function_exists('rsu_menu_old_interfaces_flag')) {
+    function rsu_menu_old_interfaces_flag()
+    {
+        // 1 = ocultar interfaces legacy, 0 = mostrar todo.
+        $old_interfaces = 1;
+        return ((int)$old_interfaces) === 1;
+    }
+}
+
+if (!function_exists('rsu_menu_insert_header_before_label')) {
+    function rsu_menu_insert_header_before_label($items, $beforeLabel, $headerLabel)
+    {
+        if (!is_array($items)) return $items;
+        $beforeLabel = trim((string)$beforeLabel);
+        $headerLabel = trim((string)$headerLabel);
+        if ($beforeLabel === '' || $headerLabel === '') return $items;
+
+        foreach ($items as $node) {
+            if (!is_array($node)) continue;
+            if (
+                isset($node['type'], $node['label'])
+                && (string)$node['type'] === 'header'
+                && trim((string)$node['label']) === $headerLabel
+            ) {
+                return $items;
+            }
+        }
+
+        for ($i = 0; $i < count($items); $i++) {
+            $node = is_array($items[$i]) ? $items[$i] : array();
+            if (isset($node['label']) && trim((string)$node['label']) === $beforeLabel) {
+                array_splice($items, $i, 0, array(array(
+                    'type' => 'header',
+                    'label' => $headerLabel
+                )));
+                return $items;
+            }
+        }
+        return $items;
+    }
+}
+
+if (!function_exists('rsu_menu_remove_items_by_labels')) {
+    function rsu_menu_remove_items_by_labels($items, $labelsToRemove)
+    {
+        if (!is_array($items) || !is_array($labelsToRemove) || empty($labelsToRemove)) {
+            return $items;
+        }
+        $lookup = array();
+        foreach ($labelsToRemove as $lbl) {
+            $lookup[trim((string)$lbl)] = true;
+        }
+
+        $filtered = array();
+        foreach ($items as $node) {
+            if (!is_array($node)) {
+                $filtered[] = $node;
+                continue;
+            }
+            $label = isset($node['label']) ? trim((string)$node['label']) : '';
+            if ($label !== '' && isset($lookup[$label])) {
+                continue;
+            }
+            $filtered[] = $node;
+        }
+        return array_values($filtered);
+    }
+}
+
+if (!function_exists('rsu_menu_remove_tree_children_by_label')) {
+    function rsu_menu_remove_tree_children_by_label($items, $treeLabel, $childLabelsToRemove)
+    {
+        if (!is_array($items) || !is_array($childLabelsToRemove)) return $items;
+        $treeLabel = trim((string)$treeLabel);
+        if ($treeLabel === '') return $items;
+
+        $lookup = array();
+        foreach ($childLabelsToRemove as $lbl) {
+            $lookup[trim((string)$lbl)] = true;
+        }
+        if (empty($lookup)) return $items;
+
+        for ($i = 0; $i < count($items); $i++) {
+            if (!is_array($items[$i])) continue;
+            $node = $items[$i];
+            $label = isset($node['label']) ? trim((string)$node['label']) : '';
+            if ($label !== $treeLabel) continue;
+            if (!isset($node['children']) || !is_array($node['children'])) continue;
+
+            $children = array();
+            foreach ($node['children'] as $child) {
+                if (!is_array($child)) {
+                    $children[] = $child;
+                    continue;
+                }
+                $childLabel = isset($child['label']) ? trim((string)$child['label']) : '';
+                if ($childLabel !== '' && isset($lookup[$childLabel])) {
+                    continue;
+                }
+                $children[] = $child;
+            }
+            $node['children'] = array_values($children);
+            $items[$i] = $node;
+            break;
+        }
+        return $items;
+    }
+}
+
+if (!function_exists('rsu_menu_apply_old_interfaces_rules')) {
+    function rsu_menu_apply_old_interfaces_rules($matrix)
+    {
+        if (!is_array($matrix) || !rsu_menu_old_interfaces_flag()) {
+            return $matrix;
+        }
+
+        // Agrega "Evaluaciones y Reportes" sobre "Proyectos" para todos los roles solicitados.
+        foreach (array(1, 2, 3, 4, 5) as $roleId) {
+            if (!isset($matrix[$roleId]['items']) || !is_array($matrix[$roleId]['items'])) continue;
+            $matrix[$roleId]['items'] = rsu_menu_insert_header_before_label(
+                $matrix[$roleId]['items'],
+                'Proyectos',
+                'Evaluaciones y Reportes'
+            );
+        }
+
+        // Oculta bloque legacy de evaluación solo para Presidente/Director Depto/Decano.
+        foreach (array(3, 4, 5) as $roleId) {
+            if (!isset($matrix[$roleId]['items']) || !is_array($matrix[$roleId]['items'])) continue;
+            $matrix[$roleId]['items'] = rsu_menu_remove_items_by_labels(
+                $matrix[$roleId]['items'],
+                array(
+                    'Evaluación de Proyectos',
+                    'Informe Semestral 2025-I',
+                    'Evaluaciones anteriores'
+                )
+            );
+        }
+
+        // Coordinador: ocultar opciones solicitadas.
+        if (isset($matrix[2]['items']) && is_array($matrix[2]['items'])) {
+            $matrix[2]['items'] = rsu_menu_remove_items_by_labels(
+                $matrix[2]['items'],
+                array(
+                    'Guía de trabajo',
+                    'Mi proyecto',
+                    'Mi progreso'
+                )
+            );
+            $matrix[2]['items'] = rsu_menu_remove_tree_children_by_label(
+                $matrix[2]['items'],
+                'Ejecución y monitoreo',
+                array('2.2. Revisión de cronograma')
+            );
+            $matrix[2]['items'] = rsu_menu_remove_tree_children_by_label(
+                $matrix[2]['items'],
+                'Evaluación e informe',
+                array('3.2. Revisión de informe')
+            );
+        }
+
+        return $matrix;
+    }
+}
+
 if (!function_exists('rsu_get_menu_matrix')) {
     function rsu_get_menu_matrix()
     {
@@ -483,7 +648,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
                         'icon_badge' => '3',
                         'children' => array(
                             array(
-                                'label' => '3.1. Informe semestral',
+                                'label' => '3.1. Informe semestral o final',
                                 'href_dynamic' => 'semestral/index.php',
                                 'active_on_dynamic' => array(
                                     'semestral/index.php',
@@ -663,6 +828,7 @@ if (!function_exists('rsu_get_menu_matrix')) {
 
         $matrix = rsu_menu_reorder_coordinator_sections($matrix);
         $matrix = rsu_menu_ensure_dirsu_informes_item($matrix);
+        $matrix = rsu_menu_apply_old_interfaces_rules($matrix);
         return rsu_menu_append_development_items($matrix);
     }
 }

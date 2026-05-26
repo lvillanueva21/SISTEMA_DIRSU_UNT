@@ -294,6 +294,7 @@ function prj_link_limpiar_filtros()
                         class="prj-deliver-btn <?= ($ent['tipo'] === 'final') ? 'prj-deliver-btn-final' : 'prj-deliver-btn-semestral' ?> prj-btn-informe"
                         data-project-id="<?= prj_h($id_py) ?>"
                         data-response-id="<?= prj_h($ent['response_id']) ?>"
+                        data-informe-tipo="<?= prj_h(($ent['tipo'] === 'final') ? 'final' : 'semestral') ?>"
                         title="<?= prj_h($ent['informe_label']) ?>"
                       ><i class="fas fa-file-alt"></i> <?= prj_h($ent['informe_label']) ?></button>
                       <button
@@ -387,8 +388,11 @@ function prj_link_limpiar_filtros()
 <div class="modal fade" id="modalInformeDetalle" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-xl" role="document">
     <div class="modal-content">
-      <div class="modal-header bg-light">
-        <h5 class="modal-title">Informe Semestral / Final</h5>
+      <div class="modal-header prj-informe-header prj-informe-header-semestral" id="prjInformeHeader">
+        <h5 class="modal-title d-flex align-items-center" id="prjInformeModalTitle">
+          <i class="fas fa-file-alt mr-2" id="prjInformeModalIcon" aria-hidden="true"></i>
+          <span id="prjInformeModalTitleText">Informe semestral</span>
+        </h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -443,6 +447,11 @@ function prj_link_limpiar_filtros()
           <hr>
           <div class="prj-tabs-head">
             <ul class="nav nav-tabs prj-eval-tabs" role="tablist">
+              <li class="nav-item d-none" id="prjTabIndicacionesItem">
+                <a class="nav-link prj-tab-yellow" id="prjTabIndicacionesLink" data-toggle="tab" href="#prjTabIndicaciones" role="tab" aria-controls="prjTabIndicaciones" aria-selected="false">
+                  Indicaciones
+                </a>
+              </li>
               <li class="nav-item">
                 <a class="nav-link prj-tab-yellow active" id="prjTabObsLink" data-toggle="tab" href="#prjTabObs" role="tab" aria-controls="prjTabObs" aria-selected="true">
                   Ver observaci&oacute;n
@@ -462,6 +471,11 @@ function prj_link_limpiar_filtros()
             <strong id="prjEvalPendingText" class="prj-pending-text">Evaluaciones pendientes: 00</strong>
           </div>
           <div class="tab-content border border-top-0 rounded-bottom p-2 bg-white">
+            <div class="tab-pane fade" id="prjTabIndicaciones" role="tabpanel" aria-labelledby="prjTabIndicacionesLink">
+              <div id="prjEvalIndicacionesBody" class="prj-indicaciones-pane">
+                <p class="mb-0 text-muted">Sin indicaciones para mostrar.</p>
+              </div>
+            </div>
             <div class="tab-pane fade show active" id="prjTabObs" role="tabpanel" aria-labelledby="prjTabObsLink">
               <div id="prjEvalObsInlineBody" class="prj-eval-obs-pane">Sin detalle cargado.</div>
             </div>
@@ -489,6 +503,40 @@ function prj_link_limpiar_filtros()
       </div>
       <div class="modal-body" id="prjObsDetalleBody">
         <div class="text-muted">Cargando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalRsuVideoRecurso" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title mb-0"><i class="fas fa-play-circle mr-1"></i> Video de apoyo</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="embed-responsive embed-responsive-16by9">
+          <video id="prjRsuVideoPlayer" class="embed-responsive-item" controls preload="metadata"></video>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalRsuRecursoInfo" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h6 class="modal-title mb-0"><i class="fas fa-info-circle mr-1"></i> Aviso</h6>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body py-3" id="prjRsuRecursoInfoBody">
+        No se encontró el recurso consulte a RSU
       </div>
     </div>
   </div>

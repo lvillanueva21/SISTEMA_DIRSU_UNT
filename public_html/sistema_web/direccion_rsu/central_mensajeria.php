@@ -84,11 +84,11 @@ $centralMsgCsrf = evt_mto_get_csrf_token('central_mensajeria_csrf');
         <ul class="navbar-nav ml-auto">
             <li class="nav-item d-none d-sm-inline-block" style="background-image: url('../web1.png'); background-size: cover; background-position: center; color: white; padding: 2px; list-style-type: none; filter: brightness(100%); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);">
                 <a href="https://rsu.unitru.edu.pe" class="nav-link" target="_blank">
-                    <p style="color: white;">Ir a pagina DIRSU</p>
+                    <p style="color: white;">Ir a página DIRSU</p>
                 </a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesion</a>
+                <a href="../componentes/sesion/cerrarSesion.php" class="nav-link">Cerrar sesión</a>
             </li>
         </ul>
     </nav>
@@ -168,6 +168,7 @@ $centralMsgCsrf = evt_mto_get_csrf_token('central_mensajeria_csrf');
                                         <select id="fEvento" class="form-control form-control-sm">
                                             <option value="">Evento (todos)</option>
                                             <option value="MAIL_DERIVACION">MAIL_DERIVACION</option>
+                                            <option value="MAIL_DERIVACION_OFICINA">MAIL_DERIVACION_OFICINA</option>
                                             <option value="MAIL_OBSERVACION">MAIL_OBSERVACION</option>
                                             <option value="MAIL_APROB_TOTAL">MAIL_APROB_TOTAL</option>
                                             <option value="MAIL_SOLICITUD_REVISION">MAIL_SOLICITUD_REVISION</option>

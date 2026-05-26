@@ -47,7 +47,7 @@ function evt_mto_api_ensure_inicio_deadline_event(mysqli $conexion, $userId = nu
     $uid = ($userId === null || (int)$userId <= 0) ? null : (int)$userId;
 
     $sql = "INSERT INTO evt_eventos (codigo, nombre, estado, actualizado_por)
-            VALUES ('inicio_fecha_limite_visible', 'Mostrar fecha limite en inicio', 0, ?)
+            VALUES ('inicio_fecha_limite_visible', 'Mostrar fecha límite en inicio', 0, ?)
             ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)";
     $st = mysqli_prepare($conexion, $sql);
     if (!$st) {
@@ -94,12 +94,12 @@ function evt_mto_api_get_db_manager_state(mysqli $conexion)
 
 function evt_mto_api_default_inicio_deadline_title()
 {
-    return 'Fecha limite';
+    return 'Fecha límite';
 }
 
 function evt_mto_api_default_inicio_deadline_message()
 {
-    return 'Sin fechas limites por el momento.';
+    return 'Sin fechas límites por el momento.';
 }
 
 function evt_mto_api_default_inicio_deadline_datetime()
@@ -115,7 +115,7 @@ function evt_mto_api_parse_deadline_datetime($input, &$errorMessage = null)
 {
     $value = trim((string)$input);
     if ($value === '') {
-        $errorMessage = 'Debe indicar la fecha y hora limite.';
+        $errorMessage = 'Debe indicar la fecha y hora límite.';
         return false;
     }
 
@@ -133,7 +133,7 @@ function evt_mto_api_parse_deadline_datetime($input, &$errorMessage = null)
     $errors = DateTime::getLastErrors();
     $hasParseErrors = (is_array($errors) && (!empty($errors['warning_count']) || !empty($errors['error_count'])));
     if (!$dt || $hasParseErrors) {
-        $errorMessage = 'Fecha limite invalida.';
+        $errorMessage = 'Fecha límite inválida.';
         return false;
     }
 
@@ -192,9 +192,9 @@ function evt_mto_api_messaging_events_catalog()
 {
     return array(
         'evaluacion_mensajeria' => 'Mensajería global de evaluación',
-        'evaluacion_mail_derivacion' => 'Correo: derivacion entre oficinas',
-        'evaluacion_mail_observacion' => 'Correo: observacion (cotejo/rubrica)',
-        'evaluacion_mail_aprob_total' => 'Correo: aprobacion total',
+        'evaluacion_mail_derivacion' => 'Correo: derivación entre oficinas',
+        'evaluacion_mail_observacion' => 'Correo: observación (cotejo/rúbrica)',
+        'evaluacion_mail_aprob_total' => 'Correo: aprobación total',
         'evaluacion_mail_solicitud_revision' => 'Correo: solicitud de revisión',
         'evaluacion_mail_subsanacion' => 'Correo: subsanación',
     );
@@ -267,6 +267,7 @@ function evt_mto_api_preview_templates_catalog()
 {
     return array(
         'PREVIEW_DERIVACION' => 'Derivación entre oficinas',
+        'PREVIEW_DERIVACION_OFICINA' => 'Derivación a oficina destino',
         'PREVIEW_OBS_COTEJO' => 'Observación por Cotejo',
         'PREVIEW_OBS_RUBRICA' => 'Observación por Rúbrica',
         'PREVIEW_APROB_TOTAL' => 'Aprobación total',
@@ -444,7 +445,7 @@ if (!($conexion instanceof mysqli)) {
 $userId = isset($_SESSION['id_usuario']) ? (int)$_SESSION['id_usuario'] : 0;
 if (!evt_mto_ensure_seed($conexion, $userId > 0 ? $userId : null)) {
     error_log('evt_mantenimiento_api: fallo al inicializar seed de evt_');
-    evt_mto_api_exit(false, 'No se pudo inicializar la configuracion de mantenimiento.', null, 500);
+    evt_mto_api_exit(false, 'No se pudo inicializar la configuración de mantenimiento.', null, 500);
 }
 if (!evt_mto_api_ensure_db_manager_event($conexion, $userId > 0 ? $userId : null)) {
     error_log('evt_mantenimiento_api: fallo al inicializar evento acceso_gestor_db');
@@ -452,7 +453,7 @@ if (!evt_mto_api_ensure_db_manager_event($conexion, $userId > 0 ? $userId : null
 }
 if (!evt_mto_api_ensure_inicio_deadline_event($conexion, $userId > 0 ? $userId : null)) {
     error_log('evt_mantenimiento_api: fallo al inicializar evento inicio_fecha_limite_visible');
-    evt_mto_api_exit(false, 'No se pudo inicializar el control de fecha limite.', null, 500);
+    evt_mto_api_exit(false, 'No se pudo inicializar el control de fecha límite.', null, 500);
 }
 if (!evt_mto_api_ensure_messaging_events($conexion, $userId > 0 ? $userId : null)) {
     error_log('evt_mantenimiento_api: fallo al inicializar eventos de mensajería');
@@ -493,7 +494,7 @@ if ($action === 'save_correo_config') {
     );
 
     if (!$ok) {
-        evt_mto_api_exit(false, $saveError !== '' ? $saveError : 'No se pudo guardar la configuracion de correo.', null, 422);
+        evt_mto_api_exit(false, $saveError !== '' ? $saveError : 'No se pudo guardar la configuración de correo.', null, 422);
     }
 
     $state = evt_mto_fetch_state();
@@ -548,13 +549,13 @@ if ($action === 'send_messaging_template_test') {
 
     $cfgResult = cor_mail_get_active_config($conexion, false);
     if (empty($cfgResult['ok']) || empty($cfgResult['config']) || !is_array($cfgResult['config'])) {
-        $msg = isset($cfgResult['message']) ? (string)$cfgResult['message'] : 'No hay configuracion de correo activa.';
+        $msg = isset($cfgResult['message']) ? (string)$cfgResult['message'] : 'No hay configuración de correo activa.';
         evt_mto_api_exit(false, $msg, null, 422);
     }
     $cfg = $cfgResult['config'];
     $destino = isset($cfg['correo_verificador']) ? trim((string)$cfg['correo_verificador']) : '';
     if ($destino === '' || !filter_var($destino, FILTER_VALIDATE_EMAIL)) {
-        evt_mto_api_exit(false, 'El correo verificador configurado no es valido.', null, 422);
+        evt_mto_api_exit(false, 'El correo verificador configurado no es válido.', null, 422);
     }
 
     $lines = preg_split('/\r\n|\r|\n/', $templateText);
@@ -703,7 +704,7 @@ if ($action === 'save_db_manager_access') {
     $ok = mysqli_stmt_execute($st);
     mysqli_stmt_close($st);
     if (!$ok) {
-        evt_mto_api_exit(false, 'No se pudo guardar la configuracion del gestor DB.', null, 500);
+        evt_mto_api_exit(false, 'No se pudo guardar la configuración del gestor DB.', null, 500);
     }
 
     $state = evt_mto_fetch_state();
@@ -737,11 +738,11 @@ if ($action === 'save_inicio_deadline') {
         $parseError = null;
         $parsed = evt_mto_api_parse_deadline_datetime($deadlineInput, $parseError);
         if ($parsed === false) {
-            evt_mto_api_exit(false, $parseError !== null ? $parseError : 'Fecha limite invalida.', null, 422);
+            evt_mto_api_exit(false, $parseError !== null ? $parseError : 'Fecha límite inválida.', null, 422);
         }
         $deadline = $parsed;
     } elseif ($visible === 1) {
-        evt_mto_api_exit(false, 'Debe indicar la fecha y hora limite para habilitar el contador.', null, 422);
+        evt_mto_api_exit(false, 'Debe indicar la fecha y hora límite para habilitar el contador.', null, 422);
     } else {
         $currentDeadline = evt_mto_api_get_inicio_deadline_state($conexion);
         if (!empty($currentDeadline['deadline'])) {
@@ -791,7 +792,7 @@ if ($action === 'save_inicio_deadline') {
     } catch (Exception $e) {
         mysqli_rollback($conexion);
         error_log('evt_mantenimiento_api save_inicio_deadline: ' . $e->getMessage());
-        evt_mto_api_exit(false, 'No se pudo guardar la configuracion de fecha limite.', null, 500);
+        evt_mto_api_exit(false, 'No se pudo guardar la configuración de fecha límite.', null, 500);
     }
 
     $state = evt_mto_fetch_state();
@@ -830,7 +831,7 @@ $current = evt_mto_fetch_state();
 $eventoId = isset($current['evento_id']) ? (int)$current['evento_id'] : 0;
 if ($eventoId <= 0) {
     error_log('evt_mantenimiento_api: evento mantenimiento_sistema no encontrado');
-    evt_mto_api_exit(false, 'No se encontro la configuracion de mantenimiento.', null, 500);
+    evt_mto_api_exit(false, 'No se encontró la configuración de mantenimiento.', null, 500);
 }
 
 $hasSecret = !empty($current['has_secret']);
@@ -880,7 +881,7 @@ try {
 
     if (!mysqli_stmt_execute($st)) {
         mysqli_stmt_close($st);
-        throw new Exception('No se pudo guardar la configuracion.');
+        throw new Exception('No se pudo guardar la configuración.');
     }
     mysqli_stmt_close($st);
 
@@ -899,5 +900,5 @@ try {
 } catch (Exception $e) {
     mysqli_rollback($conexion);
     error_log('evt_mantenimiento_api save_config: ' . $e->getMessage());
-    evt_mto_api_exit(false, 'No se pudo guardar la configuracion de mantenimiento.', null, 500);
+    evt_mto_api_exit(false, 'No se pudo guardar la configuración de mantenimiento.', null, 500);
 }

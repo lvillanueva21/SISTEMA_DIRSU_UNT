@@ -131,6 +131,65 @@ function emailsDesdeDirectorio(mysqli $cx, array $usuarios): array {
   return array_keys($dest);
 }
 
+/**
+ * Detalla disponibilidad de contactos en directorio por usuario.
+ * Devuelve:
+ * - emails: correos validos (email + correo_asistente)
+ * - missing_all: usuarios sin ningun correo valido
+ * - missing_main: usuarios sin email principal valido
+ * - missing_assistant: usuarios sin correo_asistente valido
+ */
+function detalleContactosDirectorio(mysqli $cx, array $usuarios): array {
+  $out = [
+    'emails' => [],
+    'missing_all' => [],
+    'missing_main' => [],
+    'missing_assistant' => [],
+  ];
+  $usuarios = array_values(array_unique(array_filter(array_map('strval', $usuarios))));
+  if (empty($usuarios)) return $out;
+
+  $byUser = [];
+  $place = implode(',', array_fill(0, count($usuarios), '?'));
+  $types = str_repeat('s', count($usuarios));
+  $sql = "SELECT usuario, email, correo_asistente FROM directorio WHERE usuario IN ($place)";
+  if ($st = $cx->prepare($sql)) {
+    $st->bind_param($types, ...$usuarios);
+    if ($st->execute()) {
+      $rs = $st->get_result();
+      while ($r = $rs->fetch_assoc()) {
+        $u = trim((string)($r['usuario'] ?? ''));
+        if ($u === '') continue;
+        $byUser[$u] = [
+          'email' => trim((string)($r['email'] ?? '')),
+          'correo_asistente' => trim((string)($r['correo_asistente'] ?? '')),
+        ];
+      }
+    }
+    $st->close();
+  }
+
+  foreach ($usuarios as $u) {
+    $main = '';
+    $assistant = '';
+    if (isset($byUser[$u])) {
+      $main = (string)$byUser[$u]['email'];
+      $assistant = (string)$byUser[$u]['correo_asistente'];
+    }
+    $mainOk = ($main !== '' && filter_var($main, FILTER_VALIDATE_EMAIL));
+    $assistantOk = ($assistant !== '' && filter_var($assistant, FILTER_VALIDATE_EMAIL));
+
+    if ($mainOk) $out['emails'][$main] = true;
+    if ($assistantOk) $out['emails'][$assistant] = true;
+    if (!$mainOk) $out['missing_main'][] = $u;
+    if (!$assistantOk) $out['missing_assistant'][] = $u;
+    if (!$mainOk && !$assistantOk) $out['missing_all'][] = $u;
+  }
+
+  $out['emails'] = array_keys($out['emails']);
+  return $out;
+}
+
 /** Usuarios destinatarios según rol y alcance (facultad/departamento). */
 function destinatariosPorOficina(mysqli $cx, int $rol_id, array $ctx): array {
   $usuarios = [];
@@ -300,7 +359,33 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
   // 3) Usuarios y emails
   $usuarios = $rol_id ? destinatariosPorOficina($cx, (int)$rol_id, ['fac_id'=>$PX['fac_id'], 'depa_id'=>$PX['depa_id']]) : [];
   $diag[] = 'usuarios_count='.count($usuarios);
-  $emails = emailsDesdeDirectorio($cx, $usuarios);
+  if (empty($usuarios)) {
+    if ((int)$rol_id === 5) $diag[] = 'sin_presidente_comite_asignado';
+    if ((int)$rol_id === 4) $diag[] = 'sin_director_departamento_asignado';
+    if ((int)$rol_id === 3) $diag[] = 'sin_decano_facultad_asignado';
+  }
+
+  $contactDetail = detalleContactosDirectorio($cx, $usuarios);
+  $emails = isset($contactDetail['emails']) && is_array($contactDetail['emails']) ? $contactDetail['emails'] : [];
+  if (!empty($contactDetail['missing_main'])) {
+    $diag[] = 'sin_email_principal=' . implode(',', $contactDetail['missing_main']);
+  }
+  if (!empty($contactDetail['missing_assistant'])) {
+    $diag[] = 'sin_correo_asistente=' . implode(',', $contactDetail['missing_assistant']);
+  }
+  if (!empty($contactDetail['missing_all'])) {
+    $diag[] = 'sin_correos_validos=' . implode(',', $contactDetail['missing_all']);
+  }
+
+  if ((int)$rol_id !== 1 && empty($emails)) {
+    $usuariosRsu = destinatariosPorOficina($cx, 1, ['fac_id'=>null, 'depa_id'=>null]);
+    $detalleRsu = detalleContactosDirectorio($cx, $usuariosRsu);
+    $emailsRsu = isset($detalleRsu['emails']) && is_array($detalleRsu['emails']) ? $detalleRsu['emails'] : [];
+    if (!empty($emailsRsu)) {
+      $emails = $emailsRsu;
+      $diag[] = 'fallback_destinatarios=rsu';
+    }
+  }
   if ($rol_id === 1 && empty($emails)) { $emails = ['lvillanueva@unitru.edu.pe']; $diag[]='rsu_fallback=1'; }
   if ($tipoInformeError !== '') {
     $emails = [];
@@ -329,7 +414,7 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
     ".($rubricaResumen['html'] !== '' ? $rubricaResumen['html'] : '')."
     <p><a href=\"{$url}\" target=\"_blank\" style=\"color:#0a58ca;text-decoration:underline;\">Ingresar al Sistema DIRSU</a></p>
     <hr style=\"border:none;border-top:1px solid #d8dde5;margin:14px 0;\">
-    <p style="font-size:12px;color:#666">Este mensaje se envi&oacute; autom&aacute;ticamente al/los evaluador(es) de la oficina correspondiente.</p>
+    <p style=\"font-size:12px;color:#666\">Este mensaje se envi&oacute; autom&aacute;ticamente al/los evaluador(es) de la oficina correspondiente.</p>
   ";
   $html = rsu_mail_wrap_subsanacion_html($htmlBody);
 
@@ -339,6 +424,11 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
         . "Ingresar: {$url}\n";
 
   // 5) Mensajería controlada + auditoría (envía o solo registra según switch).
+  $skipReason = ($tipoInformeError !== '') ? 'error_validacion' : '';
+  if ($skipReason === '' && $sinDestinatarios) {
+    $skipReason = !empty($diag) ? implode(' | ', $diag) : 'sin_destinatarios';
+  }
+
   $notifyOk = rsu_eval_v1_notify_mail(
     $cx,
     [
@@ -353,7 +443,7 @@ function notif_subsanacion_autoridades(mysqli $cx, array $ctx): array {
       'text'         => $text,
       'created_by'   => isset($_SESSION['usuario']) ? (string)$_SESSION['usuario'] : null,
       'ip'           => isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : null,
-      'skip_reason'  => ($tipoInformeError !== '') ? 'error_validacion' : ($sinDestinatarios ? 'sin_destinatarios' : ''),
+      'skip_reason'  => $skipReason,
     ],
     function(array $mailPayload) use (&$diag, $cx, $emails, $asunto, $html, $text) {
       $errorDetail = '';

@@ -34,6 +34,18 @@ function siguienteSem(int $anio, string $periodo): array {
 }
 
 /**
+ * bind_param dinámico compatible con parámetros por referencia.
+ */
+function bindParamDynamic(mysqli_stmt $stmt, string $types, array $params): bool {
+    $bind = [$types];
+    $params = array_values($params);
+    foreach ($params as $i => $value) {
+        $bind[] = &$params[$i];
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $bind);
+}
+
+/**
  * Construye el "plan" de filas que DEBEN existir en sm_proyecto_semestres
  */
 function planSemestres(DateTime $fi, DateTime $ff): array {
@@ -202,7 +214,9 @@ function syncProyectoSemestres(mysqli $cx, int $id_py, DateTime $fi, DateTime $f
                 $place = implode(',', array_fill(0, count($idsDesactivar), '?'));
                 $types = str_repeat('i', count($idsDesactivar));
                 $delStmt = $cx->prepare("UPDATE sm_proyecto_semestres SET vigente=0 WHERE id IN ($place)");
-                $delStmt->bind_param($types, ...$idsDesactivar);
+                if (!$delStmt || !bindParamDynamic($delStmt, $types, $idsDesactivar)) {
+                    throw new RuntimeException("Error bind update sm_proyecto_semestres (vigente=0).");
+                }
                 $delStmt->execute();
                 $desact += $delStmt->affected_rows;
                 $delStmt->close();
@@ -401,7 +415,12 @@ function obtenerInfoSemestral(mysqli $conexion, int $id_py, ?array $accessEval =
     }
 
     // 4) Sincroniza semestres
-    $syncResumen = syncProyectoSemestres($conexion, $id_py, $fi, $ff);
+    try {
+        $syncResumen = syncProyectoSemestres($conexion, $id_py, $fi, $ff);
+    } catch (Throwable $e) {
+        error_log('[obtenerInfoSemestral][syncProyectoSemestres] ' . $e->getMessage());
+        return ['error' => 'No se pudo preparar la estructura de semestres del proyecto.'];
+    }
 
     // 5) Chips
     $stmt = $conexion->prepare("

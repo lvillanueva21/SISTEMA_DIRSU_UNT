@@ -21,6 +21,26 @@ if (!function_exists('rsu_access_start_session')) {
     }
 }
 
+if (!function_exists('rsu_access_stmt_bind_params')) {
+    /**
+     * Compatibilidad segura para bind_param dinámico (requiere referencias).
+     */
+    function rsu_access_stmt_bind_params($stmt, $types, array $params)
+    {
+        if (!($stmt instanceof mysqli_stmt)) {
+            return false;
+        }
+
+        $params = array_values($params);
+        $args = array($stmt, $types);
+        foreach ($params as $i => $value) {
+            $args[] = &$params[$i];
+        }
+
+        return call_user_func_array('mysqli_stmt_bind_param', $args);
+    }
+}
+
 if (!function_exists('rsu_access_defs')) {
     function rsu_access_defs()
     {
@@ -297,7 +317,17 @@ if (!function_exists('rsu_project_interface_access_evaluate')) {
             $sql_rules = "SELECT id, periodo, codigo, descripcion, DATE_FORMAT(inicio, '%Y-%m-%d %H:%i:%s') AS inicio, DATE_FORMAT(fin, '%Y-%m-%d %H:%i:%s') AS fin FROM cronogramas WHERE estado = 1 AND periodo IN (" . $ph_periods . ") AND codigo IN (" . $ph_codes . ") ORDER BY periodo ASC, codigo ASC, id DESC";
             $stmt_rules = mysqli_prepare($conexion, $sql_rules);
             if (!$stmt_rules) { $result['ok'] = false; $result['reason_code'] = 'db_query_error'; $result['reason_message'] = 'No se pudo consultar reglas de interfaces.'; return $result; }
-            $params = array_merge($period_names, $codes); $types = str_repeat('s', count($params)); mysqli_stmt_bind_param($stmt_rules, $types, ...$params); mysqli_stmt_execute($stmt_rules); $res_rules = mysqli_stmt_get_result($stmt_rules);
+            $params = array_merge($period_names, $codes);
+            $types = str_repeat('s', count($params));
+            if (!rsu_access_stmt_bind_params($stmt_rules, $types, $params)) {
+                mysqli_stmt_close($stmt_rules);
+                $result['ok'] = false;
+                $result['reason_code'] = 'db_query_error';
+                $result['reason_message'] = 'No se pudo enlazar parámetros para consultar reglas de interfaces.';
+                return $result;
+            }
+            mysqli_stmt_execute($stmt_rules);
+            $res_rules = mysqli_stmt_get_result($stmt_rules);
             if ($res_rules instanceof mysqli_result) { while ($rw = mysqli_fetch_assoc($res_rules)) { $pn = (string)$rw['periodo']; $cd = (string)$rw['codigo']; if (!isset($rules[$pn])) $rules[$pn] = array(); if (!isset($rules[$pn][$cd])) $rules[$pn][$cd] = $rw; } mysqli_free_result($res_rules); }
             mysqli_stmt_close($stmt_rules);
         }
