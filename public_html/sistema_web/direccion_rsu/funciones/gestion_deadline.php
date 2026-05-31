@@ -78,7 +78,7 @@ $dl_res = mysqli_query($conexion, "
                     <?= $edit_mode ? 'Actualizar' : 'Guardar' ?>
                 </button>
                 <?php if ($edit_mode): ?>
-                    <a href="control_eventos.php" class="btn btn-secondary">Cancelar</a>
+                    <a href="eventos_panel.php" class="btn btn-secondary">Cancelar</a>
                 <?php endif; ?>
             </form>
         </div>
@@ -107,7 +107,7 @@ $dl_res = mysqli_query($conexion, "
                             <td><?= $d['fecha_fin'] ?></td>
                             <td><?= $d['activo'] ? '✔️' : '❌' ?></td>
                             <td>
-                                <a href="control_eventos.php?edit=<?= $d['id'] ?>" class="btn btn-sm btn-info" title="Editar"><i class="fas fa-edit"></i></a>
+                                <a href="eventos_panel.php?edit=<?= $d['id'] ?>" class="btn btn-sm btn-info" title="Editar"><i class="fas fa-edit"></i></a>
                                 <form method="post" action="funciones/procesar_deadline.php" class="d-inline">
                                     <input type="hidden" name="action" value="toggle">
                                     <input type="hidden" name="id" value="<?= $d['id'] ?>">

@@ -147,6 +147,19 @@ foreach (rsu_projects_eval_visible_actions($id_rol) as $accion) {
     );
 }
 
+// Blindaje de negocio: Director de Departamento (4) y Decanato (3)
+// solo otorgan visto bueno; no deben recibir acción de rúbrica.
+if ($id_rol === 3 || $id_rol === 4) {
+    $filtered = array();
+    foreach ($actionsPayload as $ap) {
+        if ((string)($ap['key'] ?? '') === 'rubrica') {
+            continue;
+        }
+        $filtered[] = $ap;
+    }
+    $actionsPayload = $filtered;
+}
+
 $timeline = array();
 $sqlOffices = "SELECT id, codigo, nombre, orden FROM eva_oficinas WHERE activo = 1 ORDER BY orden ASC";
 $rsOffices = mysqli_query($conexion, $sqlOffices);

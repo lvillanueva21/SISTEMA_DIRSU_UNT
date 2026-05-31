@@ -3,6 +3,9 @@ include "../componentes/configSesion.php";
 require_once "../includes/evt_mantenimiento.php";
 
 $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
+$evtHideCorreoBlock = false;
+$evtMessagingSafeMode = true;
+$evtHideCorreoConfigBlock = false;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -237,6 +240,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                     </button>
                                 </div>
                             </div>
+                            <?php if (!$evtHideCorreoBlock): ?>
                             <div class="col-12 col-md-6 col-lg-4 mt-3">
                                 <div class="p-3 evt-card-action h-100">
                                     <div class="d-flex align-items-center mb-2">
@@ -259,6 +263,8 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                     </a>
                                 </div>
                             </div>
+                            <?php endif; ?>
+                            <?php if (!$evtHideCorreoConfigBlock): ?>
                             <div class="col-12 col-md-6 col-lg-4 mt-3">
                                 <div class="p-3 evt-card-action h-100">
                                     <div class="d-flex align-items-center mb-2">
@@ -281,6 +287,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                                     </button>
                                 </div>
                             </div>
+                            <?php endif; ?>
                         </div>
                         <div class="alert alert-light border mt-4 mb-0">
                             Administra aqui los eventos criticos del sistema.
@@ -460,6 +467,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
     </div>
 </div>
 
+<?php if (!$evtHideCorreoBlock): ?>
 <div class="modal fade" id="modalMessaging" tabindex="-1" role="dialog" aria-labelledby="modalMessagingLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
         <div class="modal-content">
@@ -502,6 +510,7 @@ $evtMtoCsrf = evt_mto_get_csrf_token('evt_mantenimiento_admin_csrf');
                     <label class="custom-control-label" for="evtMsgSubsanacion">Subsanación</label>
                 </div>
 
+                <?php if (!$evtMessagingSafeMode): ?>
                 <div class="evt-msg-preview-wrap">
                     <h6 class="mb-2">Vista previa de mensajes (alineada a formato real)</h6>
                     <p class="text-muted small mb-3">
@@ -759,6 +768,12 @@ Estado: reservado para API centralizada de preflight.</pre>
                         </div>
                     </div>
                 </div>
+                <?php else: ?>
+                <div class="alert alert-warning mt-3 mb-0">
+                    <strong>Vista previa de plantillas desactivada temporalmente.</strong><br>
+                    Se mantiene habilitada la configuración de switches de mensajería mientras se evita el bloqueo de seguridad del servidor.
+                </div>
+                <?php endif; ?>
                 <div class="text-muted small mt-3">
                     Última actualización global: <span id="evtMessagingUpdatedAt">-</span>
                 </div>
@@ -770,7 +785,9 @@ Estado: reservado para API centralizada de preflight.</pre>
         </div>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if (!$evtHideCorreoConfigBlock): ?>
 <div class="modal fade" id="modalCorreoConfig" tabindex="-1" role="dialog" aria-labelledby="modalCorreoConfigLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
         <div class="modal-content">
@@ -863,7 +880,9 @@ Estado: reservado para API centralizada de preflight.</pre>
         </div>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if (!$evtHideCorreoBlock): ?>
 <div class="modal fade" id="modalMessagingTestResult" tabindex="-1" role="dialog" aria-labelledby="modalMessagingTestResultLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -890,6 +909,7 @@ Estado: reservado para API centralizada de preflight.</pre>
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="modal fade" id="modalSemestresCalc" tabindex="-1" role="dialog" aria-labelledby="modalSemestresCalcLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">

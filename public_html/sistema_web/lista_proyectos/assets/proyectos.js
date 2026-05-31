@@ -335,11 +335,18 @@
     var hasC = !!map.cotejo;
     var hasR = !!map.rubrica;
     var hasVb = !!map.vb;
-    var vbOnly = (hasVb && !hasC && !hasR);
+    var roleId = Number((ui && ui.role_id) || 0);
+    var forceVbByRole = (roleId === 3 || roleId === 4);
+    var vbOnly = forceVbByRole || (hasVb && !hasC && !hasR);
 
     item.classList.remove('d-none');
-    if (tabRLi) tabRLi.classList.remove('d-none');
-    if (tabRPane) tabRPane.classList.remove('d-none');
+    if (vbOnly) {
+      if (tabRLi) tabRLi.classList.add('d-none');
+      if (tabRPane) tabRPane.classList.add('d-none');
+    } else {
+      if (tabRLi) tabRLi.classList.remove('d-none');
+      if (tabRPane) tabRPane.classList.remove('d-none');
+    }
     if (pendingText) pendingText.classList.remove('d-none');
     setEvalTabLabel('prjTabObsLink', 'Ver observación');
     if (vbOnly) {
@@ -349,7 +356,6 @@
       setEvalTabLabel('prjTabRubricaLink', '2. Calificar rúbrica');
     }
 
-    var roleId = Number((ui && ui.role_id) || 0);
     body.innerHTML = buildIndicacionesHtml(roleId, vbOnly);
 
     if (hasJquery()) {
@@ -525,11 +531,14 @@
     var hasC = !!map.cotejo;
     var hasR = !!map.rubrica;
     var hasVb = !!map.vb;
-    if (hasVb && !hasC && !hasR) {
-      if (tabCLink) tabCLink.textContent = 'Calificar Visto Bueno';
+    var roleId = Number((currentEvalContext.ui && currentEvalContext.ui.role_id) || 0);
+    var forceVbByRole = (roleId === 3 || roleId === 4);
+    if (forceVbByRole || (hasVb && !hasC && !hasR)) {
+      if (tabCLink) tabCLink.textContent = '1. Otorgar Visto Bueno';
       if (tabRItem) tabRItem.classList.add('d-none');
       if (tabRPane) tabRPane.classList.add('d-none');
-      renderActionPane(wrapC, map.vb, 'vb', 'No aplica este tipo de evaluación para tu rol.');
+      var vbAction = map.vb || null;
+      renderActionPane(wrapC, vbAction, 'vb', 'No aplica este tipo de evaluación para tu rol.');
       wrapR.innerHTML = '';
       return;
     }

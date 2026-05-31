@@ -60,6 +60,11 @@ function cp_valid_ymd(string $value): ?DateTimeImmutable
     return $dt;
 }
 
+function cp_to_legacy_dmy(DateTimeImmutable $value): string
+{
+    return $value->format('d/m/Y');
+}
+
 function cp_build_in_clause(array $ids): string
 {
     $clean = array();
@@ -309,6 +314,9 @@ if ($aceptoCompromiso !== 1) {
     cp_redirect_datos_principales();
 }
 
+$fechaInicioLegacy = cp_to_legacy_dmy($fechaInicio);
+$fechaFinLegacy = cp_to_legacy_dmy($fechaFin);
+
 $previewSem = rsu_api_semester_audit_build_expected_rows($fechaInicioRaw, $fechaFinRaw);
 if (!is_array($previewSem) || empty($previewSem['ok']) || !isset($previewSem['rows']) || !is_array($previewSem['rows'])) {
     cp_set_flash('danger', 'No fue posible calcular los semestres del proyecto para ese rango.');
@@ -430,7 +438,7 @@ try {
     if (!$stmtProyecto) {
         throw new RuntimeException('No se pudo preparar el registro del proyecto.');
     }
-    $stmtProyecto->bind_param('sss', $tituloProyecto, $fechaInicioRaw, $fechaFinRaw);
+    $stmtProyecto->bind_param('sss', $tituloProyecto, $fechaInicioLegacy, $fechaFinLegacy);
     if (!$stmtProyecto->execute()) {
         $stmtProyecto->close();
         throw new RuntimeException('No se pudo crear el proyecto.');
@@ -474,8 +482,8 @@ try {
     $descripcion = 'Se creó el proyecto con ID: ' . $nuevoIdProyecto
         . ' para el período: ' . $periodoNombre
         . '. Título: ' . $tituloProyecto
-        . '. Inicio: ' . $fechaInicioRaw
-        . '. Fin: ' . $fechaFinRaw
+        . '. Inicio: ' . $fechaInicioLegacy
+        . '. Fin: ' . $fechaFinLegacy
         . ' (Cronograma presentación #' . $cronogramaId . ', Formulario #' . $formularioId . ').';
     $fechaActual = $now->format('Y-m-d H:i:s');
     $stmtHist = $conexion->prepare("INSERT INTO historial_proyectos (descripcion, fecha, id_py) VALUES (?, ?, ?)");

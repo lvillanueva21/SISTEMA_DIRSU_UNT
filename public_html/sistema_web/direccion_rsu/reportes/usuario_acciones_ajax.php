@@ -138,7 +138,7 @@ function ua_valid_phone($phone)
 
 function ua_valid_name($name)
 {
-    return (bool)preg_match('/^[\p{L}\s\.\'\-]{2,100}$/u', (string)$name);
+    return (bool)preg_match('/^[\p{L}\s\.\'\-]{2,50}$/u', (string)$name);
 }
 
 function ua_valid_email_simple($email)
@@ -150,7 +150,7 @@ function ua_valid_email_simple($email)
     return (bool)preg_match('/^[^\s@]+@[^\s@]+\.[^\s@]+$/', $email);
 }
 
-function ua_upsert_directorio($conexion, $usuario, $idRol, $email, $telefono, $nombres, $apellidos, $telAsis, $correoAsis)
+function ua_upsert_directorio($conexion, $usuario, $idRol, $email, $telefono, $nombres, $apellidos, $telAsis, $correoAsis, &$errorMsg = '')
 {
     $sql = "INSERT INTO directorio
                 (usuario, id_rol, email, telefono, nombres, apellidos, telefono_asistente, correo_asistente, created_at, updated_at)
@@ -167,15 +167,19 @@ function ua_upsert_directorio($conexion, $usuario, $idRol, $email, $telefono, $n
                 updated_at = NOW()";
     $st = mysqli_prepare($conexion, $sql);
     if (!$st) {
+        $errorMsg = 'Error al preparar directorio: ' . mysqli_error($conexion);
         return false;
     }
     mysqli_stmt_bind_param($st, 'sissssss', $usuario, $idRol, $email, $telefono, $nombres, $apellidos, $telAsis, $correoAsis);
     $ok = mysqli_stmt_execute($st);
+    if (!$ok) {
+        $errorMsg = mysqli_stmt_error($st);
+    }
     mysqli_stmt_close($st);
     return $ok;
 }
 
-function ua_upsert_usuario_contactos($conexion, $usuario, $email, $telefono)
+function ua_upsert_usuario_contactos($conexion, $usuario, $email, $telefono, &$errorMsg = '')
 {
     $sql = "INSERT INTO usuario_contactos (usuario, email, telefono, created_at, updated_at)
             VALUES (?, ?, ?, NOW(), NOW())
@@ -185,15 +189,19 @@ function ua_upsert_usuario_contactos($conexion, $usuario, $email, $telefono)
                 updated_at = NOW()";
     $st = mysqli_prepare($conexion, $sql);
     if (!$st) {
+        $errorMsg = 'Error al preparar usuario_contactos: ' . mysqli_error($conexion);
         return false;
     }
     mysqli_stmt_bind_param($st, 'sss', $usuario, $email, $telefono);
     $ok = mysqli_stmt_execute($st);
+    if (!$ok) {
+        $errorMsg = mysqli_stmt_error($st);
+    }
     mysqli_stmt_close($st);
     return $ok;
 }
 
-function ua_update_directorio_contact_only($conexion, $usuario, $email, $telefono)
+function ua_update_directorio_contact_only($conexion, $usuario, $email, $telefono, &$errorMsg = '')
 {
     $sql = "UPDATE directorio
                SET email = ?, telefono = ?, updated_at = NOW()
@@ -201,10 +209,14 @@ function ua_update_directorio_contact_only($conexion, $usuario, $email, $telefon
              LIMIT 1";
     $st = mysqli_prepare($conexion, $sql);
     if (!$st) {
+        $errorMsg = 'Error al preparar sincronización en directorio: ' . mysqli_error($conexion);
         return false;
     }
     mysqli_stmt_bind_param($st, 'sss', $email, $telefono, $usuario);
     $ok = mysqli_stmt_execute($st);
+    if (!$ok) {
+        $errorMsg = mysqli_stmt_error($st);
+    }
     mysqli_stmt_close($st);
     return $ok;
 }
@@ -362,15 +374,22 @@ if ($action === 'update_contact') {
         ua_json_exit(array('ok' => false, 'msg' => 'El telefono debe iniciar con 9 y tener 9 digitos.'));
     }
 
+    if (mb_strlen($email, 'UTF-8') > 150) {
+        ua_json_exit(array('ok' => false, 'msg' => 'El correo principal supera el máximo permitido (150 caracteres).'));
+    }
+
     if ($esEvaluador) {
         if (!ua_valid_name($nombres) || !ua_valid_name($apellidos)) {
-            ua_json_exit(array('ok' => false, 'msg' => 'Nombres o apellidos invalidos para este usuario.'));
+            ua_json_exit(array('ok' => false, 'msg' => 'Nombres o apellidos invalidos para este usuario (2 a 50 caracteres).'));
         }
         if ($telefonoAsistente !== '' && !ua_valid_phone($telefonoAsistente)) {
             ua_json_exit(array('ok' => false, 'msg' => 'El telefono de asistente es invalido.'));
         }
         if (!ua_valid_email_simple($correoAsistente)) {
             ua_json_exit(array('ok' => false, 'msg' => 'El correo de asistente es invalido.'));
+        }
+        if ($correoAsistente !== '' && mb_strlen($correoAsistente, 'UTF-8') > 150) {
+            ua_json_exit(array('ok' => false, 'msg' => 'El correo de asistente supera el máximo permitido (150 caracteres).'));
         }
     } else {
         $telefonoAsistente = '';
@@ -382,6 +401,7 @@ if ($action === 'update_contact') {
     mysqli_begin_transaction($conexion);
     try {
         if ($esEvaluador) {
+            $errDetalle = '';
             if (!ua_table_exists($conexion, 'directorio')) {
                 throw new Exception('No existe la tabla directorio para registrar el contacto del evaluador.');
             }
@@ -410,21 +430,23 @@ if ($action === 'update_contact') {
                 $nombres,
                 $apellidos,
                 $telefonoAsistente,
-                $correoAsistente
+                $correoAsistente,
+                $errDetalle
             )) {
-                throw new Exception('No se pudo guardar el contacto en directorio.');
+                throw new Exception('No se pudo guardar el contacto en directorio.' . ($errDetalle !== '' ? ' Detalle: ' . $errDetalle : ''));
             }
         } else {
+            $errDetalle = '';
             if (!ua_table_exists($conexion, 'usuario_contactos')) {
                 throw new Exception('No existe la tabla usuario_contactos para registrar el contacto del coordinador.');
             }
-            if (!ua_upsert_usuario_contactos($conexion, (string)$user['usuario'], $email, $telefono)) {
-                throw new Exception('No se pudo guardar el contacto del coordinador.');
+            if (!ua_upsert_usuario_contactos($conexion, (string)$user['usuario'], $email, $telefono, $errDetalle)) {
+                throw new Exception('No se pudo guardar el contacto del coordinador.' . ($errDetalle !== '' ? ' Detalle: ' . $errDetalle : ''));
             }
 
             if (ua_table_exists($conexion, 'directorio')) {
-                if (!ua_update_directorio_contact_only($conexion, (string)$user['usuario'], $email, $telefono)) {
-                    throw new Exception('No se pudo sincronizar el contacto en directorio.');
+                if (!ua_update_directorio_contact_only($conexion, (string)$user['usuario'], $email, $telefono, $errDetalle)) {
+                    throw new Exception('No se pudo sincronizar el contacto en directorio.' . ($errDetalle !== '' ? ' Detalle: ' . $errDetalle : ''));
                 }
             }
         }

@@ -141,11 +141,51 @@ if (!function_exists('rsu_sidebar_is_external_href')) {
 }
 
 if (!function_exists('rsu_sidebar_build_dynamic_href')) {
+    function rsu_sidebar_detect_app_base_prefix()
+    {
+        $candidates = array(
+            isset($_SERVER['SCRIPT_NAME']) ? (string)$_SERVER['SCRIPT_NAME'] : '',
+            isset($_SERVER['PHP_SELF']) ? (string)$_SERVER['PHP_SELF'] : '',
+            isset($_SERVER['REQUEST_URI']) ? (string)$_SERVER['REQUEST_URI'] : '',
+        );
+
+        foreach ($candidates as $raw) {
+            $raw = str_replace('\\', '/', trim($raw));
+            if ($raw === '') {
+                continue;
+            }
+            $qPos = strpos($raw, '?');
+            if ($qPos !== false) {
+                $raw = substr($raw, 0, $qPos);
+            }
+            $p = stripos($raw, '/sistema_web/');
+            if ($p === false) {
+                continue;
+            }
+            $prefix = substr($raw, 0, $p + strlen('/sistema_web/'));
+            if ($prefix === '') {
+                continue;
+            }
+            if ($prefix[0] !== '/') {
+                $prefix = '/' . $prefix;
+            }
+            return rtrim($prefix, '/') . '/';
+        }
+
+        return '';
+    }
+
     function rsu_sidebar_build_dynamic_href($target_app_path)
     {
         $target_app_path = ltrim(str_replace('\\', '/', (string)$target_app_path), '/');
         if ($target_app_path === '') {
             return '#';
+        }
+
+        // Prioriza URL absoluta dentro de /sistema_web para evitar errores por niveles relativos.
+        $base_prefix = rsu_sidebar_detect_app_base_prefix();
+        if ($base_prefix !== '') {
+            return $base_prefix . $target_app_path;
         }
 
         $script_file = isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '';

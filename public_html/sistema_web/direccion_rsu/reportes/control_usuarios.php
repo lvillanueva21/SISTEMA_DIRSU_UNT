@@ -442,11 +442,11 @@ function pagLink($i,$pag,$qBase){
           <div class="form-row">
             <div class="form-group col-md-6">
               <label for="contactNombres" class="mb-1">Nombres</label>
-              <input type="text" class="form-control form-control-sm" id="contactNombres" autocomplete="off">
+              <input type="text" class="form-control form-control-sm" id="contactNombres" maxlength="50" autocomplete="off">
             </div>
             <div class="form-group col-md-6">
               <label for="contactApellidos" class="mb-1">Apellidos</label>
-              <input type="text" class="form-control form-control-sm" id="contactApellidos" autocomplete="off">
+              <input type="text" class="form-control form-control-sm" id="contactApellidos" maxlength="50" autocomplete="off">
             </div>
             <div class="form-group col-md-6">
               <label for="contactRol" class="mb-1">Rol</label>
@@ -464,7 +464,7 @@ function pagLink($i,$pag,$qBase){
           <div class="form-row">
             <div class="form-group col-md-6">
               <label for="contactCorreo" class="mb-1">Correo institucional (@unitru.edu.pe)</label>
-              <input type="email" class="form-control form-control-sm" id="contactCorreo" autocomplete="off">
+              <input type="email" class="form-control form-control-sm" id="contactCorreo" maxlength="150" autocomplete="off">
             </div>
             <div class="form-group col-md-6 mb-0">
               <label for="contactTelefono" class="mb-1">Telefono (9 digitos, inicia con 9)</label>
@@ -482,7 +482,7 @@ function pagLink($i,$pag,$qBase){
             </div>
             <div class="form-group col-md-6 mb-0">
               <label for="contactCorreoAsistente" class="mb-1">Correo asistente (opcional)</label>
-              <input type="email" class="form-control form-control-sm" id="contactCorreoAsistente" autocomplete="off">
+              <input type="email" class="form-control form-control-sm" id="contactCorreoAsistente" maxlength="150" autocomplete="off">
             </div>
           </div>
         </div>
@@ -1316,11 +1316,19 @@ $(function () {
       $contactInlineMsg.removeClass('text-muted text-success').addClass('text-danger').text('El correo debe ser institucional (@unitru.edu.pe).');
       return;
     }
+    if (email.length > 150) {
+      $contactInlineMsg.removeClass('text-muted text-success').addClass('text-danger').text('El correo principal supera el máximo permitido (150 caracteres).');
+      return;
+    }
     if (!/^9\d{8}$/.test(telefono)) {
       $contactInlineMsg.removeClass('text-muted text-success').addClass('text-danger').text('El telefono debe tener 9 digitos e iniciar con 9.');
       return;
     }
     if (esEvaluador) {
+      if (nombres.length > 50 || apellidos.length > 50) {
+        $contactInlineMsg.removeClass('text-muted text-success').addClass('text-danger').text('Nombres y apellidos no deben superar 50 caracteres.');
+        return;
+      }
       if (nombres.length < 2 || apellidos.length < 2) {
         $contactInlineMsg.removeClass('text-muted text-success').addClass('text-danger').text('Nombres y apellidos son obligatorios para este rol.');
         return;
@@ -1331,6 +1339,10 @@ $(function () {
       }
       if (!emailSimpleValido(correoAsis)) {
         $contactInlineMsg.removeClass('text-muted text-success').addClass('text-danger').text('Correo de asistente invalido.');
+        return;
+      }
+      if (correoAsis.length > 150) {
+        $contactInlineMsg.removeClass('text-muted text-success').addClass('text-danger').text('El correo de asistente supera el máximo permitido (150 caracteres).');
         return;
       }
     } else {

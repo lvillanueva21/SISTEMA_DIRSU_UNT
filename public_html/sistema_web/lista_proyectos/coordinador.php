@@ -41,7 +41,18 @@ include "../includes/db_connection.php";
 
   <div class="content-wrapper">
     <section class="content p-3">
-      <?php include __DIR__ . "/principal.php"; ?>
+      <?php
+      $principalFile = __DIR__ . "/principal.php";
+      if (!is_file($principalFile) || !is_readable($principalFile)) {
+          echo '<div class="alert alert-danger mb-0">No se pudo cargar el listado de proyectos. Archivo no encontrado o sin permisos: <code>lista_proyectos/principal.php</code>.</div>';
+      } else {
+          try {
+              include $principalFile;
+          } catch (Throwable $e) {
+              echo '<div class="alert alert-danger mb-0">No se pudo cargar el listado de proyectos. Revisa includes y permisos del módulo <code>lista_proyectos</code>.</div>';
+          }
+      }
+      ?>
     </section>
   </div>
 

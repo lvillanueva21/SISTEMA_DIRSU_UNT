@@ -37,6 +37,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// 🔁 Siempre redirigir de vuelta a control_eventos.php
-header("Location: ../control_eventos.php");
+// Siempre redirigir de vuelta al panel de eventos.
+header("Location: ../eventos_panel.php");
 exit;

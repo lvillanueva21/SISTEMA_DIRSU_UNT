@@ -109,6 +109,9 @@ if ($fecha_fin_dt <= $fecha_inicio_dt) {
     rsu_initial_data_flash_and_redirect($return_to, 'La fecha de fin debe ser posterior a la fecha de inicio.', 'warning');
 }
 
+$fecha_inicio_legacy = $fecha_inicio_dt->format('d/m/Y');
+$fecha_fin_legacy = $fecha_fin_dt->format('d/m/Y');
+
 $preview = rsu_api_semester_audit_build_expected_rows($fecha_inicio_raw, $fecha_fin_raw);
 if (!is_array($preview) || empty($preview['ok']) || !isset($preview['rows']) || !is_array($preview['rows'])) {
     rsu_initial_data_flash_and_redirect($return_to, 'No fue posible calcular los semestres del proyecto para ese rango.', 'danger');
@@ -130,7 +133,7 @@ if (!$stmt) {
     rsu_initial_data_flash_and_redirect($return_to, 'No se pudo preparar la actualizacion del proyecto.', 'danger');
 }
 
-mysqli_stmt_bind_param($stmt, 'sssi', $titulo, $fecha_inicio_raw, $fecha_fin_raw, $id_py);
+mysqli_stmt_bind_param($stmt, 'sssi', $titulo, $fecha_inicio_legacy, $fecha_fin_legacy, $id_py);
 $ok = mysqli_stmt_execute($stmt);
 $affected = mysqli_stmt_affected_rows($stmt);
 mysqli_stmt_close($stmt);
