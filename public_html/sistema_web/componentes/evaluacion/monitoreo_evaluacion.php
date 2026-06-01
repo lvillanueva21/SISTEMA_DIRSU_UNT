@@ -69,7 +69,7 @@ $paginas = $limite? ceil(max($total,1)/$limite) : 1;
   <input type="number" name="id" value="<?=htmlspecialchars($id_bus)?>" class="form-control mr-2"/>
   <label class="mr-2">Mostrar:</label>
   <select name="l" class="form-control mr-2">
-    <?php foreach([5,10,100,0=>'Todas'] as $v=>$txt){ $sel=($limite==$v||($v===0&&$limite==0))?'selected':''; echo "<option value='$v' $sel>$txt</option>";?>
+    <?php foreach([5,10,100,0=>'Todas'] as $v=>$txt){ $sel=($limite==$v||($v===0&&$limite==0))?'selected':''; echo "<option value='$v' $sel>$txt</option>";}?>
   </select>
   <button class="btn btn-primary">Aplicar</button>
 </form>
