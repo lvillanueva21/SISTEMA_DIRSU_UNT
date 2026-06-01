@@ -297,39 +297,7 @@ function fecha_bonita($dt) {
 }
 
 </style>
-<!-- Toolbar superior de acciones rápidas -->
-<div class="home-toolbar d-flex align-items-center flex-wrap">
-  <span class="label"><i class="fas fa-video mr-1"></i> Tutoriales para Revisión de Informe Semestral 2025 - I:</span>
-
-  <a class="btn btn-sm btn-comite video-btn"
-     href="https://drive.google.com/file/d/1jBXfcNGzRUfhDQ-QPuiH13ZvGGzng9Q5/view?usp=sharing"
-     target="_blank" rel="noopener noreferrer"
-     data-toggle="tooltip" title="Ver tutorial (se abrirá en otra pestaña)">
-    Comité de Facultad
-  </a>
-
-  <a class="btn btn-sm btn-depto video-btn"
-     href="https://drive.google.com/file/d/1Q2DEyhG_eFQ3TXIpEuB3BmpBcxAhWf2A/view?usp=sharing"
-     target="_blank" rel="noopener noreferrer"
-     data-toggle="tooltip" title="Ver tutorial (se abrirá en otra pestaña)">
-    Dirección de Departamento
-  </a>
-
-  <a class="btn btn-sm btn-decan video-btn"
-     href="https://drive.google.com/file/d/1jROsasdErplDsT2pPiKqwDFmmlgr_242/view?usp=sharing"
-     target="_blank" rel="noopener noreferrer"
-     data-toggle="tooltip" title="Ver tutorial (se abrirá en otra pestaña)">
-    Decanato de Facultad
-  </a>
-
-  <a class="btn btn-sm btn-dirsu video-btn"
-     href="https://drive.google.com/file/d/1zB0nJ-TcGaYefYNK2Mpj-bNghW_4S6rV/view?usp=sharing"
-     target="_blank" rel="noopener noreferrer"
-     data-toggle="tooltip" title="Ver tutorial (se abrirá en otra pestaña)">
-    Dirección de RSU
-  </a>
-</div>
-
+<?php include __DIR__ . '/capacitaciones_videos_block.php'; ?>
 
 <!-- Row: Bienvenida (columna 1) + columna 2 vacía -->
 <div class="row home-row">

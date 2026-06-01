@@ -183,7 +183,8 @@
       html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="pdf_cotejo" data-resource-kind="pdf">Ver Anexo 9 - Lista de Cotejo</button>';
       html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="pdf_rubrica" data-resource-kind="pdf">Ver Anexo 10 - Rúbrica</button>';
       html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_calificar" data-resource-kind="video">Video - Calificar por cotejo y rúbrica</button>';
-      html += '</div>';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_coord_capacitacion_completa_22052026" data-resource-kind="video">Capacitación completa - 22-05-2026</button>';
+    html += '</div>';
       return html;
     }
 
@@ -197,6 +198,7 @@
     html += '</div>';
     html += '<div class="prj-indicaciones-actions">';
     html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_calificar" data-resource-kind="video">Video sobre cómo otorgar el visto bueno</button>';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_coord_capacitacion_completa_22052026" data-resource-kind="video">Capacitación completa - 22-05-2026</button>';
     html += '</div>';
     return html;
   }
@@ -215,6 +217,7 @@
     html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="doc_anexo08" data-resource-kind="download">Ver Anexo 08 - Esquema de Informe Semestral y Final</button>';
     html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-blue prj-btn-recurso-rsu" data-resource="pdf_rubrica" data-resource-kind="pdf">Ver Anexo 10 - Rúbrica</button>';
     html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_coord_revision_subsanacion" data-resource-kind="video">Video - Solicitar revisión y subsanar observación.</button>';
+    html += '  <button type="button" class="btn prj-indicaciones-btn prj-indicaciones-btn-red prj-btn-recurso-rsu" data-resource="video_coord_capacitacion_completa_22052026" data-resource-kind="video">Capacitación completa - 22-05-2026</button>';
     html += '</div>';
     return html;
   }
@@ -371,26 +374,51 @@
     else window.alert(txt);
   }
 
+  function getCurrentRoleIdForResource() {
+    var fromEval = Number((currentEvalContext.ui && currentEvalContext.ui.role_id) || 0);
+    if (fromEval > 0) return fromEval;
+    var fromPage = Number(window.PRJ_PAGE_ROLE_ID || 0);
+    return (fromPage > 0) ? fromPage : 0;
+  }
+
+  function resolveYoutubeVideoUrl(resourceKey) {
+    var map = window.PRJ_YOUTUBE_VIDEO_MAP || {};
+    var byResource = map ? map[resourceKey] : null;
+    if (!byResource || typeof byResource !== 'object') return '';
+
+    var roleId = getCurrentRoleIdForResource();
+    if (roleId <= 0) return '';
+
+    var key = String(roleId);
+    var url = byResource[key];
+    return String(url || '').trim();
+  }
+
   function openRsuVideoModal(url) {
-    var video = document.getElementById('prjRsuVideoPlayer');
-    if (!video) return;
-    video.pause();
-    video.removeAttribute('src');
-    video.load();
-    video.src = url;
+    var frame = document.getElementById('prjRsuVideoFrame');
+    if (!frame) return;
+    frame.src = '';
+    frame.src = String(url || '').trim();
     if (hasJquery()) window.jQuery('#modalRsuVideoRecurso').modal('show');
   }
 
   function closeRsuVideoModalAndStop() {
-    var video = document.getElementById('prjRsuVideoPlayer');
-    if (!video) return;
-    video.pause();
-    video.removeAttribute('src');
-    video.load();
+    var frame = document.getElementById('prjRsuVideoFrame');
+    if (!frame) return;
+    frame.src = '';
   }
 
   function openRsuResource(resourceKey, kind) {
     if (!resourceKey) return;
+    if (kind === 'video') {
+      var ytUrl = resolveYoutubeVideoUrl(resourceKey);
+      if (!ytUrl) {
+        showRsuRecursoInfo('No se encontró el recurso de video para tu rol. Consulte a RSU.');
+        return;
+      }
+      openRsuVideoModal(ytUrl);
+      return;
+    }
     if (!(window.jQuery && window.jQuery.ajax)) {
       showRsuRecursoInfo('No hay motor AJAX disponible.');
       return;
@@ -414,9 +442,7 @@
         showRsuRecursoInfo('No se encontró el recurso consulte a RSU');
         return;
       }
-      if (kind === 'video') {
-        openRsuVideoModal(url);
-      } else if (kind === 'download') {
+      if (kind === 'download') {
         window.location.href = url;
       } else {
         window.open(url, '_blank', 'noopener');

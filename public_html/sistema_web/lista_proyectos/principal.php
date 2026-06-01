@@ -88,6 +88,15 @@ foreach ($items as $row) {
 }
 $progress_map = rsu_projects_progress_by_project_ids($conexion, $project_ids, $id_rol);
 
+$prj_youtube_video_map = array();
+$prj_video_map_file = __DIR__ . '/recursos_video_youtube_config.php';
+if (is_file($prj_video_map_file) && is_readable($prj_video_map_file)) {
+    $prj_tmp_map = include $prj_video_map_file;
+    if (is_array($prj_tmp_map)) {
+        $prj_youtube_video_map = $prj_tmp_map;
+    }
+}
+
 function prj_link_pagina($p)
 {
     global $filtros;
@@ -111,6 +120,10 @@ function prj_link_limpiar_filtros()
   <strong>Rol:</strong> <?= prj_h($rol_texto) ?> &nbsp;&nbsp;
   <strong>Usuario:</strong> <?= prj_h($usuario) ?>
 </div>
+<script>
+window.PRJ_PAGE_ROLE_ID = <?= (int)$id_rol ?>;
+window.PRJ_YOUTUBE_VIDEO_MAP = <?= json_encode($prj_youtube_video_map, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+</script>
 
 <div class="card prj-filters-card mb-2">
   <div class="card-body py-2">
@@ -519,7 +532,14 @@ function prj_link_limpiar_filtros()
       </div>
       <div class="modal-body">
         <div class="embed-responsive embed-responsive-16by9">
-          <video id="prjRsuVideoPlayer" class="embed-responsive-item" controls preload="metadata"></video>
+          <iframe
+            id="prjRsuVideoFrame"
+            class="embed-responsive-item"
+            src=""
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            frameborder="0"
+          ></iframe>
         </div>
       </div>
     </div>

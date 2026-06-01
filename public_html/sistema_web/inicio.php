@@ -286,6 +286,8 @@
           </div>
         </div>
         <!-- /.row -->
+        <?php include __DIR__ . '/inicio/capacitaciones_videos_block.php'; ?>
+
         <!-- ====== FILA 4: IMÁGENES GRANDES (2 columnas, mismas dimensiones) ====== -->
         <div class="row grid-two">
           <!-- Imagen 1 -->
@@ -351,7 +353,7 @@
 
 
         <!-- ====== FILA 2: BUZÓN & DEADLINE (2 columnas) ====== -->
-        <div class="row grid-two">
+        <div class="row grid-two d-none">
           <!-- Buzón -->
           <div class="col-md-6 mb-3">
             <div class="card h-100">
@@ -465,7 +467,7 @@
         </div>
         <!-- /.row -->
         <!-- ====== FILA 3: CRONOGRAMA GLOBAL & NOTAS (placeholder) ====== -->
-        <div class="row grid-two">
+        <div class="row grid-two d-none">
           <div class="col-md-6 mb-3">
             <div class="card h-100">
               <div class="card-header" style="background-color:#28a745;color:#fff;">
